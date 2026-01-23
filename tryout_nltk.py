@@ -3,7 +3,6 @@
 # def try_ret(): return 1 + 1 #=> 2.
 # print(dir(list)) prints all methods of a class.
 
-import inspect
 import nltk
 
 # ##### Tokenization
@@ -182,7 +181,6 @@ import nltk
 # # run_similarities()
 
 # ##### Text classification
-import random
 from nltk.corpus import movie_reviews
 
 
@@ -195,7 +193,7 @@ def get_docs():
 
 
 def run_classification():
-    documents = get_docs()
+    # documents = get_docs()  # Not used in this function
     #     # print(documents[0])
     #     # randomized = random.shuffle(documents)
     #     # print(randomized[0])
