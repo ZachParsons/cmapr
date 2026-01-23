@@ -205,3 +205,14 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project specific
+venv.old/
+output/*.json
+output/*.csv
+output/*.graphml
+output/*.html
+*.pickle
+*.ps
+.DS_Store
+README.old

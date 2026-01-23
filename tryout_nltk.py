@@ -1,8 +1,3 @@
-# General Python notes.
-# def try_ret(): 1 + 1 #=> None.
-# def try_ret(): return 1 + 1 #=> 2.
-# print(dir(list)) prints all methods of a class.
-
 import nltk
 
 # ##### Tokenization
