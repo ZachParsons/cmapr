@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(source venv/bin/activate)",
+      "Bash(python3:*)",
+      "Bash(venv/bin/python:*)",
+      "Bash(venv/bin/pip list:*)",
+      "Bash(venv/bin/pip install:*)",
+      "Bash(venv/bin/python3 -m pip:*)",
+      "Bash(venv/bin/pytest --version)",
+      "Bash(venv/bin/pip freeze:*)"
+    ]
+  }
+}

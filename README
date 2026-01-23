@@ -1,0 +1,22 @@
+# setup
+[x] brew install python3
+~~pip3 install nltk~~
+~~brew install pipx~~
+~~pipx install nltk~~
+
+
+# install nltk.
+cd /Users/zach/se/projects/nlp/spike
+python3 -m venv venv
+source venv/bin/activate
+python3 -m pip install nltk
+
+# run file as script.
+python3 "/Users/zach/se/projects/nlp/spike/pos_tagger.py"
+
+# run file in interactive shell.
+`python3`
+`import post_tagger`
+`pos_tagger.run()`
+`import importlib`
+`importlib.reload(pos_tagger)`
