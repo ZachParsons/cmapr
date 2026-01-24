@@ -18,7 +18,19 @@
       "Bash(pytest:*)",
       "Bash(venv/bin/pytest tests/ -v --tb=line)",
       "Bash(tree:*)",
-      "Bash(venv/bin/pytest tests/ -v)"
+      "Bash(venv/bin/pytest tests/ -v)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(poetry run format:*)",
+      "Bash(make help:*)",
+      "Bash(make format:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(git commit:*)",
+      "Bash(make test:*)",
+      "Bash(venv/bin/ipython:*)"
     ]
   }
 }
