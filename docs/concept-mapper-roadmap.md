@@ -80,6 +80,111 @@ The following functionality already exists in the spike directory and can be ref
 
 ---
 
+## Storage Architecture
+
+**Philosophy:** Start simple with human-readable formats, design for extensibility.
+
+### Current Approach (Phases 1-6)
+
+**File formats:**
+- **JSON** for all structured data
+  - Preprocessed corpus, term lists, relations, graphs
+  - Human-readable, debuggable, language-agnostic
+  - Easy to inspect and version control
+- **CSV** for tabular/matrix data
+  - Co-occurrence matrices, frequency distributions, TF-IDF scores
+  - Opens in Excel, Pandas-native, easy inspection
+- **Cache** reference corpora as JSON
+  - Brown corpus frequencies (one-time computation)
+  - Fast enough for development and moderate scale
+
+**Filesystem organization:**
+```
+output/
+├── corpus/
+│   ├── preprocessed.json        # ProcessedDocument objects
+│   └── metadata.json             # Corpus-level metadata
+├── analysis/
+│   ├── terms.json                # Curated TermList
+│   ├── frequencies.csv           # Term frequency distributions
+│   ├── cooccurrence.csv          # Co-occurrence matrix
+│   └── tfidf_scores.csv          # TF-IDF scores vs reference
+├── graphs/
+│   ├── graph.json                # NetworkX graph (node-link format)
+│   └── d3/
+│       ├── data.json             # D3-formatted export
+│       └── index.html            # Interactive visualization
+└── cache/
+    └── brown_corpus_freqs.json   # Reference corpus frequencies
+```
+
+### Extensibility Design
+
+**Abstract storage backend** (`src/concept_mapper/storage/backend.py`):
+```python
+from abc import ABC, abstractmethod
+from pathlib import Path
+
+class StorageBackend(ABC):
+    @abstractmethod
+    def save_corpus(self, corpus: ProcessedDocument, path: Path) -> None: ...
+
+    @abstractmethod
+    def load_corpus(self, path: Path) -> ProcessedDocument: ...
+
+    @abstractmethod
+    def save_term_list(self, terms: TermList, path: Path) -> None: ...
+
+    @abstractmethod
+    def load_term_list(self, path: Path) -> TermList: ...
+
+    # ... etc for other data types
+
+class JSONBackend(StorageBackend):
+    """Default: Human-readable, debuggable"""
+    # Implementation using json.dump/load
+
+class SQLiteBackend(StorageBackend):
+    """Future: Searchable, queryable intermediate data"""
+    # Implementation using sqlite3
+
+class ParquetBackend(StorageBackend):
+    """Future: Fast columnar storage for large matrices"""
+    # Implementation using pandas.to_parquet
+```
+
+**Configuration-driven backend selection:**
+```yaml
+# pipeline.yaml
+storage:
+  backend: json  # Options: json (default), sqlite, parquet
+  output_dir: ./output
+  compression: false  # gzip for JSON when needed
+```
+
+### Migration Path
+
+**When to switch backends:**
+- **SQLite**: When you need to query intermediate data (search across documents, filter terms)
+- **Parquet**: When matrices exceed ~100K terms (faster read/write than CSV)
+- **HDF5**: When working with very large corpora (multi-GB preprocessed data)
+- **Database (Postgres)**: When building web interface or multi-user access
+
+**Always maintain:**
+- Same API across all backends (`save_corpus()`, `load_corpus()`)
+- Export to JSON/CSV for portability and archiving
+- Human-readable reference formats in documentation
+
+### Implementation Tasks
+
+- [ ] **Phase 0.4: Storage abstraction** (`src/concept_mapper/storage/`)
+  - [ ] Define `StorageBackend` ABC
+  - [ ] Implement `JSONBackend` as default
+  - [ ] Add filesystem utilities (create output dirs, check paths)
+  - [ ] Tests: round-trip save/load for each data type
+
+---
+
 ## Phase 1: Corpus Ingestion & Preprocessing
 
 All downstream analysis depends on clean, structured text.
