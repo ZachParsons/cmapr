@@ -15,8 +15,9 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 - ✅ Phase 1 Complete: Corpus loading, preprocessing pipeline (tokenization, POS, lemmas)
 - ✅ Phase 2 Complete: Frequency analysis, Brown corpus reference, TF-IDF
 - ✅ Phase 3 Complete: Philosophical term detection (multi-method rarity analysis)
-- 🚧 Phase 4 Next: Term list management
-- 📊 221 tests passing, all green
+- ✅ Phase 4 Complete: Term list management (curation, import/export, auto-population)
+- 🚧 Phase 5 Next: Search & concordance
+- 📊 268 tests passing, all green
 
 **References:**
 - Lane 2019, *Natural Language Processing in Action*
@@ -349,37 +350,55 @@ Identify author-specific conceptual vocabulary - terms with specialized meaning 
 
 ---
 
-## Phase 4: Term List Management
+## Phase 4: Term List Management ✅ COMPLETE
 
 Human-in-the-loop curation.
 
-- [ ] **4.1 Data structures** (`src/concept_mapper/terms/models.py`)
-  - [ ] `TermEntry` dataclass: term, lemma, pos, definition, notes, examples
-  - [ ] `TermList` class: collection with lookup by term
+- [x] **4.1 Data structures** (`src/concept_mapper/terms/models.py`)
+  - [x] `TermEntry` dataclass: term, lemma, pos, definition, notes, examples, metadata
+  - [x] `TermList` class: collection with lookup by term
+  - [x] Dictionary serialization (to_dict/from_dict)
+  - [x] Iteration, length, containment support
 
-- [ ] **4.2 CRUD operations** (`src/concept_mapper/terms/manager.py`)
-  - [ ] `add_term(term: str, metadata: dict = None)`
-  - [ ] `remove_term(term: str)`
-  - [ ] `update_term(term: str, metadata: dict)`
-  - [ ] `get_term(term: str) -> TermEntry | None`
-  - [ ] `list_terms() -> list[TermEntry]`
-  - [ ] Tests: CRUD round-trip
+- [x] **4.2 CRUD operations** (TermList methods)
+  - [x] `add(entry: TermEntry)` - add term to list
+  - [x] `remove(term: str)` - remove term from list
+  - [x] `update(term: str, **kwargs)` - update term fields
+  - [x] `get(term: str) -> TermEntry | None` - retrieve term
+  - [x] `list_terms() -> list[TermEntry]` - get all terms (sorted)
+  - [x] `list_term_names() -> list[str]` - get term names only
+  - [x] Tests: CRUD round-trip, error handling
 
-- [ ] **4.3 Persistence**
-  - [ ] `save(path: Path)` → JSON serialization
-  - [ ] `load(path: Path) -> TermList`
-  - [ ] Tests: save → load preserves all data
+- [x] **4.3 Persistence**
+  - [x] `save(path: Path)` → JSON serialization
+  - [x] `load(path: Path) -> TermList` → JSON deserialization
+  - [x] Creates parent directories automatically
+  - [x] Tests: save → load preserves all data
 
-- [ ] **4.4 Bulk operations**
-  - [ ] `import_from_file(path: Path)` (plain text, one term per line)
-  - [ ] `export_to_file(path: Path, format: str)`
-  - [ ] `merge(other: TermList) -> TermList`
-  - [ ] Tests: import/export round-trip
+- [x] **4.4 Bulk operations** (`src/concept_mapper/terms/manager.py`)
+  - [x] TermManager class for bulk operations
+  - [x] `import_from_txt(path)` - plain text, one term per line
+  - [x] `export_to_txt(path)` - export to text
+  - [x] `import_from_csv(path)` - CSV with term + metadata columns
+  - [x] `export_to_csv(path)` - export to CSV with fields
+  - [x] `merge_from_file(path, format)` - merge from file
+  - [x] `filter_by_pos(tags)` - filter by POS tags
+  - [x] `get_statistics()` - term list statistics
+  - [x] Tests: import/export round-trip, formats
 
-- [ ] **4.5 Auto-populate from rarity**
-  - [ ] `suggest_terms(docs, scorer: RarityScorer, threshold: float) -> TermList`
-  - [ ] Populate examples from corpus automatically
-  - [ ] Tests: suggested list contains expected rare terms
+- [x] **4.5 Auto-populate from rarity** (`src/concept_mapper/terms/suggester.py`)
+  - [x] `suggest_terms_from_analysis(docs, reference, min_score, top_n)` - use PhilosophicalTermScorer
+  - [x] Populate examples from corpus automatically (max_examples parameter)
+  - [x] Infer POS tags from documents
+  - [x] Include score metadata for each term
+  - [x] `suggest_terms_by_method(method)` - use specific detection method
+  - [x] Support for ratio, tfidf, neologism, definitional methods
+  - [x] Tests: suggested list contains expected rare terms
+
+**Test Coverage:**
+- 47 comprehensive tests for term list management
+- Tests for data structures, CRUD, persistence, bulk operations, auto-population
+- All edge cases covered (duplicates, missing fields, file errors, etc.)
 
 ---
 
