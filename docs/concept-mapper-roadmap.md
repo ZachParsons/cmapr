@@ -14,8 +14,9 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 - ✅ Phase 0 Complete: Storage layer, test corpus, NLTK data
 - ✅ Phase 1 Complete: Corpus loading, preprocessing pipeline (tokenization, POS, lemmas)
 - ✅ Phase 2 Complete: Frequency analysis, Brown corpus reference, TF-IDF
-- 🚧 Phase 3 Next: Philosophical term detection (corpus-comparative analysis)
-- 📊 125 tests passing, all green
+- ✅ Phase 3 Complete: Philosophical term detection (multi-method rarity analysis)
+- 🚧 Phase 4 Next: Term list management
+- 📊 221 tests passing, all green
 
 **References:**
 - Lane 2019, *Natural Language Processing in Action*
@@ -271,62 +272,76 @@ Statistical foundation for rarity detection.
 
 ---
 
-## Phase 3: Philosophical Term Detection
+## Phase 3: Philosophical Term Detection ✅ COMPLETE
 
 Identify author-specific conceptual vocabulary - terms with specialized meaning distinctive to this author's work, not merely terms rare within the primary text.
 
 **Goal:** Find terms like Aristotle's 'eudaimonia', Spinoza's 'affect', Hegel's 'sublation', Philosopher' 'abstraction', or Deleuze & Guattari's 'body without organs' - philosophical neologisms and technical terminology statistically improbable in general English corpora.
 
-- [ ] **3.1 Corpus-comparative analysis** (`src/concept_mapper/analysis/rarity.py`)
-  - [ ] `compare_to_reference(docs, reference_corpus: Counter) -> dict[str, float]`
-    - [ ] Calculate relative frequency: `(freq_in_author / total_author) / (freq_in_reference / total_reference)`
-    - [ ] High ratio = term overused by author vs. general English
-  - [ ] `get_corpus_specific_terms(docs, reference: Counter, threshold: float) -> set[str]`
-    - [ ] Filter terms by minimum ratio threshold
-    - [ ] Consider both absolute frequency in author and relative rarity
-  - [ ] Tests: plant term with high author-freq/low reference-freq, verify detection
+- [x] **3.1 Corpus-comparative analysis** (`src/concept_mapper/analysis/rarity.py`)
+  - [x] `compare_to_reference(docs, reference_corpus: Counter) -> dict[str, float]`
+    - [x] Calculate relative frequency: `(freq_in_author / total_author) / (freq_in_reference / total_reference)`
+    - [x] High ratio = term overused by author vs. general English
+  - [x] `get_corpus_specific_terms(docs, reference: Counter, threshold: float) -> set[str]`
+    - [x] Filter terms by minimum ratio threshold
+    - [x] Consider both absolute frequency in author and relative rarity
+  - [x] `get_top_corpus_specific_terms()`, `get_neologism_candidates()`, `get_term_context_stats()`
+  - [x] Tests: plant term with high author-freq/low reference-freq, verify detection
   - **Note:** This is PRIMARY method - terms distinctive to author's conceptual framework
 
-- [ ] **3.2 TF-IDF against reference corpus**
-  - [ ] `tfidf_vs_reference(docs, reference: Counter) -> dict[str, float]`
-  - [ ] Treat author's corpus as single document, reference corpus as background
-  - [ ] High TF-IDF = term characteristic of author's usage
-  - [ ] Tests: author-specific philosophical term scores above generic vocabulary
+- [x] **3.2 TF-IDF against reference corpus**
+  - [x] `tfidf_vs_reference(docs, reference: Counter) -> dict[str, float]`
+  - [x] Treat author's corpus as single document, reference corpus as background
+  - [x] High TF-IDF = term characteristic of author's usage
+  - [x] `get_top_tfidf_terms()`, `get_distinctive_by_tfidf()`, `get_combined_distinctive_terms()`
+  - [x] Tests: author-specific philosophical term scores above generic vocabulary
 
-- [ ] **3.3 Neologism detection**
-  - [ ] `get_potential_neologisms(docs, dictionary: set) -> set[str]` (not in WordNet)
-    - [ ] Load WordNet lemmas as baseline dictionary
-    - [ ] Filter out proper nouns, OCR errors, typos with frequency threshold
-  - [ ] `get_capitalized_technical_terms(docs) -> set[str]` (non-sentence-initial)
-    - [ ] May indicate reified abstractions ("Being", "Concept", "Spirit")
-  - [ ] Tests: planted neologism detected, common words excluded
+- [x] **3.3 Neologism detection**
+  - [x] `get_wordnet_neologisms(docs) -> set[str]` (not in WordNet's 117K word-sense pairs)
+    - [x] Load WordNet lemmas as baseline dictionary
+    - [x] Filter out proper nouns and stopwords with frequency threshold
+  - [x] `get_capitalized_technical_terms(docs) -> set[str]` (non-sentence-initial)
+    - [x] May indicate reified abstractions ("Being", "Concept", "Spirit")
+    - [x] Position-based detection (avoids POS tagger issues)
+  - [x] `get_potential_neologisms()`, `get_all_neologism_signals()` (multi-method with high-confidence subset)
+  - [x] Tests: planted neologism detected, common words excluded
 
-- [ ] **3.4 Definitional context extraction**
-  - [ ] `get_definitional_contexts(docs) -> list[tuple[str, str]]` (term, sentence)
-    - [ ] Patterns: "X is...", "by X I mean...", "what I call X", "the concept of X"
-    - [ ] Extract sentences where author explicitly defines terms
-  - [ ] `score_by_definitional_context(terms: set[str], contexts: list) -> dict[str, int]`
-    - [ ] Higher score = more authorial attention/definition
-  - [ ] Tests: pattern matching on planted definitional sentences
+- [x] **3.4 Definitional context extraction**
+  - [x] `get_definitional_contexts(docs) -> list[tuple[str, str, str, str]]` (term, sentence, pattern, doc_id)
+    - [x] 8 patterns: copular, explicit_mean, metalinguistic, conceptual, appositive, explicit_define, referential, interpretive
+    - [x] Extract sentences where author explicitly defines terms
+  - [x] `score_by_definitional_context(terms: set[str], contexts: list) -> dict[str, int]`
+    - [x] Higher score = more authorial attention/definition
+  - [x] `get_definitional_sentences()`, `get_highly_defined_terms()`, `analyze_definitional_patterns()`
+  - [x] Tests: pattern matching on planted definitional sentences
   - **Note:** Direct signal of conceptual importance
 
-- [ ] **3.5 POS-filtered candidate extraction**
-  - [x] `filter_by_pos(terms: set[str], pos_tags: set[str], docs) -> set[str]` *(spike: pos_tagger.py:106-118 filters common verbs)*
-    - [ ] Focus on nouns (NN, NNP, NNS), verbs (VB*), adjectives (JJ*)
-    - [ ] Exclude function words, determiners, prepositions
-  - [ ] Tests: function words filtered out
-  - **Note:** pos_tagger.py has filter logic for excluding common verbs (lines 107-111). Generalize to other POS.
+- [x] **3.5 POS-filtered candidate extraction**
+  - [x] `filter_by_pos_tags(docs, include_tags, exclude_tags) -> set[str]`
+    - [x] Focus on nouns (NN, NNP, NNS), verbs (VB*), adjectives (JJ*)
+    - [x] Exclude function words, determiners, prepositions
+  - [x] `get_philosophical_term_candidates()` with focus modes (nouns, verbs, adjectives, all_content)
+  - [x] `get_compound_terms()` for hyphenated and noun phrases
+  - [x] `get_filtered_candidates()` for comprehensive extraction
+  - [x] Tests: function words filtered out
 
-- [ ] **3.6 Hybrid philosophical term scorer**
-  - [ ] `PhilosophicalTermScorer` class with configurable weights
-    - [ ] Weight 1: Corpus-comparative ratio (primary signal)
-    - [ ] Weight 2: TF-IDF vs reference
-    - [ ] Weight 3: Neologism detection (boolean boost)
-    - [ ] Weight 4: Definitional context count
-    - [ ] Weight 5: Capitalization (reified abstractions)
-  - [ ] `score_term(term: str) -> float`
-  - [ ] `score_all(min_score: float) -> dict[str, float]`
-  - [ ] Tests: known philosophical neologism scores high, common English words score low
+- [x] **3.6 Hybrid philosophical term scorer**
+  - [x] `PhilosophicalTermScorer` class with configurable weights
+    - [x] Weight 1: Corpus-comparative ratio (1.0, primary signal)
+    - [x] Weight 2: TF-IDF vs reference (1.0)
+    - [x] Weight 3: Neologism detection (0.5, boolean boost)
+    - [x] Weight 4: Definitional context count (0.3)
+    - [x] Weight 5: Capitalization (0.2, reified abstractions)
+  - [x] `score_term(term: str) -> dict` (returns breakdown of all components)
+  - [x] `score_all(min_score: float, top_n: int) -> list[tuple[str, float, dict]]`
+  - [x] `get_high_confidence_terms(min_signals: int) -> set[str]` (multi-signal agreement)
+  - [x] `score_philosophical_terms()` convenience function
+  - [x] Tests: known philosophical neologism scores high, common English words score low
+
+**Test Coverage:**
+- 103 rarity detection tests (unit + integration)
+- Tests on real philosophical corpus (sample1-3)
+- All edge cases covered (empty docs, missing terms, etc.)
 
 **Explicitly deprioritized:**
 - Hapax legomena within primary text (not useful - a term used 50x by author but rare in English is still a philosophical term)
