@@ -17,28 +17,16 @@ Usage:
     result = pos_tagger.run_pipeline("Your text here", top_n=10)
 """
 
-from nltk import word_tokenize, pos_tag, sent_tokenize
+from nltk import pos_tag
 from nltk.probability import FreqDist
 from nltk.corpus import stopwords
-from pathlib import Path
 from typing import List, Tuple, Dict, Set
 
+# Import from new modular structure
+from src.concept_mapper.corpus.loader import load_text
+from src.concept_mapper.preprocessing.tokenize import tokenize_words, tokenize_sentences
+
 # ===== Core Functions (Pure, Composable) =====
-
-
-def load_text(file_path: str) -> str:
-    """Load text content from a file."""
-    return Path(file_path).read_text(encoding="utf-8")
-
-
-def tokenize_words(text: str) -> List[str]:
-    """Tokenize text into words."""
-    return word_tokenize(text)
-
-
-def tokenize_sentences(text: str) -> List[str]:
-    """Tokenize text into sentences."""
-    return sent_tokenize(text)
 
 
 def tag_parts_of_speech(tokens: List[str]) -> List[Tuple[str, str]]:
