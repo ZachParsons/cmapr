@@ -22,25 +22,20 @@ import nltk
 import sys
 from pathlib import Path
 
-
 # Required NLTK data packages
 REQUIRED_PACKAGES = [
     # Tokenization
     ("punkt", "Punkt tokenizer models"),
     ("punkt_tab", "Punkt tokenizer tables"),
-
     # POS tagging
     ("averaged_perceptron_tagger", "Averaged perceptron POS tagger"),
     ("averaged_perceptron_tagger_eng", "English averaged perceptron POS tagger"),
-
     # Lemmatization
     ("wordnet", "WordNet lexical database"),
     ("omw-1.4", "Open Multilingual Wordnet"),
-
     # Reference corpora
     ("brown", "Brown corpus"),
     ("stopwords", "Stopwords corpus"),
-
     # Example/test corpora
     ("movie_reviews", "Movie reviews corpus"),
     ("gutenberg", "Gutenberg corpus"),
@@ -118,6 +113,7 @@ def verify_downloads() -> bool:
     # Test tokenization
     try:
         from nltk import word_tokenize, sent_tokenize
+
         test_text = "Hello, world! This is a test."
         word_tokenize(test_text)
         sent_tokenize(test_text)
@@ -129,6 +125,7 @@ def verify_downloads() -> bool:
     # Test POS tagging
     try:
         from nltk import pos_tag
+
         pos_tag(["test", "word"])
         print("  ✓ POS tagging working")
     except Exception as e:
@@ -138,6 +135,7 @@ def verify_downloads() -> bool:
     # Test lemmatization
     try:
         from nltk.stem import WordNetLemmatizer
+
         lemmatizer = WordNetLemmatizer()
         lemmatizer.lemmatize("running", pos="v")
         print("  ✓ Lemmatization working")
@@ -148,6 +146,7 @@ def verify_downloads() -> bool:
     # Test stopwords
     try:
         from nltk.corpus import stopwords
+
         stopwords.words("english")
         print("  ✓ Stopwords working")
     except Exception as e:
@@ -157,6 +156,7 @@ def verify_downloads() -> bool:
     # Test Brown corpus
     try:
         from nltk.corpus import brown
+
         brown.words()[:10]
         print("  ✓ Brown corpus working")
     except Exception as e:
@@ -182,7 +182,9 @@ def main():
             print("\n⚠ Downloads completed but verification failed.")
             sys.exit(1)
     else:
-        print("\n⚠ Some downloads failed. Please check your internet connection and try again.")
+        print(
+            "\n⚠ Some downloads failed. Please check your internet connection and try again."
+        )
         sys.exit(1)
 
 

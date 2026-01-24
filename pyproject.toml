@@ -32,3 +32,9 @@ ipython = "^8.27"      # REPL w/ autoreload ⭐
 # playwright = "^1.48"   # E2E tests (not needed for NLP)
 # tox = "^4.16"          # Task runner/multi-env
 # uv = "^0.4"            # Fast pip/install (CLI)
+
+[tool.poetry.scripts]
+format = "scripts.format:main"
+lint = "scripts.lint:main"
+test = "scripts.test:main"
+check = "scripts.check:main"
