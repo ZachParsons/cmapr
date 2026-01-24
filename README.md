@@ -108,7 +108,7 @@ Analyze a text file:
 import pos_tagger as pt
 
 # Analyze a file
-result = pt.run('philosopher_1920_cc.txt')
+result = pt.run('data/sample/philosopher_1920_cc.txt')
 
 print(f"Total tokens: {result['token_count']}")
 print(f"Top content verbs: {result['content_verbs'][:5]}")
@@ -147,7 +147,7 @@ Find sentences containing specific terms:
 import pos_tagger as pt
 
 # Search for a term in a file
-sentences = pt.search_term_in_file('philosopher_1920_cc.txt', 'consciousness')
+sentences = pt.search_term_in_file('data/sample/philosopher_1920_cc.txt', 'consciousness')
 print(f"Found {len(sentences)} sentences")
 
 # Display results
@@ -213,12 +213,15 @@ spike/
 │       ├── sample1_dialectics.txt
 │       ├── sample2_epistemology.txt
 │       ├── sample3_ontology.txt
+│       ├── philosopher_1920_cc.txt  # Philosopher test file
 │       └── CORPUS_SPEC.md      # Detailed corpus specification
+├── docs/                        # Project documentation
+│   ├── concept-mapper-roadmap.md  # Full development roadmap
+│   └── PHASE0_COMPLETE.md      # Phase 0 completion summary
 ├── scripts/
 │   └── download_nltk_data.py   # NLTK data downloader
 ├── output/                      # Generated output files
 ├── pos_tagger.py               # Refactored analysis functions
-├── example_usage.py            # Usage examples
 ├── requirements.txt            # Python dependencies
 ├── pyproject.toml              # Project configuration
 └── README.md                   # This file
@@ -300,7 +303,7 @@ Current test coverage:
 
 ## Roadmap
 
-See `concept-mapper-roadmap.md` for the complete development roadmap.
+See `docs/concept-mapper-roadmap.md` for the complete development roadmap.
 
 **Current Phase:** Phase 0 (Complete ✓)
 
@@ -308,10 +311,8 @@ See `concept-mapper-roadmap.md` for the complete development roadmap.
 
 ## Documentation
 
-- **`PHASE0_COMPLETE.md`** - Phase 0 completion summary
-- **`REFACTORING_NOTES.md`** - Notes on pos_tagger.py refactoring
-- **`SETUP.md`** - Environment setup details
-- **`concept-mapper-roadmap.md`** - Full project roadmap
+- **`docs/PHASE0_COMPLETE.md`** - Phase 0 completion summary
+- **`docs/concept-mapper-roadmap.md`** - Full project roadmap
 - **`data/sample/CORPUS_SPEC.md`** - Sample corpus specification
 
 ## References
