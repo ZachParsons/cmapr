@@ -1,0 +1,47 @@
+{
+  "description": "Test corpus for validating philosophical term detection",
+  "files": [
+    {
+      "filename": "test_philosophical_terms.txt",
+      "invented_terms": {
+        "daseinology": {
+          "frequency": 6,
+          "type": "neologism",
+          "expected_detection": true,
+          "notes": "Completely invented term, not in WordNet or Brown corpus"
+        },
+        "temporalization": {
+          "frequency": 5,
+          "type": "neologism",
+          "expected_detection": true,
+          "notes": "Philosophical neologism derived from 'temporal'"
+        },
+        "ekstatic": {
+          "frequency": 4,
+          "type": "specialized_spelling",
+          "expected_detection": true,
+          "notes": "Variant spelling of 'ecstatic' with philosophical meaning"
+        }
+      },
+      "common_terms_to_filter": [
+        "the",
+        "of",
+        "and",
+        "to",
+        "is"
+      ],
+      "total_words": 127,
+      "total_sentences": 12
+    },
+    {
+      "filename": "philosopher_1920_cc.txt",
+      "type": "real_corpus",
+      "notes": "Philosopher' 'Class Consciousness' - contains real philosophical terms like 'abstraction'"
+    }
+  ],
+  "validation_criteria": {
+    "term_detection": "All invented terms should score high in corpus-comparative analysis",
+    "frequency_verification": "Exact counts should match documented frequencies",
+    "filtering": "Common terms should be excluded from philosophical term list"
+  }
+}
