@@ -4,7 +4,9 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 
 ## Project Overview
 
-**Goal:** Analyze texts to identify terms with author-specific meanings, understand their usage through co-occurrence and grammatical relations, and export concept maps for D3 visualization.
+**Goal:** Analyze philosophical texts to identify author-specific conceptual vocabulary - neologisms and terms with specialized technical meaning that are statistically distinctive compared to general English corpora. Map these concepts through co-occurrence and grammatical relations, exporting as D3 visualizations.
+
+**Examples of target terms:** Aristotle's 'eudaimonia', Spinoza's 'affect', Hegel's 'sublation', Philosopher' 'abstraction', Deleuze & Guattari's 'body without organs'
 
 **Stack:** Python, NLTK, spaCy (for dependency parsing), networkx, Click (CLI)
 
@@ -159,34 +161,66 @@ Statistical foundation for rarity detection.
 
 ---
 
-## Phase 3: Rarity Detection
+## Phase 3: Philosophical Term Detection
 
-Operationalize "rare" and "technical."
+Identify author-specific conceptual vocabulary - terms with specialized meaning distinctive to this author's work, not merely terms rare within the primary text.
 
-- [ ] **3.1 Frequency-based rarity** (`src/concept_mapper/analysis/rarity.py`)
-  - [ ] `get_hapax_legomena(docs: list[ProcessedDocument]) -> set[str]`
-  - [ ] `get_low_frequency_terms(docs, threshold: int) -> set[str]`
-  - [x] `get_low_frequency_by_pos(docs, pos_tags: set, threshold: int) -> set[str]` *(spike: pos_tagger.py:106-118 filters common verbs)*
-  - [ ] Tests: inject known hapax, verify detection
-  - **Note:** pos_tagger.py has filter logic for excluding common verbs (lines 107-111). Can generalize to other POS.
+**Goal:** Find terms like Aristotle's 'eudaimonia', Spinoza's 'affect', Hegel's 'sublation', Philosopher' 'abstraction', or Deleuze & Guattari's 'body without organs' - philosophical neologisms and technical terminology statistically improbable in general English corpora.
 
-- [ ] **3.2 TF-IDF-based rarity**
+- [ ] **3.1 Corpus-comparative analysis** (`src/concept_mapper/analysis/rarity.py`)
+  - [ ] `compare_to_reference(docs, reference_corpus: Counter) -> dict[str, float]`
+    - [ ] Calculate relative frequency: `(freq_in_author / total_author) / (freq_in_reference / total_reference)`
+    - [ ] High ratio = term overused by author vs. general English
   - [ ] `get_corpus_specific_terms(docs, reference: Counter, threshold: float) -> set[str]`
-  - [ ] Compare author's usage against general English
-  - [ ] Tests: author-specific term scores above threshold
+    - [ ] Filter terms by minimum ratio threshold
+    - [ ] Consider both absolute frequency in author and relative rarity
+  - [ ] Tests: plant term with high author-freq/low reference-freq, verify detection
+  - **Note:** This is PRIMARY method - terms distinctive to author's conceptual framework
 
-- [ ] **3.3 Structural rarity heuristics**
-  - [ ] `get_capitalized_nouns(docs) -> set[str]` (non-sentence-initial)
-  - [ ] `get_potential_neologisms(docs, dictionary: set) -> set[str]` (not in wordnet)
+- [ ] **3.2 TF-IDF against reference corpus**
+  - [ ] `tfidf_vs_reference(docs, reference: Counter) -> dict[str, float]`
+  - [ ] Treat author's corpus as single document, reference corpus as background
+  - [ ] High TF-IDF = term characteristic of author's usage
+  - [ ] Tests: author-specific philosophical term scores above generic vocabulary
+
+- [ ] **3.3 Neologism detection**
+  - [ ] `get_potential_neologisms(docs, dictionary: set) -> set[str]` (not in WordNet)
+    - [ ] Load WordNet lemmas as baseline dictionary
+    - [ ] Filter out proper nouns, OCR errors, typos with frequency threshold
+  - [ ] `get_capitalized_technical_terms(docs) -> set[str]` (non-sentence-initial)
+    - [ ] May indicate reified abstractions ("Being", "Concept", "Spirit")
+  - [ ] Tests: planted neologism detected, common words excluded
+
+- [ ] **3.4 Definitional context extraction**
   - [ ] `get_definitional_contexts(docs) -> list[tuple[str, str]]` (term, sentence)
-    - [ ] Patterns: "X is...", "by X I mean...", "what I call X"
-  - [ ] Tests: planted capitalized noun detected, neologism detected
+    - [ ] Patterns: "X is...", "by X I mean...", "what I call X", "the concept of X"
+    - [ ] Extract sentences where author explicitly defines terms
+  - [ ] `score_by_definitional_context(terms: set[str], contexts: list) -> dict[str, int]`
+    - [ ] Higher score = more authorial attention/definition
+  - [ ] Tests: pattern matching on planted definitional sentences
+  - **Note:** Direct signal of conceptual importance
 
-- [ ] **3.4 Hybrid rarity scorer**
-  - [ ] `RarityScorer` class with configurable methods and weights
+- [ ] **3.5 POS-filtered candidate extraction**
+  - [x] `filter_by_pos(terms: set[str], pos_tags: set[str], docs) -> set[str]` *(spike: pos_tagger.py:106-118 filters common verbs)*
+    - [ ] Focus on nouns (NN, NNP, NNS), verbs (VB*), adjectives (JJ*)
+    - [ ] Exclude function words, determiners, prepositions
+  - [ ] Tests: function words filtered out
+  - **Note:** pos_tagger.py has filter logic for excluding common verbs (lines 107-111). Generalize to other POS.
+
+- [ ] **3.6 Hybrid philosophical term scorer**
+  - [ ] `PhilosophicalTermScorer` class with configurable weights
+    - [ ] Weight 1: Corpus-comparative ratio (primary signal)
+    - [ ] Weight 2: TF-IDF vs reference
+    - [ ] Weight 3: Neologism detection (boolean boost)
+    - [ ] Weight 4: Definitional context count
+    - [ ] Weight 5: Capitalization (reified abstractions)
   - [ ] `score_term(term: str) -> float`
   - [ ] `score_all(min_score: float) -> dict[str, float]`
-  - [ ] Tests: common English words score low
+  - [ ] Tests: known philosophical neologism scores high, common English words score low
+
+**Explicitly deprioritized:**
+- Hapax legomena within primary text (not useful - a term used 50x by author but rare in English is still a philosophical term)
+- Within-text frequency thresholds (except for noise filtering)
 
 ---
 
@@ -503,6 +537,7 @@ Phase 5          Phase 6          Phase 7
 - **Curation checkpoint at Phase 4:** Review suggested terms before building graphs. Garbage in → garbage out.
 - **CLI incrementally:** Add subcommands as phases complete rather than all at end.
 - **spaCy vs NLTK:** Phase 7 introduces spaCy for dependency parsing. Could use earlier if NLTK POS tagging proves insufficient.
+- **Rarity = corpus-comparative:** "Rare" means statistically improbable in general English, not necessarily rare within the primary text. A term used 100 times by the author but nearly absent from Brown corpus is a philosophical term worth tracking.
 
 ## Refactoring Strategy from Spike
 
@@ -524,7 +559,7 @@ Phase 5          Phase 6          Phase 7
 **Code reuse percentage by phase:**
 - Phase 0: ~70% done (structure needed, NLTK data downloaded, corpus exists)
 - Phase 1: ~50% done (tokenization, POS, lemmatization exist but need modularization)
-- Phase 2: ~40% done (FreqDist used, POS filtering exists, needs corpus-level aggregation)
-- Phase 3: ~20% done (common word filtering exists, needs full rarity scoring)
+- Phase 2: ~40% done (FreqDist used, POS filtering exists, needs reference corpus integration & aggregation)
+- Phase 3: ~10% done (POS filtering exists in spike, but corpus-comparative analysis is new work)
 - Phase 5: ~30% done (basic sentence search exists, needs structured return types)
 - Phases 4, 6-11: ~0% done (no existing implementations)
