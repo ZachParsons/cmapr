@@ -1,0 +1,15 @@
+Semantic Holism and Practical Consequences
+
+The principle of meaning-variance holds that terms shift significance across theoretical frameworks. Meaning-variance challenges the notion of stable reference. When we accept meaning-variance, translation becomes deeply problematic. Quine's argument for meaning-variance undermines traditional epistemology.
+
+The concept of instrumental-warranting replaces correspondence truth. Knowledge gains instrumental-warranting through practical success. Instrumental-warranting connects belief with action. Dewey argued that instrumental-warranting is the only legitimate criterion.
+
+Conceptual schemes organize experience through category-matrices. Different conceptual schemes impose different category-matrices. The idea of category-matrices raises questions about relativism. Davidson rejected the dualism between conceptual scheme and empirical content.
+
+Truth-aptness determines which sentences can bear truth values. Not all grammatically well-formed sentences have truth-aptness. Ethical statements may lack truth-aptness despite appearing propositional. The debate over truth-aptness divides cognitivists from non-cognitivists.
+
+Referential opacity occurs when substitution fails to preserve truth. Belief contexts exhibit referential opacity. Understanding referential opacity clarifies intensional logic. Frege's puzzle about referential opacity motivated his sense-reference distinction.
+
+The pragmatic maxim tests meaning through experiential consequences. According to the pragmatic maxim, concepts without practical difference are meaningless. Peirce formulated the pragmatic maxim to clarify metaphysical disputes. The pragmatic maxim influenced logical positivism despite their differences.
+
+These concepts—meaning-variance, instrumental-warranting, category-matrices, truth-aptness, referential opacity, and the pragmatic maxim—demonstrate analytic and pragmatist convergence on meaning and practice.

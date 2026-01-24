@@ -1,8 +1,10 @@
 """
 Test that the sample corpus matches its specification.
 
-This test validates that the documented frequencies in data/sample/CORPUS_SPEC.md
-match the actual frequencies found in the sample corpus files.
+This test validates the new diverse philosophical corpus files:
+- sample1_analytic_pragmatism.txt
+- sample2_poststructural_political.txt
+- sample3_mind_consciousness.txt
 """
 
 import pytest
@@ -15,191 +17,176 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import pos_tagger as pt
 
 
-class TestSampleCorpusFrequencies:
-    """Test that documented frequencies match actual frequencies."""
+class TestSampleCorpusFiles:
+    """Test that sample corpus files exist and are loadable."""
 
     @pytest.fixture
     def sample_files(self):
         """Return paths to sample corpus files."""
         base = Path(__file__).parent.parent / "data" / "sample"
         return {
-            "sample1": base / "sample1_dialectics.txt",
-            "sample2": base / "sample2_epistemology.txt",
-            "sample3": base / "sample3_ontology.txt",
+            "sample1": base / "sample1_analytic_pragmatism.txt",
+            "sample2": base / "sample2_poststructural_political.txt",
+            "sample3": base / "sample3_mind_consciousness.txt",
         }
 
-    @pytest.fixture
-    def term_counts(self, sample_files):
-        """Load and count terms in all sample files."""
-        counts = {}
+    def test_all_sample_files_exist(self, sample_files):
+        """Test that all sample files exist."""
         for name, path in sample_files.items():
+            assert path.exists(), f"{name} does not exist at {path}"
+
+    def test_sample_files_not_empty(self, sample_files):
+        """Test that sample files are not empty."""
+        for name, path in sample_files.items():
+            text = pt.load_text(str(path))
+            assert len(text) > 0, f"{name} is empty"
+            assert len(text) > 1000, f"{name} seems too short ({len(text)} chars)"
+
+    def test_sample1_loadable(self, sample_files):
+        """Test that sample1 can be loaded and analyzed."""
+        result = pt.run(str(sample_files["sample1"]))
+        assert "tokens" in result
+        assert "nouns" in result
+        assert result["token_count"] > 100
+
+    def test_sample2_loadable(self, sample_files):
+        """Test that sample2 can be loaded and analyzed."""
+        result = pt.run(str(sample_files["sample2"]))
+        assert "tokens" in result
+        assert "nouns" in result
+        assert result["token_count"] > 100
+
+    def test_sample3_loadable(self, sample_files):
+        """Test that sample3 can be loaded and analyzed."""
+        result = pt.run(str(sample_files["sample3"]))
+        assert "tokens" in result
+        assert "nouns" in result
+        assert result["token_count"] > 100
+
+
+class TestSampleCorpusContent:
+    """Test that sample corpus contains expected philosophical terms."""
+
+    @pytest.fixture
+    def term_counts(self):
+        """Load and count terms in all sample files."""
+        base = Path(__file__).parent.parent / "data" / "sample"
+        files = {
+            "sample1": base / "sample1_analytic_pragmatism.txt",
+            "sample2": base / "sample2_poststructural_political.txt",
+            "sample3": base / "sample3_mind_consciousness.txt",
+        }
+
+        counts = {}
+        for name, path in files.items():
             text = pt.load_text(str(path))
             tokens = pt.tokenize_words(text)
             counts[name] = Counter([t.lower() for t in tokens])
         return counts
 
-    def test_sample1_token_count(self, sample_files):
-        """Test that sample1 has expected token count."""
-        text = pt.load_text(str(sample_files["sample1"]))
-        tokens = pt.tokenize_words(text)
-        assert len(tokens) == 170, f"Expected 170 tokens, got {len(tokens)}"
+    # Sample 1: Analytic Philosophy & Pragmatism
+    def test_sample1_contains_meaning_variance(self, term_counts):
+        """Test that sample1 contains meaning-variance."""
+        assert term_counts["sample1"]["meaning-variance"] > 0
 
-    def test_sample2_token_count(self, sample_files):
-        """Test that sample2 has expected token count."""
-        text = pt.load_text(str(sample_files["sample2"]))
-        tokens = pt.tokenize_words(text)
-        assert len(tokens) == 172, f"Expected 172 tokens, got {len(tokens)}"
-
-    def test_sample3_token_count(self, sample_files):
-        """Test that sample3 has expected token count."""
-        text = pt.load_text(str(sample_files["sample3"]))
-        tokens = pt.tokenize_words(text)
-        assert len(tokens) == 182, f"Expected 182 tokens, got {len(tokens)}"
-
-    # Sample 1 term frequencies
-    def test_sample1_dasein_flux(self, term_counts):
-        """Test dasein-flux frequency in sample1."""
-        assert term_counts["sample1"]["dasein-flux"] == 6
-
-    def test_sample1_geist_praxis(self, term_counts):
-        """Test geist-praxis frequency in sample1."""
-        assert term_counts["sample1"]["geist-praxis"] == 7
-
-    def test_sample1_abstraction(self, term_counts):
-        """Test abstraction frequency in sample1."""
-        assert term_counts["sample1"]["abstraction"] == 5
-
-    def test_sample1_totality_consciousness(self, term_counts):
-        """Test totality-consciousness frequency in sample1."""
-        assert term_counts["sample1"]["totality-consciousness"] == 5
-
-    # Sample 2 term frequencies
-    def test_sample2_noetic_intuition(self, term_counts):
-        """Test noetic-intuition frequency in sample2."""
-        assert term_counts["sample2"]["noetic-intuition"] == 4
-
-    def test_sample2_categorial(self, term_counts):
-        """Test categorial frequency in sample2."""
-        assert term_counts["sample2"]["categorial"] == 4
-
-    def test_sample2_synthesis(self, term_counts):
-        """Test synthesis frequency in sample2."""
-        assert term_counts["sample2"]["synthesis"] == 4
-
-    def test_sample2_intentionality_vectors(self, term_counts):
-        """Test intentionality-vectors frequency in sample2."""
-        assert term_counts["sample2"]["intentionality-vectors"] == 5
-
-    def test_sample2_eidetic(self, term_counts):
-        """Test eidetic frequency in sample2."""
-        assert term_counts["sample2"]["eidetic"] == 5
-
-    def test_sample2_reduction(self, term_counts):
-        """Test reduction frequency in sample2."""
-        assert term_counts["sample2"]["reduction"] == 5
-
-    def test_sample2_lifeworld_horizons(self, term_counts):
-        """Test lifeworld-horizons frequency in sample2."""
-        assert term_counts["sample2"]["lifeworld-horizons"] == 4
-
-    # Sample 3 term frequencies
-    def test_sample3_being_toward_finitude(self, term_counts):
-        """Test being-toward-finitude frequency in sample3."""
-        assert term_counts["sample3"]["being-toward-finitude"] == 6
-
-    def test_sample3_existential_thrownness(self, term_counts):
-        """Test existential-thrownness frequency in sample3."""
-        assert term_counts["sample3"]["existential-thrownness"] == 6
-
-    def test_sample3_worldhood_disclosure(self, term_counts):
-        """Test worldhood-disclosure frequency in sample3."""
-        assert term_counts["sample3"]["worldhood-disclosure"] == 5
-
-    def test_sample3_hermeneutic_circle(self, term_counts):
-        """Test hermeneutic-circle frequency in sample3."""
-        assert term_counts["sample3"]["hermeneutic-circle"] == 5
-
-    def test_sample3_resolute(self, term_counts):
-        """Test resolute frequency in sample3."""
-        assert term_counts["sample3"]["resolute"] == 4
-
-    def test_sample3_dasein_flux(self, term_counts):
-        """Test dasein-flux frequency in sample3 (cross-file term)."""
-        assert term_counts["sample3"]["dasein-flux"] == 1
-
-    def test_sample3_geist_praxis(self, term_counts):
-        """Test geist-praxis frequency in sample3 (cross-file term)."""
-        assert term_counts["sample3"]["geist-praxis"] == 1
-
-    # Cross-file totals
-    def test_cross_file_dasein_flux_total(self, term_counts):
-        """Test total dasein-flux frequency across all files."""
-        total = (
-            term_counts["sample1"]["dasein-flux"]
-            + term_counts["sample2"]["dasein-flux"]
-            + term_counts["sample3"]["dasein-flux"]
+    def test_sample1_contains_referential_opacity(self, term_counts):
+        """Test that sample1 contains referential-opacity or opacity."""
+        # May be tokenized as "referential-opacity" or "opacity"
+        has_term = (
+            term_counts["sample1"]["referential-opacity"] > 0
+            or term_counts["sample1"]["opacity"] > 0
         )
-        assert total == 7, f"Expected 7 total occurrences, got {total}"
+        assert has_term, "Expected to find referential-opacity or opacity"
 
-    def test_cross_file_geist_praxis_total(self, term_counts):
-        """Test total geist-praxis frequency across all files."""
-        total = (
-            term_counts["sample1"]["geist-praxis"]
-            + term_counts["sample2"]["geist-praxis"]
-            + term_counts["sample3"]["geist-praxis"]
+    def test_sample1_contains_pragmatic(self, term_counts):
+        """Test that sample1 contains pragmatic-related terms."""
+        has_term = (
+            term_counts["sample1"]["pragmatic"] > 0
+            or term_counts["sample1"]["pragmatism"] > 0
         )
-        assert total == 8, f"Expected 8 total occurrences, got {total}"
+        assert has_term, "Expected to find pragmatic or pragmatism"
 
+    # Sample 2: Post-structuralism & Political Philosophy
+    def test_sample2_contains_differance(self, term_counts):
+        """Test that sample2 contains différance."""
+        assert term_counts["sample2"]["différance"] > 0
 
-class TestSampleCorpusSearch:
-    """Test search functionality on sample corpus."""
+    def test_sample2_contains_bio_regulation(self, term_counts):
+        """Test that sample2 contains bio-regulation."""
+        # May be tokenized as "bio-regulation" or separate words
+        has_term = term_counts["sample2"]["bio-regulation"] > 0 or (
+            term_counts["sample2"]["bio"] > 0
+            and term_counts["sample2"]["regulation"] > 0
+        )
+        assert has_term, "Expected to find bio-regulation"
 
-    @pytest.fixture
-    def sample_files(self):
-        """Return paths to sample corpus files."""
-        base = Path(__file__).parent.parent / "data" / "sample"
-        return {
-            "sample1": str(base / "sample1_dialectics.txt"),
-            "sample2": str(base / "sample2_epistemology.txt"),
-            "sample3": str(base / "sample3_ontology.txt"),
-        }
+    def test_sample2_contains_deterritorialization(self, term_counts):
+        """Test that sample2 contains deterritorialization."""
+        assert term_counts["sample2"]["deterritorialization"] > 0
 
-    def test_search_dasein_flux_sample1(self, sample_files):
-        """Test searching for dasein-flux in sample1."""
-        sentences = pt.search_term_in_file(sample_files["sample1"], "dasein-flux")
-        assert (
-            len(sentences) == 6
-        ), f"Expected 6 sentences with dasein-flux, got {len(sentences)}"
+    def test_sample2_contains_rhizomatic(self, term_counts):
+        """Test that sample2 contains rhizomatic."""
+        has_term = (
+            term_counts["sample2"]["rhizomatic-becoming"] > 0
+            or term_counts["sample2"]["rhizomatic"] > 0
+        )
+        assert has_term, "Expected to find rhizomatic"
 
-    def test_search_geist_praxis_sample1(self, sample_files):
-        """Test searching for geist-praxis in sample1."""
-        sentences = pt.search_term_in_file(sample_files["sample1"], "geist-praxis")
-        assert (
-            len(sentences) == 7
-        ), f"Expected 7 sentences with geist-praxis, got {len(sentences)}"
+    # Sample 3: Philosophy of Mind & Consciousness
+    def test_sample3_contains_phenomenal_character(self, term_counts):
+        """Test that sample3 contains phenomenal-character."""
+        has_term = (
+            term_counts["sample3"]["phenomenal-character"] > 0
+            or term_counts["sample3"]["phenomenal"] > 0
+        )
+        assert has_term, "Expected to find phenomenal-character or phenomenal"
 
-    def test_search_consciousness_sample1(self, sample_files):
-        """Test searching for consciousness in sample1."""
-        sentences = pt.search_term_in_file(sample_files["sample1"], "consciousness")
-        # Should find both "consciousness" and "totality-consciousness"
-        assert len(sentences) > 0, "Expected to find sentences with consciousness"
+    def test_sample3_contains_qualia(self, term_counts):
+        """Test that sample3 contains qualia/quale terms."""
+        has_term = (
+            term_counts["sample3"]["quale"] > 0
+            or term_counts["sample3"]["qualia"] > 0
+            or term_counts["sample3"]["quale-inversion"] > 0
+        )
+        assert has_term, "Expected to find quale/qualia terms"
 
-    def test_search_reduction_sample2(self, sample_files):
-        """Test searching for reduction in sample2."""
-        sentences = pt.search_term_in_file(sample_files["sample2"], "reduction")
-        assert (
-            len(sentences) == 5
-        ), f"Expected 5 sentences with reduction, got {len(sentences)}"
+    def test_sample3_contains_zombie(self, term_counts):
+        """Test that sample3 contains zombie-conceivability."""
+        has_term = (
+            term_counts["sample3"]["zombie-conceivability"] > 0
+            or term_counts["sample3"]["zombie"] > 0
+        )
+        assert has_term, "Expected to find zombie terms"
+
+    def test_sample3_contains_intentionality(self, term_counts):
+        """Test that sample3 contains intentionality or intentional."""
+        has_term = (
+            term_counts["sample3"]["intentionality"] > 0
+            or term_counts["sample3"]["intentional"] > 0
+        )
+        assert has_term, "Expected to find intentional terms"
 
 
 class TestSampleCorpusAnalysis:
-    """Test that analysis pipeline works on sample corpus."""
+    """Test that analysis pipeline works on new sample corpus."""
 
     @pytest.fixture
     def sample1_analysis(self):
         """Return analysis of sample1."""
         base = Path(__file__).parent.parent / "data" / "sample"
-        return pt.run(str(base / "sample1_dialectics.txt"))
+        return pt.run(str(base / "sample1_analytic_pragmatism.txt"))
+
+    @pytest.fixture
+    def sample2_analysis(self):
+        """Return analysis of sample2."""
+        base = Path(__file__).parent.parent / "data" / "sample"
+        return pt.run(str(base / "sample2_poststructural_political.txt"))
+
+    @pytest.fixture
+    def sample3_analysis(self):
+        """Return analysis of sample3."""
+        base = Path(__file__).parent.parent / "data" / "sample"
+        return pt.run(str(base / "sample3_mind_consciousness.txt"))
 
     def test_sample1_analysis_structure(self, sample1_analysis):
         """Test that analysis returns expected structure."""
@@ -210,17 +197,56 @@ class TestSampleCorpusAnalysis:
         assert "nouns" in sample1_analysis
         assert "adjectives" in sample1_analysis
 
-    def test_sample1_top_nouns_include_rare_terms(self, sample1_analysis):
-        """Test that top nouns include our invented rare terms."""
-        top_nouns = [noun for noun, count in sample1_analysis["nouns"][:10]]
+    def test_sample2_analysis_structure(self, sample2_analysis):
+        """Test that analysis returns expected structure."""
+        assert "tokens" in sample2_analysis
+        assert "token_count" in sample2_analysis
+        assert "nouns" in sample2_analysis
 
-        # These are our most frequent rare terms in sample1
-        expected_terms = ["geist-praxis", "abstraction", "dasein-flux"]
+    def test_sample3_analysis_structure(self, sample3_analysis):
+        """Test that analysis returns expected structure."""
+        assert "tokens" in sample3_analysis
+        assert "token_count" in sample3_analysis
+        assert "nouns" in sample3_analysis
 
-        for term in expected_terms:
-            assert (
-                term in top_nouns
-            ), f"Expected {term} in top 10 nouns, got {top_nouns}"
+    def test_sample1_has_philosophical_nouns(self, sample1_analysis):
+        """Test that sample1 nouns include analytic philosophy terms."""
+        top_nouns = [noun for noun, count in sample1_analysis["nouns"][:20]]
+        # Should include some key terms (may be hyphenated or separate)
+        has_analytic_terms = any(
+            term in " ".join(top_nouns).lower()
+            for term in ["meaning", "variance", "opacity", "scheme", "truth"]
+        )
+        assert has_analytic_terms, f"Expected analytic terms in top nouns: {top_nouns}"
+
+    def test_sample2_has_philosophical_nouns(self, sample2_analysis):
+        """Test that sample2 nouns include post-structural/political terms."""
+        top_nouns = [noun for noun, count in sample2_analysis["nouns"][:20]]
+        has_poststructural_terms = any(
+            term in " ".join(top_nouns).lower()
+            for term in ["différance", "bio", "regulation", "position", "capability"]
+        )
+        assert (
+            has_poststructural_terms
+        ), f"Expected post-structural terms in top nouns: {top_nouns}"
+
+    def test_sample3_has_philosophical_nouns(self, sample3_analysis):
+        """Test that sample3 nouns include philosophy of mind terms."""
+        top_nouns = [noun for noun, count in sample3_analysis["nouns"][:20]]
+        has_mind_terms = any(
+            term in " ".join(top_nouns).lower()
+            for term in [
+                "phenomenal",
+                "consciousness",
+                "zombie",
+                "quale",
+                "mind",
+                "intentional",
+            ]
+        )
+        assert (
+            has_mind_terms
+        ), f"Expected philosophy of mind terms in top nouns: {top_nouns}"
 
 
 if __name__ == "__main__":

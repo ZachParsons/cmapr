@@ -6,7 +6,6 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 
 Concept Mapper analyzes texts to identify terms with author-specific meanings, understand their usage through co-occurrence and grammatical relations, and export concept maps for D3 visualization.
 
-**Current Status:** Phase 0 complete (project scaffolding)
 
 ## Installation
 
@@ -163,9 +162,9 @@ Test with the provided sample corpus:
 import pos_tagger as pt
 
 files = [
-    'data/sample/sample1_dialectics.txt',
-    'data/sample/sample2_epistemology.txt',
-    'data/sample/sample3_ontology.txt'
+    'data/sample/sample1_analytic_pragmatism.txt',
+    'data/sample/sample2_poststructural_political.txt',
+    'data/sample/sample3_mind_consciousness.txt'
 ]
 
 for file in files:
@@ -190,7 +189,7 @@ import pos_tagger as pt
 %autoreload 2
 
 # Run analysis
-result = pt.run('data/sample/sample1_dialectics.txt')
+result = pt.run('data/sample/sample1_analytic_pragmatism.txt')
 result['content_verbs'][:10]
 
 # Reload module after changes
@@ -210,14 +209,13 @@ spike/
 │   └── test_sample_corpus.py   # Corpus validation tests (29 tests)
 ├── data/
 │   └── sample/                  # Sample test corpus
-│       ├── sample1_dialectics.txt
-│       ├── sample2_epistemology.txt
-│       ├── sample3_ontology.txt
+│       ├── sample1_analytic_pragmatism.txt
+│       ├── sample2_poststructural_political.txt
+│       ├── sample3_mind_consciousness.txt
 │       ├── philosopher_1920_cc.txt  # Philosopher test file
 │       └── CORPUS_SPEC.md      # Detailed corpus specification
 ├── docs/                        # Project documentation
 │   ├── concept-mapper-roadmap.md  # Full development roadmap
-│   └── PHASE0_COMPLETE.md      # Phase 0 completion summary
 ├── scripts/
 │   └── download_nltk_data.py   # NLTK data downloader
 ├── output/                      # Generated output files
@@ -305,13 +303,9 @@ Current test coverage:
 
 See `docs/concept-mapper-roadmap.md` for the complete development roadmap.
 
-**Current Phase:** Phase 0 (Complete ✓)
-
-**Next Phase:** Phase 1 - Corpus Ingestion & Preprocessing
 
 ## Documentation
 
-- **`docs/PHASE0_COMPLETE.md`** - Phase 0 completion summary
 - **`docs/concept-mapper-roadmap.md`** - Full project roadmap
 - **`data/sample/CORPUS_SPEC.md`** - Sample corpus specification
 
@@ -319,7 +313,6 @@ See `docs/concept-mapper-roadmap.md` for the complete development roadmap.
 
 - Lane 2019, *Natural Language Processing in Action*
 - Rockwell & Sinclair 2016, *Hermeneutica*
-- Moretti, *Graphs, Maps, Trees*
 
 ## License
 

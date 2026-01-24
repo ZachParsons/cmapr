@@ -37,6 +37,104 @@
       "filename": "philosopher_1920_cc.txt",
       "type": "real_corpus",
       "notes": "Philosopher' 'Class Consciousness' - contains real philosophical terms like 'abstraction'"
+    },
+    {
+      "filename": "sample1_analytic_pragmatism.txt",
+      "tradition": "Analytic Philosophy & Pragmatism",
+      "invented_terms": {
+        "meaning-variance": {
+          "type": "technical_neologism",
+          "tradition": "Quine, analytic philosophy",
+          "expected_detection": true
+        },
+        "instrumental-warranting": {
+          "type": "technical_neologism",
+          "tradition": "Dewey, pragmatism",
+          "expected_detection": true
+        },
+        "category-matrices": {
+          "type": "technical_neologism",
+          "tradition": "Davidson, conceptual schemes",
+          "expected_detection": true
+        },
+        "referential-opacity": {
+          "type": "established_term",
+          "tradition": "Frege, logic",
+          "notes": "Might appear in Brown corpus but rare"
+        }
+      }
+    },
+    {
+      "filename": "sample2_poststructural_political.txt",
+      "tradition": "Post-structuralism & Political Philosophy",
+      "invented_terms": {
+        "bio-regulation": {
+          "type": "technical_neologism",
+          "tradition": "Foucault, biopolitics",
+          "expected_detection": true
+        },
+        "différance": {
+          "type": "neologism",
+          "tradition": "Derrida, deconstruction",
+          "notes": "French spelling, definitely not in Brown corpus"
+        },
+        "entitlement-transfer": {
+          "type": "technical_neologism",
+          "tradition": "Nozick, libertarianism",
+          "expected_detection": true
+        },
+        "rhizomatic-becoming": {
+          "type": "neologism",
+          "tradition": "Deleuze & Guattari",
+          "expected_detection": true
+        },
+        "capability-approach": {
+          "type": "established_term",
+          "tradition": "Sen, development economics",
+          "notes": "May appear in social science texts"
+        },
+        "deterritorialization": {
+          "type": "neologism",
+          "tradition": "Deleuze & Guattari",
+          "expected_detection": true
+        }
+      }
+    },
+    {
+      "filename": "sample3_mind_consciousness.txt",
+      "tradition": "Philosophy of Mind & Consciousness Studies",
+      "invented_terms": {
+        "phenomenal-character": {
+          "type": "technical_term",
+          "tradition": "Philosophy of mind",
+          "notes": "Standard term in consciousness studies"
+        },
+        "functional-architecture": {
+          "type": "technical_term",
+          "tradition": "Cognitive science",
+          "notes": "Standard term in cog sci"
+        },
+        "explanatory-gap": {
+          "type": "established_term",
+          "tradition": "Levine, consciousness",
+          "notes": "Well-known problem in philosophy of mind"
+        },
+        "quale-inversion": {
+          "type": "technical_neologism",
+          "tradition": "Inverted spectrum arguments",
+          "expected_detection": true
+        },
+        "zombie-conceivability": {
+          "type": "technical_neologism",
+          "tradition": "Chalmers, philosophical zombies",
+          "expected_detection": true
+        },
+        "modal-reconfiguration": {
+          "type": "neologism",
+          "tradition": "Modal metaphysics of mind",
+          "expected_detection": true
+        }
+      }
     }
   ],
   "validation_criteria": {
