@@ -32,4 +32,14 @@ check: format lint test
 	@echo "✅ All checks passed! Ready to commit."
 
 shell:
-	@$(IPYTHON) -i -c "import pos_tagger; print('📦 Auto-imported: pos_tagger')"
+	@$(IPYTHON) -i -c "\
+import pos_tagger; \
+from src.concept_mapper.corpus import load_file, load_directory, Document, Corpus; \
+from src.concept_mapper.preprocessing import preprocess, preprocess_corpus, filter_by_pos; \
+from collections import Counter; \
+print('📦 Auto-imported:'); \
+print('  pos_tagger'); \
+print('  load_file, load_directory, Document, Corpus'); \
+print('  preprocess, preprocess_corpus, filter_by_pos'); \
+print('  Counter'); \
+"
