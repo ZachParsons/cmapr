@@ -10,7 +10,12 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 
 **Stack:** Python, NLTK, spaCy (for dependency parsing), networkx, Click (CLI)
 
-**Current Status:** NLTK foundation exists in spike (`tryout_nltk.py`, `pos_tagger.py`). ~30-40% of Phase 1-2 functionality implemented.
+**Current Status:**
+- ✅ Phase 0 Complete: Storage layer, test corpus, NLTK data
+- ✅ Phase 1 Complete: Corpus loading, preprocessing pipeline (tokenization, POS, lemmas)
+- ✅ Phase 2 Complete: Frequency analysis, Brown corpus reference, TF-IDF
+- 🚧 Phase 3 Next: Philosophical term detection (corpus-comparative analysis)
+- 📊 125 tests passing, all green
 
 **References:**
 - Lane 2019, *Natural Language Processing in Action*
@@ -60,23 +65,23 @@ The following functionality already exists in the spike directory and can be ref
 
 ---
 
-## Phase 0: Project Scaffolding
+## Phase 0: Project Scaffolding ✅ COMPLETE
 
-- [ ] **0.1 Initialize project structure**
-  - [ ] Create directory layout: `src/concept_mapper/`, `tests/`, `data/sample/`, `output/`
-  - [ ] Initialize git repository
+- [x] **0.1 Initialize project structure**
+  - [x] Create directory layout: `src/concept_mapper/`, `tests/`, `data/sample/`, `output/`
+  - [x] Initialize git repository
   - [x] Create `pyproject.toml` or `requirements.txt` *(spike: requirements.txt exists with nltk>=3.8)*
-  - [ ] Initial dependencies: `nltk`, `pytest`, `click` *(nltk done, need pytest & click)*
+  - [x] Initial dependencies: `nltk`, `pytest`, `click`, `black`, `ruff`, `ipython`
 
 - [x] **0.2 Download NLTK data** *(spike: pos_tagger.py:29-32 downloads all needed data)*
   - [x] Create setup script `scripts/download_nltk_data.py` *(inline in pos_tagger.py, should extract)*
-  - [x] Download: `punkt`, `averaged_perceptron_tagger`, `wordnet`, `brown`, `stopwords` *(punkt, tagger done; need wordnet, brown, stopwords)*
+  - [x] Download: `punkt`, `averaged_perceptron_tagger`, `wordnet`, `brown`, `stopwords`
   - [x] Verify downloads succeed *(working in current spike)*
 
 - [x] **0.3 Create sample test corpus**
-  - [x] Create 2-3 short `.txt` files in `data/sample/` *(spike: philosopher_1920_cc.txt exists, 91KB)*
-  - [ ] Include invented "rare terms" with known frequencies
-  - [ ] Document expected values for verification
+  - [x] Create 2-3 short `.txt` files in `data/sample/` *(5 files total, 95KB)*
+  - [x] Include invented "rare terms" with known frequencies *(test_philosophical_terms.txt with daseinology, temporalization, ekstatic)*
+  - [x] Document expected values for verification *(test_corpus_manifest.json)*
 
 ---
 
@@ -177,55 +182,53 @@ storage:
 
 ### Implementation Tasks
 
-- [ ] **Phase 0.4: Storage abstraction** (`src/concept_mapper/storage/`)
-  - [ ] Define `StorageBackend` ABC
-  - [ ] Implement `JSONBackend` as default
-  - [ ] Add filesystem utilities (create output dirs, check paths)
-  - [ ] Tests: round-trip save/load for each data type
+- [x] **Phase 0.4: Storage abstraction** (`src/concept_mapper/storage/`)
+  - [x] Define `StorageBackend` ABC
+  - [x] Implement `JSONBackend` as default
+  - [x] Add filesystem utilities (create output dirs, check paths)
+  - [x] Tests: round-trip save/load for each data type *(12 tests passing)*
 
 ---
 
-## Phase 1: Corpus Ingestion & Preprocessing
+## Phase 1: Corpus Ingestion & Preprocessing ✅ COMPLETE (except 1.7)
 
 All downstream analysis depends on clean, structured text.
 
-- [ ] **1.1 File loader** (`src/concept_mapper/corpus/loader.py`)
-  - [x] `load_file(path: Path) -> str` *(spike: pos_tagger.py:35-37 has basic file reading)*
-  - [ ] `load_directory(path: Path, pattern: str = "*.txt") -> dict[str, str]`
-  - [ ] Handle encoding (UTF-8 with Latin-1 fallback) *(spike uses default encoding)*
-  - [ ] Tests: load sample files, verify content
-  - **Note:** Basic file reading exists. Needs Path type, encoding handling, and directory loading.
+- [x] **1.1 File loader** (`src/concept_mapper/corpus/loader.py`)
+  - [x] `load_file(path: Path) -> Document`
+  - [x] `load_directory(path: Path, pattern: str = "*.txt") -> Corpus`
+  - [x] Handle encoding (UTF-8 with Latin-1 fallback)
+  - [x] Tests: load sample files, verify content *(22 tests passing)*
 
-- [ ] **1.2 Data structures** (`src/concept_mapper/corpus/models.py`)
-  - [ ] `Document` dataclass: text, metadata (title, author, date, source_path)
-  - [ ] `Corpus` class: collection of Documents
-  - [ ] `ProcessedDocument` dataclass: raw, sentences, tokens, pos_tags, lemmas
+- [x] **1.2 Data structures** (`src/concept_mapper/corpus/models.py`)
+  - [x] `Document` dataclass: text, metadata (title, author, date, source_path)
+  - [x] `Corpus` class: collection of Documents
+  - [x] `ProcessedDocument` dataclass: raw, sentences, tokens, pos_tags, lemmas
 
-- [ ] **1.3 Tokenization** (`src/concept_mapper/preprocessing/tokenize.py`)
-  - [x] `tokenize_words(text: str) -> list[str]` *(spike: pos_tagger.py:40-41 uses word_tokenize)*
-  - [x] `tokenize_sentences(text: str) -> list[str]` *(spike: tryout_nltk.py:16 uses sent_tokenize)*
-  - [ ] Preserve original case in parallel structure
-  - [ ] Tests: verify token/sentence counts on sample
-  - **Note:** Refactor existing implementations from spike into proper module structure
+- [x] **1.3 Tokenization** (`src/concept_mapper/preprocessing/tokenize.py`)
+  - [x] `tokenize_words(text: str) -> list[str]`
+  - [x] `tokenize_sentences(text: str) -> list[str]`
+  - [x] `tokenize_words_preserve_case()` - preserves original case
+  - [x] Tests: verify token/sentence counts on sample *(24 tests passing)*
 
-- [ ] **1.4 POS tagging** (`src/concept_mapper/preprocessing/tagging.py`)
-  - [x] `tag_tokens(tokens: list[str]) -> list[tuple[str, str]]` *(spike: pos_tagger.py:26 imports pos_tag)*
-  - [x] `tag_sentences(sentences: list[str]) -> list[list[tuple[str, str]]]` *(spike: tryout_nltk.py:47-57)*
-  - [ ] Tests: spot-check known POS assignments
-  - **Note:** Working implementation in pos_tagger.py:17-21 (run function). Needs modularization.
+- [x] **1.4 POS tagging** (`src/concept_mapper/preprocessing/tagging.py`)
+  - [x] `tag_tokens(tokens: list[str]) -> list[tuple[str, str]]`
+  - [x] `tag_sentences(sentences: list[str]) -> list[list[tuple[str, str]]]`
+  - [x] `filter_by_pos()` - extract tokens by POS tag
+  - [x] Tests: spot-check known POS assignments *(24 tests passing)*
 
-- [ ] **1.5 Lemmatization** (`src/concept_mapper/preprocessing/lemmatize.py`)
-  - [ ] `get_wordnet_pos(treebank_tag: str) -> str` (map Penn tags to WordNet)
-  - [x] `lemmatize(word: str, pos: str) -> str` *(spike: tryout_nltk.py:118-134 has WordNetLemmatizer examples)*
-  - [ ] `lemmatize_tagged(tagged_tokens: list[tuple]) -> list[str]`
-  - [x] Tests: "running" → "run", "better" → "good" *(spike: tryout_nltk.py:123-132 has test cases)*
-  - **Note:** Example code exists but commented out. Shows lemmatizer.lemmatize() with pos parameter.
+- [x] **1.5 Lemmatization** (`src/concept_mapper/preprocessing/lemmatize.py`)
+  - [x] `get_wordnet_pos(treebank_tag: str) -> str` (map Penn tags to WordNet)
+  - [x] `lemmatize(word: str, pos: str) -> str`
+  - [x] `lemmatize_tagged(tagged_tokens: list[tuple]) -> list[str]`
+  - [x] `lemmatize_words()` - batch lemmatization
+  - [x] Tests: "running" → "run", "better" → "good" *(24 tests passing)*
 
-- [ ] **1.6 Preprocessing pipeline** (`src/concept_mapper/preprocessing/pipeline.py`)
-  - [ ] `preprocess(document: Document) -> ProcessedDocument`
-  - [ ] `preprocess_corpus(corpus: Corpus) -> list[ProcessedDocument]`
-  - [ ] Single entry point that runs tokenize → tag → lemmatize
-  - [ ] Tests: round-trip load → preprocess → verify structure
+- [x] **1.6 Preprocessing pipeline** (`src/concept_mapper/preprocessing/pipeline.py`)
+  - [x] `preprocess(document: Document) -> ProcessedDocument`
+  - [x] `preprocess_corpus(corpus: Corpus) -> list[ProcessedDocument]`
+  - [x] Single entry point that runs tokenize → tag → lemmatize
+  - [x] Tests: round-trip load → preprocess → verify structure *(24 tests passing)*
 
 - [ ] **1.7 Paragraph segmentation** (`src/concept_mapper/preprocessing/segment.py`)
   - [ ] `segment_paragraphs(text: str) -> list[str]`
@@ -235,34 +238,36 @@ All downstream analysis depends on clean, structured text.
 
 ---
 
-## Phase 2: Term Extraction & Frequency Analysis
+## Phase 2: Term Extraction & Frequency Analysis ✅ COMPLETE
 
 Statistical foundation for rarity detection.
 
-- [ ] **2.1 Frequency distribution** (`src/concept_mapper/analysis/frequency.py`)
-  - [x] `word_frequencies(doc: ProcessedDocument) -> Counter` *(spike: tryout_nltk.py:207 uses FreqDist)*
-  - [x] `pos_filtered_frequencies(doc: ProcessedDocument, pos_tags: set) -> Counter` *(spike: pos_tagger.py:66-73 filters verbs by POS)*
-  - [ ] Option: count lemmas vs surface forms
-  - [x] Tests: manual count verification *(spike: tryout_nltk.py:208-209 shows common words)*
-  - **Note:** FreqDist already used for movie reviews corpus. Verb filtering example in pos_tagger.py:66-73.
+- [x] **2.1 Frequency distribution** (`src/concept_mapper/analysis/frequency.py`)
+  - [x] `word_frequencies(doc: ProcessedDocument) -> Counter`
+  - [x] `pos_filtered_frequencies(doc: ProcessedDocument, pos_tags: set) -> Counter`
+  - [x] Option: count lemmas vs surface forms (use_lemmas parameter)
+  - [x] `get_vocabulary()` - extract unique terms
+  - [x] Tests: manual count verification *(21 tests passing)*
 
-- [ ] **2.2 Corpus-level aggregation**
-  - [ ] `corpus_frequencies(docs: list[ProcessedDocument]) -> Counter`
-  - [ ] `document_frequencies(docs: list[ProcessedDocument]) -> Counter` (in how many docs?)
-  - [ ] Tests: term in 2 docs → doc_freq = 2
+- [x] **2.2 Corpus-level aggregation**
+  - [x] `corpus_frequencies(docs: list[ProcessedDocument]) -> Counter`
+  - [x] `document_frequencies(docs: list[ProcessedDocument]) -> Counter` (in how many docs?)
+  - [x] Tests: term in 2 docs → doc_freq = 2 *(21 tests passing)*
 
-- [ ] **2.3 Reference corpus** (`src/concept_mapper/analysis/reference.py`)
-  - [x] `load_reference_corpus(name: str = "brown") -> Counter` *(spike: tryout_nltk.py:138-142 uses gutenberg/movie_reviews corpus)*
-  - [ ] Cache to disk after first computation
-  - [x] Tests: verify brown corpus loads, common words have high freq *(spike: tryout_nltk.py:189-212)*
-  - **Note:** Already familiar with NLTK corpora (gutenberg, movie_reviews, state_union). Brown corpus mentioned in roadmap Phase 0.2.
+- [x] **2.3 Reference corpus** (`src/concept_mapper/analysis/reference.py`)
+  - [x] `load_reference_corpus(name: str = "brown") -> Counter`
+  - [x] Cache to disk after first computation *(output/cache/brown_corpus_freqs.json)*
+  - [x] `get_reference_vocabulary()` - all unique words in Brown
+  - [x] `get_reference_size()` - total word count (1.16M words)
+  - [x] Tests: verify brown corpus loads, common words have high freq *(21 tests passing)*
 
-- [ ] **2.4 TF-IDF** (`src/concept_mapper/analysis/tfidf.py`)
-  - [ ] `tf(term: str, doc: ProcessedDocument) -> float`
-  - [ ] `idf(term: str, docs: list[ProcessedDocument]) -> float`
-  - [ ] `tfidf(term: str, doc: ProcessedDocument, docs: list) -> float`
-  - [ ] `corpus_tfidf_scores(docs: list[ProcessedDocument]) -> dict[str, float]`
-  - [ ] Tests: unique term scores high, common term scores low
+- [x] **2.4 TF-IDF** (`src/concept_mapper/analysis/tfidf.py`)
+  - [x] `tf(term: str, doc: ProcessedDocument) -> float`
+  - [x] `idf(term: str, docs: list[ProcessedDocument]) -> float`
+  - [x] `tfidf(term: str, doc: ProcessedDocument, docs: list) -> float`
+  - [x] `corpus_tfidf_scores(docs: list[ProcessedDocument]) -> dict[str, float]`
+  - [x] `document_tfidf_scores()` - per-document TF-IDF
+  - [x] Tests: unique term scores high, common term scores low *(21 tests passing)*
 
 ---
 
@@ -661,10 +666,18 @@ Phase 5          Phase 6          Phase 7
 2. Add networkx graph construction (no spike equivalent)
 3. Build Click CLI interface (no spike equivalent)
 
-**Code reuse percentage by phase:**
-- Phase 0: ~70% done (structure needed, NLTK data downloaded, corpus exists)
-- Phase 1: ~50% done (tokenization, POS, lemmatization exist but need modularization)
-- Phase 2: ~40% done (FreqDist used, POS filtering exists, needs reference corpus integration & aggregation)
-- Phase 3: ~10% done (POS filtering exists in spike, but corpus-comparative analysis is new work)
-- Phase 5: ~30% done (basic sentence search exists, needs structured return types)
-- Phases 4, 6-11: ~0% done (no existing implementations)
+**Implementation status by phase:**
+- Phase 0: ✅ 100% COMPLETE (storage, test corpus, NLTK data)
+- Phase 1: ✅ ~95% COMPLETE (all modules done except paragraph segmentation)
+- Phase 2: ✅ 100% COMPLETE (frequency, reference corpus, TF-IDF)
+- Phase 3: ~0% done (corpus-comparative analysis is new work)
+- Phase 4: ~0% done (term list management)
+- Phase 5: ~30% done (basic sentence search exists in spike, needs structured return types)
+- Phases 6-11: ~0% done (no existing implementations)
+
+**Test coverage:**
+- 125 tests passing across all modules
+- Phase 0: 12 tests (storage)
+- Phase 1: 46 tests (corpus + preprocessing)
+- Phase 2: 21 tests (analysis)
+- Legacy: 46 tests (pos_tagger, sample corpus)
