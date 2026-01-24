@@ -20,7 +20,6 @@ Or from Python:
 
 import nltk
 import sys
-from pathlib import Path
 
 # Required NLTK data packages
 REQUIRED_PACKAGES = [
