@@ -32,4 +32,4 @@ check: format lint test
 	@echo "✅ All checks passed! Ready to commit."
 
 shell:
-	@$(IPYTHON)
+	@$(IPYTHON) -i -c "import pos_tagger; print('📦 Auto-imported: pos_tagger')"
