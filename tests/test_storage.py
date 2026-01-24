@@ -2,9 +2,6 @@
 Tests for storage backend and utilities.
 """
 
-import json
-from pathlib import Path
-
 import pytest
 
 from src.concept_mapper.storage import (

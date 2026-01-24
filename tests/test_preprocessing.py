@@ -2,8 +2,6 @@
 Tests for preprocessing modules: tokenization, POS tagging, lemmatization, pipeline.
 """
 
-import pytest
-
 from nltk.corpus import wordnet
 from src.concept_mapper.corpus import Document
 from src.concept_mapper.preprocessing import (
@@ -154,7 +152,9 @@ class TestLemmatization:
     def test_lemmatize_adjective(self):
         """Test lemmatizing adjectives."""
         assert lemmatize("better", wordnet.ADJ) == "good"
-        assert lemmatize("best", wordnet.ADJ) == "best"  # Note: "best" doesn't lemmatize to "good"
+        assert (
+            lemmatize("best", wordnet.ADJ) == "best"
+        )  # Note: "best" doesn't lemmatize to "good"
 
     def test_lemmatize_tagged(self):
         """Test lemmatizing POS-tagged tokens."""
@@ -178,9 +178,7 @@ class TestPipeline:
 
     def test_preprocess_simple_document(self):
         """Test preprocessing a simple document."""
-        doc = Document(
-            text="The cat sat. It ran.", metadata={"title": "Test"}
-        )
+        doc = Document(text="The cat sat. It ran.", metadata={"title": "Test"})
         processed = preprocess(doc)
 
         assert processed.raw_text == "The cat sat. It ran."

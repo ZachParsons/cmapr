@@ -6,7 +6,7 @@ and filtering by part-of-speech tags.
 """
 
 from collections import Counter
-from typing import List, Optional, Set
+from typing import List, Set
 
 from ..corpus.models import ProcessedDocument
 

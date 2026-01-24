@@ -30,7 +30,9 @@
       "Bash(git reset:*)",
       "Bash(git commit:*)",
       "Bash(make test:*)",
-      "Bash(venv/bin/ipython:*)"
+      "Bash(venv/bin/ipython:*)",
+      "Bash(venv/bin/pytest:*)",
+      "Bash(venv/bin/python3:*)"
     ]
   }
 }

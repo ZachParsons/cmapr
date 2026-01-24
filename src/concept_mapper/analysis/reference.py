@@ -37,7 +37,9 @@ def load_reference_corpus(
         True
     """
     if name != "brown":
-        raise ValueError(f"Unsupported reference corpus: {name}. Only 'brown' is currently supported.")
+        raise ValueError(
+            f"Unsupported reference corpus: {name}. Only 'brown' is currently supported."
+        )
 
     # Check cache first
     if cache:

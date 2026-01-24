@@ -36,10 +36,12 @@ shell:
 import pos_tagger; \
 from src.concept_mapper.corpus import load_file, load_directory, Document, Corpus; \
 from src.concept_mapper.preprocessing import preprocess, preprocess_corpus, filter_by_pos; \
+from src.concept_mapper.analysis import word_frequencies, pos_filtered_frequencies, corpus_frequencies, load_reference_corpus, corpus_tfidf_scores, tfidf; \
 from collections import Counter; \
 print('📦 Auto-imported:'); \
-print('  pos_tagger'); \
-print('  load_file, load_directory, Document, Corpus'); \
-print('  preprocess, preprocess_corpus, filter_by_pos'); \
-print('  Counter'); \
+print('  Corpus: load_file, load_directory, Document, Corpus'); \
+print('  Preprocessing: preprocess, preprocess_corpus, filter_by_pos'); \
+print('  Analysis: word_frequencies, pos_filtered_frequencies, corpus_frequencies'); \
+print('  Analysis: load_reference_corpus, corpus_tfidf_scores, tfidf'); \
+print('  Utils: Counter, pos_tagger'); \
 "

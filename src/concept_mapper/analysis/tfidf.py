@@ -6,7 +6,6 @@ terms that are characteristic of specific documents or corpora.
 """
 
 import math
-from collections import Counter
 from typing import Dict, List
 
 from ..corpus.models import ProcessedDocument

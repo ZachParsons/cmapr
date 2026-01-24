@@ -37,13 +37,13 @@ def get_wordnet_pos(treebank_tag: str) -> str:
         >>> get_wordnet_pos('JJ')
         'a'
     """
-    if treebank_tag.startswith('J'):
+    if treebank_tag.startswith("J"):
         return wordnet.ADJ
-    elif treebank_tag.startswith('V'):
+    elif treebank_tag.startswith("V"):
         return wordnet.VERB
-    elif treebank_tag.startswith('N'):
+    elif treebank_tag.startswith("N"):
         return wordnet.NOUN
-    elif treebank_tag.startswith('R'):
+    elif treebank_tag.startswith("R"):
         return wordnet.ADV
     else:
         # Default to noun

@@ -52,9 +52,7 @@ class JSONBackend(StorageBackend):
         path.parent.mkdir(parents=True, exist_ok=True)
 
         with path.open("w", encoding="utf-8") as f:
-            json.dump(
-                term_list, f, indent=self.indent, ensure_ascii=self.ensure_ascii
-            )
+            json.dump(term_list, f, indent=self.indent, ensure_ascii=self.ensure_ascii)
 
     def load_term_list(self, path: Path) -> Any:
         """Load term list from JSON."""

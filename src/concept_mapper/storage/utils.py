@@ -6,7 +6,6 @@ and validating file paths.
 """
 
 from pathlib import Path
-from typing import Optional
 
 
 def ensure_output_structure(base_dir: Path = Path("output")) -> dict[str, Path]:
@@ -109,4 +108,6 @@ def get_cache_path(
     Returns:
         Full path to cache file
     """
-    return get_output_path(cache_name, subdir="cache", base_dir=base_dir, ensure_dir=ensure_dir)
+    return get_output_path(
+        cache_name, subdir="cache", base_dir=base_dir, ensure_dir=ensure_dir
+    )

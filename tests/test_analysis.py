@@ -292,9 +292,7 @@ class TestTFIDF:
                 tokens=["running", "runs"],
                 lemmas=["run", "run"],
             ),
-            ProcessedDocument(
-                raw_text="jumping", tokens=["jumping"], lemmas=["jump"]
-            ),
+            ProcessedDocument(raw_text="jumping", tokens=["jumping"], lemmas=["jump"]),
         ]
 
         # Using lemmas, both "running" and "runs" become "run"
@@ -315,19 +313,46 @@ class TestPhilosophicalTerms:
         return ProcessedDocument(
             raw_text="Daseinology examines being. Daseinology reveals temporalization. Temporalization structures existence.",
             tokens=[
-                "Daseinology", "examines", "being", ".",
-                "Daseinology", "reveals", "temporalization", ".",
-                "Temporalization", "structures", "existence", "."
+                "Daseinology",
+                "examines",
+                "being",
+                ".",
+                "Daseinology",
+                "reveals",
+                "temporalization",
+                ".",
+                "Temporalization",
+                "structures",
+                "existence",
+                ".",
             ],
             pos_tags=[
-                ("Daseinology", "NN"), ("examines", "VBZ"), ("being", "NN"), (".", "."),
-                ("Daseinology", "NN"), ("reveals", "VBZ"), ("temporalization", "NN"), (".", "."),
-                ("Temporalization", "NN"), ("structures", "VBZ"), ("existence", "NN"), (".", ".")
+                ("Daseinology", "NN"),
+                ("examines", "VBZ"),
+                ("being", "NN"),
+                (".", "."),
+                ("Daseinology", "NN"),
+                ("reveals", "VBZ"),
+                ("temporalization", "NN"),
+                (".", "."),
+                ("Temporalization", "NN"),
+                ("structures", "VBZ"),
+                ("existence", "NN"),
+                (".", "."),
             ],
             lemmas=[
-                "daseinology", "examine", "being", ".",
-                "daseinology", "reveal", "temporalization", ".",
-                "temporalization", "structure", "existence", "."
+                "daseinology",
+                "examine",
+                "being",
+                ".",
+                "daseinology",
+                "reveal",
+                "temporalization",
+                ".",
+                "temporalization",
+                "structure",
+                "existence",
+                ".",
             ],
         )
 
