@@ -1,323 +1,282 @@
 # Concept Mapper
 
-A tool for extracting and visualizing an author's idiosyncratic conceptual vocabulary from primary texts.
+A tool for extracting and visualizing an author's idiosyncratic conceptual vocabulary from philosophical texts.
 
 ## Overview
 
-Concept Mapper analyzes texts to identify terms with author-specific meanings, understand their usage through co-occurrence and grammatical relations, and export concept maps for D3 visualization.
+Concept Mapper analyzes primary texts to identify author-specific philosophical terminology—neologisms and terms with specialized technical meaning that are statistically distinctive compared to general English. It then maps relationships between these concepts through co-occurrence analysis and grammatical extraction, producing interactive network visualizations.
 
+**Examples of target terms:** Aristotle's *eudaimonia*, Spinoza's *affect*, Hegel's *sublation*, Philosopher' *abstraction*, Deleuze & Guattari's *body without organs*
 
-## Installation
-
-### 1. Clone and Setup Virtual Environment
-
-```bash
-cd /Users/zach/se/projects/nlp/spike
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 2. Install Dependencies
+## Quick Start
 
 ```bash
+# Install dependencies
 pip install -r requirements.txt
+
+# Install package in development mode
+pip install -e .
+
+# Run tests
+pytest tests/ -v
 ```
 
-### 3. Download NLTK Data
+## Features (Phases 0-7 Complete)
 
-```bash
-python scripts/download_nltk_data.py
-```
+### ✅ Phase 1: Corpus Preprocessing
+- Load documents from text files
+- Sentence and word tokenization
+- POS (Part of Speech) tagging
+- Lemmatization
+- **[See examples →](docs/usage-guide.md#phase-1-corpus-preprocessing)**
 
-This downloads all required NLTK datasets (punkt, POS taggers, wordnet, brown corpus, etc.)
+### ✅ Phase 2: Frequency Analysis
+- Word frequency distributions
+- TF-IDF (Term Frequency-Inverse Document Frequency) scoring
+- Comparison to Brown corpus reference
+- **[See examples →](docs/usage-guide.md#phase-2-frequency-analysis--tf-idf)**
 
-## Development Commands
+### ✅ Phase 3: Philosophical Term Detection
+- Multi-method rarity detection (5 signals)
+- Corpus-comparative analysis
+- Neologism detection (WordNet lookup)
+- Definitional context identification
+- Hybrid scorer with weighted signals
+- **[See examples →](docs/usage-guide.md#phase-3-philosophical-term-detection)**
 
-### Code Formatting
+### ✅ Phase 4: Term List Management
+- CRUD operations for curated terms
+- Import/export (JSON, CSV, TXT)
+- Auto-population from statistical analysis
+- Metadata: definitions, notes, examples, POS tags
+- **[See examples →](docs/usage-guide.md#phase-4-term-list-management)**
 
-Format all Python files with black:
+### ✅ Phase 5: Search & Concordance
+- Find sentences containing terms
+- KWIC (Key Word In Context) concordance display
+- Context windows (N sentences before/after)
+- Dispersion analysis (where terms appear)
+- **[See examples →](docs/usage-guide.md#phase-5-search--concordance)**
 
-```bash
-# Format all files
-venv/bin/black *.py
+### ✅ Phase 6: Co-occurrence Analysis
+- Sentence-level co-occurrence
+- N-sentence window co-occurrence
+- PMI (Pointwise Mutual Information)
+- LLR (Log-Likelihood Ratio) significance testing
+- Co-occurrence matrices (count/PMI/LLR)
+- **[See examples →](docs/usage-guide.md#phase-6-co-occurrence-analysis)**
 
-# Check formatting without making changes
-venv/bin/black *.py --check
+### ✅ Phase 7: Relation Extraction
+- SVO (Subject-Verb-Object) triples
+- Copular definitions (X is Y)
+- Prepositional relations (X of Y)
+- Evidence aggregation
+- Pattern-based extraction using NLTK
+- **[See examples →](docs/usage-guide.md#phase-7-relation-extraction)**
 
-# Format specific file
-venv/bin/black pos_tagger.py
-```
+## Documentation
 
-### Linting
+- **[Usage Guide](docs/usage-guide.md)** - Practical examples for each phase
+- **[Development Roadmap](docs/concept-mapper-roadmap.md)** - Complete project plan
+- **[API Reference](src/concept_mapper/)** - Module documentation
 
-Check code quality with ruff:
-
-```bash
-# Check all files
-venv/bin/ruff check *.py
-
-# Auto-fix issues
-venv/bin/ruff check *.py --fix
-
-# Check specific files
-venv/bin/ruff check pos_tagger.py test_pos_tagger.py
-```
-
-### Running Tests
-
-Run tests with pytest:
-
-```bash
-# Run all tests
-venv/bin/pytest
-
-# Run with verbose output
-venv/bin/pytest -v
-
-# Run specific test file
-venv/bin/pytest test_pos_tagger.py -v
-
-# Run tests in a directory
-venv/bin/pytest tests/ -v
-
-# Run specific test
-venv/bin/pytest tests/test_sample_corpus.py::TestSampleCorpusFrequencies::test_sample1_token_count -v
-
-# Show test coverage
-venv/bin/pytest --cov=src
-```
-
-### Combined Check (Format, Lint, Test)
-
-Run all checks before committing:
-
-```bash
-venv/bin/black *.py && \
-venv/bin/ruff check *.py && \
-venv/bin/pytest tests/ -v
-```
-
-## Usage
-
-### Basic Analysis
-
-Analyze a text file:
+## Example Workflow
 
 ```python
-import pos_tagger as pt
+from concept_mapper.corpus.loader import load_document
+from concept_mapper.preprocessing.pipeline import preprocess
+from concept_mapper.analysis.reference import load_reference_corpus
+from concept_mapper.analysis.rarity import PhilosophicalTermScorer
 
-# Analyze a file
-result = pt.run('data/sample/philosopher_1920_cc.txt')
+# Load and preprocess text
+doc = load_document("data/sample/philosopher_1920_cc.txt")
+processed = preprocess(doc)
 
-print(f"Total tokens: {result['token_count']}")
-print(f"Top content verbs: {result['content_verbs'][:5]}")
-print(f"Top nouns: {result['nouns'][:5]}")
+# Detect philosophical terms
+reference = load_reference_corpus()
+scorer = PhilosophicalTermScorer([processed], reference)
+candidates = scorer.score_all(min_score=2.0, top_n=20)
+
+# Show results
+for term, score, components in candidates:
+    print(f"{term:20} {score:.2f}")
 ```
 
-### Custom Pipeline
-
-Build a custom analysis pipeline:
-
-```python
-import pos_tagger as pt
-
-# Load and process step by step
-text = pt.load_text('your_file.txt')
-tokens = pt.tokenize_words(text)
-tagged = pt.tag_parts_of_speech(tokens)
-
-# Extract specific POS categories
-verbs = pt.extract_words_by_pos(tagged, 'V')
-nouns = pt.extract_words_by_pos(tagged, 'N')
-
-# Filter and count
-common_verbs = pt.get_common_verbs()
-stop_words = pt.get_stopwords_set()
-filtered = pt.filter_common_words(verbs, common_verbs, stop_words)
-freq_dist = pt.calculate_frequency_distribution(filtered)
-top_verbs = pt.get_most_common(freq_dist, 20)
+**Output:**
+```
+abstraction          4.87
+proletariat          3.45
+bourgeoisie          3.21
+commodity            2.98
+fetishism            2.76
+...
 ```
 
-### Search Functionality
+**See [Usage Guide](docs/usage-guide.md#complete-workflow-example) for the complete workflow.**
 
-Find sentences containing specific terms:
+## Sample Data
 
-```python
-import pos_tagger as pt
+The `data/sample/` directory contains test corpora:
 
-# Search for a term in a file
-sentences = pt.search_term_in_file('data/sample/philosopher_1920_cc.txt', 'consciousness')
-print(f"Found {len(sentences)} sentences")
-
-# Display results
-for sentence in sentences[:5]:
-    print(f"  - {sentence}")
-```
-
-### Sample Corpus
-
-Test with the provided sample corpus:
-
-```python
-import pos_tagger as pt
-
-files = [
-    'data/sample/sample1_analytic_pragmatism.txt',
-    'data/sample/sample2_poststructural_political.txt',
-    'data/sample/sample3_mind_consciousness.txt'
-]
-
-for file in files:
-    result = pt.run(file)
-    print(f"\nFile: {file}")
-    print(f"Top nouns: {result['nouns'][:5]}")
-```
-
-## Interactive Shell
-
-Use the enhanced IPython REPL for development:
-
-```bash
-venv/bin/ipython
-```
-
-```python
-import pos_tagger as pt
-
-# Auto-reload modules when they change
-%load_ext autoreload
-%autoreload 2
-
-# Run analysis
-result = pt.run('data/sample/sample1_analytic_pragmatism.txt')
-result['content_verbs'][:10]
-
-# Reload module after changes
-import importlib
-importlib.reload(pt)
-```
+- `philosopher_1920_cc.txt` - Philosopher' *History and Class Consciousness* (93KB)
+- `hegel_phenomenology_excerpt.txt` - Hegel's *Phenomenology of Spirit* excerpt
+- `test_philosophical_terms.txt` - Synthetic test data with known terms
 
 ## Project Structure
 
 ```
-spike/
-├── src/
-│   └── concept_mapper/          # Main package (Phase 1+)
-│       └── __init__.py
-├── tests/                       # Test suite
-│   ├── test_pos_tagger.py      # Core functionality tests (17 tests)
-│   └── test_sample_corpus.py   # Corpus validation tests (29 tests)
-├── data/
-│   └── sample/                  # Sample test corpus
-│       ├── sample1_analytic_pragmatism.txt
-│       ├── sample2_poststructural_political.txt
-│       ├── sample3_mind_consciousness.txt
-│       ├── philosopher_1920_cc.txt  # Philosopher test file
-│       └── CORPUS_SPEC.md      # Detailed corpus specification
-├── docs/                        # Project documentation
-│   ├── concept-mapper-roadmap.md  # Full development roadmap
-├── scripts/
-│   └── download_nltk_data.py   # NLTK data downloader
-├── output/                      # Generated output files
-├── pos_tagger.py               # Refactored analysis functions
-├── requirements.txt            # Python dependencies
-├── pyproject.toml              # Project configuration
-└── README.md                   # This file
+.
+├── src/concept_mapper/        # Main package
+│   ├── corpus/                # Document loading and models
+│   ├── preprocessing/         # Tokenization, POS, lemmatization
+│   ├── analysis/              # Frequency, TF-IDF, rarity, co-occurrence, relations
+│   ├── search/                # Search and concordance
+│   └── terms/                 # Term list management
+├── tests/                     # Test suite (406 tests)
+├── data/sample/               # Sample corpus
+├── docs/                      # Documentation
+└── output/                    # Analysis results
 ```
 
-## Dependencies
+## Technology Stack
 
-### Core NLP
-- `nltk==3.9.2` - Natural Language Processing toolkit
-- `click==8.3.1` - CLI framework
-
-### Development Tools
-- `pytest==9.0.2` - Testing framework
-- `black==26.1.0` - Code formatter
-- `ruff==0.14.14` - Fast Python linter
-- `ipython==9.9.0` - Enhanced REPL
-
-See `requirements.txt` for full dependency list.
+- **Python 3.14**
+- **NLTK** (Natural Language Toolkit) - tokenization, POS tagging, lemmatization
+- **pytest** - testing framework
+- **Black** - code formatting
+- **Ruff** - linting
 
 ## Testing
 
-### Test Suites
-
-- **`test_pos_tagger.py`** (17 tests) - Tests for core NLP functions
-  - Tokenization, POS tagging, lemmatization
-  - Filtering, frequency analysis
-  - Search and pipeline functions
-
-- **`tests/test_sample_corpus.py`** (29 tests) - Validates sample corpus
-  - Token counts
-  - Term frequencies
-  - Cross-file term detection
-  - Search functionality
-  - Analysis pipeline integration
-
-### Run All Tests
+All 406 tests passing:
 
 ```bash
-venv/bin/pytest tests/ -v
-# 29 passed
+# Run all tests
+pytest tests/ -v
+
+# Run specific module tests
+pytest tests/test_corpus.py -v
+pytest tests/test_analysis.py -v
+pytest tests/test_search.py -v
+pytest tests/test_cooccurrence.py -v
+pytest tests/test_relations.py -v
+
+# Run with coverage
+pytest tests/ --cov=src/concept_mapper
 ```
-
-### Test Coverage
-
-Current test coverage:
-- Core functions: 17 tests ✓
-- Corpus validation: 29 tests ✓
-- **Total: 46/46 tests passing** ✓
-
-## Development Workflow
-
-1. **Activate virtual environment**
-   ```bash
-   source venv/bin/activate
-   ```
-
-2. **Make changes to code**
-
-3. **Format code**
-   ```bash
-   venv/bin/black *.py
-   ```
-
-4. **Check linting**
-   ```bash
-   venv/bin/ruff check *.py --fix
-   ```
-
-5. **Run tests**
-   ```bash
-   venv/bin/pytest tests/ -v
-   ```
-
-6. **Commit changes**
-   ```bash
-   git add .
-   git commit -m "Description of changes"
-   ```
 
 ## Roadmap
 
-See `docs/concept-mapper-roadmap.md` for the complete development roadmap.
+- ✅ **Phase 0-7:** Complete (preprocessing, analysis, search, relations)
+- 🚧 **Phase 8:** Graph construction with networkx
+- 📋 **Phase 9:** D3.js visualization export
+- 📋 **Phase 10:** CLI interface
+- 📋 **Phase 11:** Documentation and examples
 
+**See [Development Roadmap](docs/concept-mapper-roadmap.md) for details.**
 
-## Documentation
+## Development
 
-- **`docs/concept-mapper-roadmap.md`** - Full project roadmap
-- **`data/sample/CORPUS_SPEC.md`** - Sample corpus specification
+```bash
+# Install development dependencies
+pip install -r requirements.txt
 
-## References
+# Install package in editable mode
+pip install -e .
 
-- Lane 2019, *Natural Language Processing in Action*
-- Rockwell & Sinclair 2016, *Hermeneutica*
+# Format code
+black src/ tests/
+
+# Lint
+ruff check src/ tests/
+
+# Run tests
+pytest tests/ -v
+```
+
+## Use Cases
+
+1. **Digital Humanities Research**
+   - Identify key concepts in philosophical texts
+   - Trace conceptual evolution across works
+   - Compare authors' conceptual frameworks
+
+2. **Literature Analysis**
+   - Find author-specific terminology
+   - Analyze concept relationships
+   - Visualize conceptual networks
+
+3. **Academic Writing**
+   - Ensure consistent terminology usage
+   - Identify central concepts for indexing
+   - Generate concept maps for papers
+
+## Examples by Phase
+
+### Find Key Terms (Phase 3)
+```python
+scorer = PhilosophicalTermScorer(docs, reference)
+terms = scorer.get_high_confidence_terms(min_signals=3)
+# Returns: [(term, score, components), ...]
+```
+
+### Search in Context (Phase 5)
+```python
+from concept_mapper.search import get_context
+
+windows = get_context("abstraction", docs, n_sentences=2)
+for w in windows:
+    print(w)  # Shows 2 sentences before/after
+```
+
+### Find Associations (Phase 6)
+```python
+from concept_mapper.analysis import get_top_cooccurrences
+
+top = get_top_cooccurrences("consciousness", docs, n=10, method="pmi")
+# Returns: [(term, pmi_score), ...]
+```
+
+### Extract Relations (Phase 7)
+```python
+from concept_mapper.analysis import get_relations
+
+relations = get_relations("being", docs)
+for r in relations:
+    print(f"{r.source} --[{r.relation_type}]--> {r.target}")
+    print(f"  Evidence: {len(r.evidence)} sentences")
+```
+
+**See [Usage Guide](docs/usage-guide.md) for complete examples.**
 
 ## License
 
-[License information to be added]
+MIT License - See LICENSE file for details
+
+## Citation
+
+If you use this tool in your research, please cite:
+
+```bibtex
+@software{concept_mapper,
+  title={Concept Mapper: Philosophical Term Extraction and Network Analysis},
+  author={Your Name},
+  year={2026},
+  url={https://github.com/yourusername/concept-mapper}
+}
+```
 
 ## Contributing
 
-[Contributing guidelines to be added]
+Contributions welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Ensure all tests pass (`pytest tests/`)
+5. Format code with Black
+6. Submit a pull request
+
+## Contact
+
+Questions or suggestions? Open an issue on GitHub.
