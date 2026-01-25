@@ -4,22 +4,33 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 
 ## Project Overview
 
-**Goal:** Analyze philosophical texts to identify author-specific conceptual vocabulary - neologisms and terms with specialized technical meaning that are statistically distinctive compared to general English corpora. Map these concepts through co-occurrence and grammatical relations, exporting as D3 visualizations.
+**Goal:** Analyze philosophical texts to identify author-specific conceptual vocabulary - neologisms and terms with specialized technical meaning that are statistically distinctive compared to general English corpora. Map these concepts through co-occurrence and grammatical relations, exporting as D3 (Data-Driven Documents) visualizations for interactive web-based exploration.
 
 **Examples of target terms:** Aristotle's 'eudaimonia', Spinoza's 'affect', Hegel's 'sublation', Philosopher' 'abstraction', Deleuze & Guattari's 'body without organs'
 
-**Stack:** Python, NLTK, spaCy (for dependency parsing), networkx, Click (CLI)
+**Stack:** Python, NLTK (Natural Language Toolkit), spaCy (for dependency parsing), networkx, Click (CLI - Command Line Interface)
 
 **Current Status:**
 - ✅ Phase 0 Complete: Storage layer, test corpus, NLTK data
-- ✅ Phase 1 Complete: Corpus loading, preprocessing pipeline (tokenization, POS, lemmas)
-- ✅ Phase 2 Complete: Frequency analysis, Brown corpus reference, TF-IDF
+- ✅ Phase 1 Complete: Corpus loading, preprocessing pipeline (tokenization, POS tags, lemmas)
+- ✅ Phase 2 Complete: Frequency analysis, Brown corpus reference, TF-IDF scores
 - ✅ Phase 3 Complete: Philosophical term detection (multi-method rarity analysis)
 - ✅ Phase 4 Complete: Term list management (curation, import/export, auto-population)
-- ✅ Phase 5 Complete: Search & concordance (find, KWIC, context windows, dispersion)
+- ✅ Phase 5 Complete: Search & concordance (find, KWIC displays, context windows, dispersion)
 - ✅ Phase 6 Complete: Co-occurrence analysis (PMI, LLR, matrices)
 - 🚧 Phase 7 Next: Relation extraction (dependency parsing, SVO triples)
 - 📊 368 tests passing, all green
+
+**Acronym Reference:**
+- **POS** = Part of Speech (noun, verb, adjective, etc.)
+- **TF-IDF** = Term Frequency-Inverse Document Frequency (measures term importance)
+- **KWIC** = Key Word In Context (concordance display format)
+- **PMI** = Pointwise Mutual Information (measures term association strength)
+- **LLR** = Log-Likelihood Ratio (statistical significance test for co-occurrence)
+- **SVO** = Subject-Verb-Object (grammatical triple)
+- **CLI** = Command Line Interface
+- **JSON** = JavaScript Object Notation (human-readable data format)
+- **CSV** = Comma-Separated Values (spreadsheet format)
 
 **References:**
 - Lane 2019, *Natural Language Processing in Action*
@@ -96,13 +107,13 @@ The following functionality already exists in the spike directory and can be ref
 ### Current Approach (Phases 1-6)
 
 **File formats:**
-- **JSON** for all structured data
+- **JSON (JavaScript Object Notation)** for all structured data
   - Preprocessed corpus, term lists, relations, graphs
-  - Human-readable, debuggable, language-agnostic
+  - Human-readable text format for data interchange
   - Easy to inspect and version control
-- **CSV** for tabular/matrix data
+- **CSV (Comma-Separated Values)** for tabular/matrix data
   - Co-occurrence matrices, frequency distributions, TF-IDF scores
-  - Opens in Excel, Pandas-native, easy inspection
+  - Spreadsheet-compatible format that opens in Excel, Pandas-native
 - **Cache** reference corpora as JSON
   - Brown corpus frequencies (one-time computation)
   - Fast enough for development and moderate scale
@@ -180,7 +191,7 @@ storage:
 - **Database (Postgres)**: When building web interface or multi-user access
 
 **Always maintain:**
-- Same API across all backends (`save_corpus()`, `load_corpus()`)
+- Same API (Application Programming Interface) across all backends (`save_corpus()`, `load_corpus()`)
 - Export to JSON/CSV for portability and archiving
 - Human-readable reference formats in documentation
 
@@ -215,7 +226,7 @@ All downstream analysis depends on clean, structured text.
   - [x] `tokenize_words_preserve_case()` - preserves original case
   - [x] Tests: verify token/sentence counts on sample *(24 tests passing)*
 
-- [x] **1.4 POS tagging** (`src/concept_mapper/preprocessing/tagging.py`)
+- [x] **1.4 POS (Part of Speech) tagging** (`src/concept_mapper/preprocessing/tagging.py`)
   - [x] `tag_tokens(tokens: list[str]) -> list[tuple[str, str]]`
   - [x] `tag_sentences(sentences: list[str]) -> list[list[tuple[str, str]]]`
   - [x] `filter_by_pos()` - extract tokens by POS tag
@@ -265,12 +276,12 @@ Statistical foundation for rarity detection.
   - [x] `get_reference_size()` - total word count (1.16M words)
   - [x] Tests: verify brown corpus loads, common words have high freq *(21 tests passing)*
 
-- [x] **2.4 TF-IDF** (`src/concept_mapper/analysis/tfidf.py`)
-  - [x] `tf(term: str, doc: ProcessedDocument) -> float`
-  - [x] `idf(term: str, docs: list[ProcessedDocument]) -> float`
-  - [x] `tfidf(term: str, doc: ProcessedDocument, docs: list) -> float`
+- [x] **2.4 TF-IDF (Term Frequency-Inverse Document Frequency)** (`src/concept_mapper/analysis/tfidf.py`)
+  - [x] `tf(term: str, doc: ProcessedDocument) -> float` - term frequency in document
+  - [x] `idf(term: str, docs: list[ProcessedDocument]) -> float` - inverse document frequency
+  - [x] `tfidf(term: str, doc: ProcessedDocument, docs: list) -> float` - combined score
   - [x] `corpus_tfidf_scores(docs: list[ProcessedDocument]) -> dict[str, float]`
-  - [x] `document_tfidf_scores()` - per-document TF-IDF
+  - [x] `document_tfidf_scores()` - per-document TF-IDF scores
   - [x] Tests: unique term scores high, common term scores low *(21 tests passing)*
 
 ---
@@ -417,12 +428,12 @@ Find where and how terms appear.
   - [ ] Support lemma matching option *(deferred: TODO in code)*
   - [x] Tests: 12 tests covering all search functionality
 
-- [x] **5.2 Concordance (KWIC)** (`src/concept_mapper/search/concordance.py`)
+- [x] **5.2 KWIC (Key Word In Context) concordance** (`src/concept_mapper/search/concordance.py`)
   - [x] `KWICLine` dataclass: left_context, keyword, right_context, doc_id
-  - [x] `concordance(term: str, docs, width: int = 50) -> list[KWICLine]`
+  - [x] `concordance(term: str, docs, width: int = 50) -> list[KWICLine]` - aligned display
   - [x] `concordance_sorted()` for sorting by left/right context
   - [x] `concordance_filtered()` for co-occurrence patterns
-  - [x] Aligned output on keyword for scanning
+  - [x] Aligned output on keyword for easy scanning
   - [x] Tests: 12 tests covering KWIC display and formatting
 
 - [x] **5.3 Context window** (`src/concept_mapper/search/context.py`)
@@ -471,10 +482,10 @@ Relational structure from proximity.
   - [x] Tests: 3 tests covering window behavior
 
 - [x] **6.5 Statistical significance**
-  - [x] `pmi(term1: str, term2: str, docs) -> float` (pointwise mutual information)
-  - [x] `log_likelihood_ratio(term1: str, term2: str, docs) -> float`
-  - [x] PMI for measuring association strength
-  - [x] G² (log-likelihood) with significance thresholds
+  - [x] `pmi(term1: str, term2: str, docs) -> float` - PMI (Pointwise Mutual Information) measures how much more likely terms co-occur than expected by chance
+  - [x] `log_likelihood_ratio(term1: str, term2: str, docs) -> float` - LLR (Log-Likelihood Ratio) G² test for statistical significance of co-occurrence
+  - [x] PMI for measuring association strength (positive = associated, ~0 = independent)
+  - [x] LLR with significance thresholds (>3.84 p<0.05, >6.63 p<0.01, >10.83 p<0.001)
   - [x] Symmetric measures
   - [x] Tests: 12 tests covering PMI and LLR
 
@@ -499,8 +510,8 @@ Grammatical relations, not just proximity.
   - [ ] `parse_sentence(sentence: str) -> Doc`
   - [ ] Tests: parse returns valid spaCy Doc
 
-- [ ] **7.2 Subject-verb-object extraction**
-  - [ ] `SVOTriple` dataclass: subject, verb, object, sentence
+- [ ] **7.2 SVO (Subject-Verb-Object) extraction**
+  - [ ] `SVOTriple` dataclass: subject, verb, object, sentence - captures who does what to whom
   - [ ] `extract_svo(doc: Doc) -> list[SVOTriple]`
   - [ ] `extract_svo_for_term(term: str, docs) -> list[SVOTriple]`
   - [ ] Tests: "The dog bites the man" → (dog, bites, man)
@@ -563,9 +574,9 @@ Transform analysis into network structure.
 
 ## Phase 9: Export & Visualization
 
-Output for D3 and other tools.
+Output for D3 (Data-Driven Documents visualization library) and other tools.
 
-- [ ] **9.1 D3 JSON export** (`src/concept_mapper/export/d3.py`)
+- [ ] **9.1 D3 JSON export** (`src/concept_mapper/export/d3.py`) - formats graph data for D3.js visualization
   - [ ] D3 schema:
     ```json
     {
@@ -589,9 +600,9 @@ Output for D3 and other tools.
   - [ ] `export_csv(graph, path)` → nodes.csv + edges.csv
   - [ ] Tests: Gephi can open graphml, Graphviz renders dot
 
-- [ ] **9.4 HTML visualization template** (`src/concept_mapper/export/template/`)
-  - [ ] Minimal D3 force-directed graph HTML
-  - [ ] Loads JSON, renders interactive graph
+- [ ] **9.4 HTML (HyperText Markup Language) visualization template** (`src/concept_mapper/export/template/`)
+  - [ ] Minimal D3 force-directed graph HTML page
+  - [ ] Loads JSON, renders interactive graph in web browser
   - [ ] `generate_html(graph, output_dir: Path)`
   - [ ] Tests: HTML renders in browser without errors
 
