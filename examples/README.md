@@ -4,14 +4,15 @@ This example demonstrates the complete workflow from raw text to interactive vis
 
 ## Sample Corpus
 
-The `sample_text.txt` file contains a passage written in the style of Martin Heidegger's *Being and Time*, featuring characteristic philosophical terminology:
+The `sample_text.txt` file contains a passage on critical social theory and Thinkerist philosophy, featuring characteristic philosophical terminology:
 
-- **Dasein** - Heidegger's term for human being/existence
-- **Being** (capitalized) - Fundamental ontological concept
-- **Temporality** - Essential structure of Dasein
-- **Thrownness** - Existential condition of being-in-the-world
-- **Care** - Fundamental structure of Dasein
-- And other specialized philosophical concepts
+- **Abstraction** - Transformation of human relations into thing-like entities
+- **Praxis** - Unity of theory and practice through transformative action
+- **Dialectical negation** - Hegelian method of sublation and synthesis
+- **Separation** - Separation of workers from products and species-being
+- **Hegemony** - Cultural leadership and consent (Gramsci)
+- **Recognition** - Mutual acknowledgment between subjects (Hegel/Honneth)
+- And other critical theory concepts
 
 ## Step-by-Step Walkthrough
 

@@ -106,7 +106,10 @@ def ingest(ctx, path, output, recursive, pattern):
     if output:
         output_path = Path(output)
     else:
-        output_path = output_dir / "corpus.json"
+        # Default: output/corpus/corpus.json
+        corpus_dir = output_dir / "corpus"
+        corpus_dir.mkdir(parents=True, exist_ok=True)
+        output_path = corpus_dir / "corpus.json"
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -204,7 +207,10 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
     if output:
         output_path = Path(output)
     else:
-        output_path = output_dir / "terms.json"
+        # Default: output/terms/terms.json
+        terms_dir = output_dir / "terms"
+        terms_dir.mkdir(parents=True, exist_ok=True)
+        output_path = terms_dir / "terms.json"
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -447,7 +453,10 @@ def graph(ctx, corpus, terms, method, threshold, output):
     if output:
         output_path = Path(output)
     else:
-        output_path = output_dir / "graph.json"
+        # Default: output/graphs/graph.json
+        graphs_dir = output_dir / "graphs"
+        graphs_dir.mkdir(parents=True, exist_ok=True)
+        output_path = graphs_dir / "graph.json"
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -530,12 +539,16 @@ def export(ctx, graph_file, format, output, title):
     if output:
         output_path = Path(output)
     else:
+        # Default: output/exports/
+        exports_dir = output_dir / "exports"
+        exports_dir.mkdir(parents=True, exist_ok=True)
+
         if format == "html":
-            output_path = output_dir / "visualization"
+            output_path = exports_dir / "visualization"
         elif format == "csv":
-            output_path = output_dir / "csv"
+            output_path = exports_dir / "csv"
         else:
-            output_path = output_dir / f"graph.{format}"
+            output_path = exports_dir / f"graph.{format}"
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 

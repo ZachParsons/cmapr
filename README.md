@@ -30,19 +30,29 @@ Try the example workflow with included sample data:
 
 ```bash
 # Process the sample philosophical text
-concept-mapper ingest examples/sample_text.txt -o corpus.json
+concept-mapper ingest examples/sample_text.txt
 
-# Detect philosophical terms (Dasein, Being, temporality, etc.)
-concept-mapper rarities corpus.json --top-n 20 -o terms.json
+# Detect philosophical terms (abstraction, praxis, separation, etc.)
+concept-mapper rarities output/corpus/corpus.json --top-n 20
 
 # Build concept graph from co-occurrence
-concept-mapper graph corpus.json -t terms.json -m cooccurrence -o graph.json
+concept-mapper graph output/corpus/corpus.json -t output/terms/terms.json -m cooccurrence
 
 # Generate interactive visualization
-concept-mapper export graph.json --format html -o viz/
+concept-mapper export output/graphs/graph.json --format html
 
 # Open visualization in browser
-open viz/index.html
+open output/exports/visualization/index.html
+```
+
+**Default output structure:**
+```
+output/
+├── corpus/         # Preprocessed corpora
+├── terms/          # Detected terms
+├── graphs/         # Concept graphs
+├── exports/        # Visualizations and export formats
+└── cache/          # Reference corpus cache
 ```
 
 Or run the complete example workflow (from project root):
@@ -53,14 +63,20 @@ bash examples/workflow.sh
 
 For your own documents:
 ```bash
-# Analyze your own text file
+# Analyze your own text file (outputs to ./output/)
+concept-mapper ingest your_document.txt
+concept-mapper rarities output/corpus/corpus.json
+concept-mapper graph output/corpus/corpus.json -t output/terms/terms.json
+concept-mapper export output/graphs/graph.json --format html
+
+# Or specify custom output locations with -o flag
 concept-mapper ingest your_document.txt -o my_corpus.json
 concept-mapper rarities my_corpus.json -o my_terms.json
 concept-mapper graph my_corpus.json -t my_terms.json -o my_graph.json
 concept-mapper export my_graph.json --format html -o my_viz/
 
 # Or process a directory of texts
-concept-mapper ingest path/to/corpus/ -r -o my_corpus.json
+concept-mapper ingest path/to/corpus/ -r
 ```
 
 See `concept-mapper --help` for full command reference and [examples/README.md](examples/README.md) for detailed walkthrough.

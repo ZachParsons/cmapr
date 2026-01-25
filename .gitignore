@@ -208,10 +208,11 @@ __marimo__/
 
 # Project specific
 venv.old/
-output/*.json
-output/*.csv
-output/*.graphml
-output/*.html
+output/
+examples/output/
+examples/corpus.json
+examples/terms.json
+examples/graph*.json
 *.pickle
 *.ps
 .DS_Store
