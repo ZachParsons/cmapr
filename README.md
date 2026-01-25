@@ -21,7 +21,7 @@ pip install -e .
 pytest tests/ -v
 ```
 
-## Features (Phases 0-8 Complete)
+## Features (Phases 0-9 Complete)
 
 ### ✅ Phase 1: Corpus Preprocessing
 - Load documents from text files
@@ -81,6 +81,14 @@ pytest tests/ -v
 - Graph operations (merge, prune, filter, subgraph)
 - Graph metrics (centrality, communities, paths, density)
 - **[See examples →](docs/usage-guide.md#phase-8-graph-construction)**
+
+### ✅ Phase 9: Export & Visualization
+- D3.js JSON export for interactive web visualizations
+- GraphML export for Gephi, yEd, Cytoscape
+- DOT export for Graphviz
+- CSV export for spreadsheets and databases
+- Standalone HTML visualizations with force-directed layouts
+- **[See examples →](docs/usage-guide.md#phase-9-export--visualization)**
 
 ## Documentation
 
@@ -157,7 +165,7 @@ The `data/sample/` directory contains test corpora:
 
 ## Testing
 
-All 468 tests passing:
+All 498 tests passing (2 skipped):
 
 ```bash
 # Run all tests
@@ -170,6 +178,7 @@ pytest tests/test_search.py -v
 pytest tests/test_cooccurrence.py -v
 pytest tests/test_relations.py -v
 pytest tests/test_graph.py -v
+pytest tests/test_export.py -v
 
 # Run with coverage
 pytest tests/ --cov=src/concept_mapper
@@ -177,9 +186,9 @@ pytest tests/ --cov=src/concept_mapper
 
 ## Roadmap
 
-- ✅ **Phase 0-8:** Complete (preprocessing, analysis, search, relations, graphs)
-- 🚧 **Phase 9:** D3.js visualization export
-- 📋 **Phase 10:** CLI interface
+- ✅ **Phase 0-9:** Complete (preprocessing, analysis, search, relations, graphs, export)
+- 🚧 **Phase 10:** CLI interface
+- 📋 **Phase 11:** Documentation and deployment
 - 📋 **Phase 10:** CLI interface
 - 📋 **Phase 11:** Documentation and examples
 

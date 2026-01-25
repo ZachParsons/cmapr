@@ -1170,6 +1170,211 @@ Found 3 conceptual clusters
 
 ---
 
+## Phase 9: Export & Visualization
+
+Export graphs to various formats for visualization and analysis.
+
+### What It Enables
+
+- **D3.js JSON**: Interactive web visualizations with force-directed layouts
+- **GraphML**: Import into Gephi, yEd, Cytoscape for advanced graph analysis
+- **DOT**: Render with Graphviz for publication-quality diagrams
+- **CSV**: Export to spreadsheets for manual inspection and editing
+- **HTML**: Standalone interactive visualizations that run in any web browser
+
+### Example: Export to D3 JSON
+
+```python
+from pathlib import Path
+from concept_mapper.export import export_d3_json, load_d3_json
+
+# Export graph to D3 JSON
+export_d3_json(
+    graph=cooccur_graph,
+    path=Path("output/network.json"),
+    include_evidence=False,  # Set True to include evidence sentences
+    size_by="betweenness",   # Size nodes by centrality
+    compute_communities=True  # Detect and color-code communities
+)
+
+# Load the exported data
+data = load_d3_json(Path("output/network.json"))
+print(f"Exported {len(data['nodes'])} nodes and {len(data['links'])} links")
+# Exported 30 nodes and 45 links
+```
+
+### Example: Generate Interactive HTML Visualization
+
+```python
+from concept_mapper.export import generate_html
+
+# Generate standalone HTML visualization
+html_path = generate_html(
+    graph=cooccur_graph,
+    output_dir=Path("output/visualization"),
+    title="Philosopher Conceptual Network",
+    width=1200,
+    height=800,
+    include_evidence=True  # Show evidence in tooltips
+)
+
+print(f"Open {html_path} in your browser")
+# Open output/visualization/index.html in your browser
+```
+
+**The generated HTML includes:**
+- Force-directed graph layout
+- Interactive node dragging
+- Zoom and pan controls
+- Tooltips showing node/edge information
+- Color-coded communities
+- Node size by centrality or frequency
+- Edge width by weight
+
+### Example: Export to Multiple Formats
+
+```python
+from concept_mapper.export import (
+    export_graphml,
+    export_dot,
+    export_csv,
+    export_gexf,
+)
+
+# For Gephi (GraphML)
+export_graphml(cooccur_graph, Path("output/network.graphml"))
+
+# For Graphviz (DOT) - requires pydot
+try:
+    export_dot(cooccur_graph, Path("output/network.dot"), layout="neato")
+    # Then render: dot -Tpng output/network.dot -o output/network.png
+except ImportError:
+    print("Install pydot for DOT export: pip install pydot")
+
+# For spreadsheets (CSV)
+export_csv(cooccur_graph, Path("output/csv/"))
+# Creates: output/csv/nodes.csv, output/csv/edges.csv
+
+# For Gephi (GEXF)
+export_gexf(cooccur_graph, Path("output/network.gexf"))
+```
+
+### Example: Export with Evidence
+
+```python
+from concept_mapper.export import export_d3_json
+
+# Export relation graph with evidence sentences
+export_d3_json(
+    graph=relation_graph,
+    path=Path("output/relations.json"),
+    include_evidence=True,
+    max_evidence=3  # Limit to 3 example sentences per edge
+)
+
+# The resulting JSON will have evidence in link objects:
+# {
+#   "nodes": [...],
+#   "links": [
+#     {
+#       "source": "consciousness",
+#       "target": "intentional",
+#       "weight": 3,
+#       "label": "copular",
+#       "evidence": [
+#         "Consciousness is intentional.",
+#         "Consciousness is always intentional.",
+#         "All consciousness is intentional."
+#       ]
+#     }
+#   ]
+# }
+```
+
+### Example: Complete Visualization Workflow
+
+```python
+from pathlib import Path
+from concept_mapper.corpus.loader import load_document
+from concept_mapper.preprocessing.pipeline import preprocess
+from concept_mapper.analysis.reference import load_reference_corpus
+from concept_mapper.analysis.rarity import PhilosophicalTermScorer
+from concept_mapper.terms.models import TermList
+from concept_mapper.analysis.cooccurrence import build_cooccurrence_matrix
+from concept_mapper.graph import graph_from_cooccurrence, centrality, detect_communities, assign_communities
+from concept_mapper.export import generate_html, export_csv
+
+# 1. Load and analyze text
+doc = load_document("data/sample/philosopher_1920_cc.txt")
+docs = [preprocess(doc)]
+
+reference = load_reference_corpus()
+scorer = PhilosophicalTermScorer(docs, reference)
+candidates = scorer.score_all(min_score=2.0, top_n=30)
+
+# 2. Create term list
+terms = TermList([{"term": term, "pos": "NN"} for term, _, _ in candidates])
+
+# 3. Build co-occurrence graph
+matrix = build_cooccurrence_matrix(terms, docs, method="pmi", window="sentence")
+graph = graph_from_cooccurrence(matrix, threshold=0.3)
+
+# 4. Compute metrics
+communities = detect_communities(graph)
+assign_communities(graph, communities)
+
+central = centrality(graph, method="betweenness")
+for node_id in graph.nodes():
+    node_attrs = graph.get_node(node_id)
+    node_attrs["centrality"] = central.get(node_id, 0.0)
+    # Update node with centrality
+    graph.graph.nodes[node_id].update(node_attrs)
+
+# 5. Export to multiple formats
+output_dir = Path("output/philosopher_network")
+
+# Interactive HTML visualization
+html_path = generate_html(
+    graph,
+    output_dir,
+    title="Philosopher: History and Class Consciousness",
+    width=1400,
+    height=900
+)
+
+# CSV for spreadsheet analysis
+export_csv(graph, output_dir / "csv")
+
+print(f"""
+Visualization complete!
+
+Interactive HTML: {html_path}
+CSV data: {output_dir}/csv/
+
+Open the HTML file in a web browser to explore the network.
+- Drag nodes to rearrange
+- Hover for term information
+- Use mouse wheel to zoom
+- Colors show conceptual communities
+""")
+```
+
+**Expected Output:**
+```
+Visualization complete!
+
+Interactive HTML: output/philosopher_network/index.html
+CSV data: output/philosopher_network/csv/
+
+Open the HTML file in a web browser to explore the network.
+- Drag nodes to rearrange
+- Hover for term information
+- Use mouse wheel to zoom
+- Colors show conceptual communities
+```
+
+---
+
 ## Output Files
 
 The analysis produces these output files:
@@ -1205,14 +1410,15 @@ pytest tests/test_search.py -v          # Phase 5
 pytest tests/test_cooccurrence.py -v    # Phase 6
 pytest tests/test_relations.py -v       # Phase 7
 pytest tests/test_graph.py -v           # Phase 8
+pytest tests/test_export.py -v          # Phase 9
 ```
 
 ---
 
 ## Next Steps
 
-- **Phase 9:** Export to D3.js for interactive visualization
 - **Phase 10:** CLI interface for batch processing
 - **Phase 11:** Documentation and deployment
+- **Phase 12:** Advanced features (temporal analysis, cross-corpus comparison)
 
 See the [roadmap](concept-mapper-roadmap.md) for details on upcoming phases.
