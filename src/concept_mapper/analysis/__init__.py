@@ -7,6 +7,7 @@ Provides functions for:
 - Reference corpus loading (Brown corpus)
 - TF-IDF calculations
 - Rarity detection and corpus-comparative analysis
+- Co-occurrence analysis and relationship discovery
 """
 
 from .frequency import (
@@ -51,6 +52,17 @@ from .rarity import (
     get_filtered_candidates,
     PhilosophicalTermScorer,
     score_philosophical_terms,
+)
+from .cooccurrence import (
+    cooccurs_in_sentence,
+    cooccurs_filtered,
+    cooccurs_in_paragraph,
+    cooccurs_within_n,
+    pmi,
+    log_likelihood_ratio,
+    build_cooccurrence_matrix,
+    save_cooccurrence_matrix,
+    get_top_cooccurrences,
 )
 
 __all__ = [
@@ -97,4 +109,14 @@ __all__ = [
     # Hybrid scorer (Phase 3.6)
     "PhilosophicalTermScorer",
     "score_philosophical_terms",
+    # Co-occurrence analysis (Phase 6)
+    "cooccurs_in_sentence",
+    "cooccurs_filtered",
+    "cooccurs_in_paragraph",
+    "cooccurs_within_n",
+    "pmi",
+    "log_likelihood_ratio",
+    "build_cooccurrence_matrix",
+    "save_cooccurrence_matrix",
+    "get_top_cooccurrences",
 ]

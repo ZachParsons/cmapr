@@ -17,8 +17,9 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 - ✅ Phase 3 Complete: Philosophical term detection (multi-method rarity analysis)
 - ✅ Phase 4 Complete: Term list management (curation, import/export, auto-population)
 - ✅ Phase 5 Complete: Search & concordance (find, KWIC, context windows, dispersion)
-- 🚧 Phase 6 Next: Co-occurrence analysis
-- 📊 320 tests passing, all green
+- ✅ Phase 6 Complete: Co-occurrence analysis (PMI, LLR, matrices)
+- 🚧 Phase 7 Next: Relation extraction (dependency parsing, SVO triples)
+- 📊 368 tests passing, all green
 
 **References:**
 - Lane 2019, *Natural Language Processing in Action*
@@ -443,41 +444,48 @@ Find where and how terms appear.
 
 ---
 
-## Phase 6: Co-occurrence Analysis
+## Phase 6: Co-occurrence Analysis ✅ COMPLETE
 
 Relational structure from proximity.
 
-- [ ] **6.1 Sentence-level co-occurrence** (`src/concept_mapper/analysis/cooccurrence.py`)
-  - [ ] `cooccurs_in_sentence(term: str, docs) -> Counter`
-  - [ ] Count all terms appearing in same sentences as target
-  - [ ] Tests: two terms in same sentence → count = 1
+- [x] **6.1 Sentence-level co-occurrence** (`src/concept_mapper/analysis/cooccurrence.py`)
+  - [x] `cooccurs_in_sentence(term: str, docs) -> Counter`
+  - [x] Count all terms appearing in same sentences as target
+  - [x] Case-sensitive and case-insensitive modes
+  - [x] Tests: 6 tests covering sentence co-occurrence
 
-- [ ] **6.2 Filtered co-occurrence**
-  - [ ] `cooccurs_filtered(term: str, docs, term_list: TermList) -> Counter`
-  - [ ] Only count terms in curated list
-  - [ ] Tests: non-list terms excluded
+- [x] **6.2 Filtered co-occurrence**
+  - [x] `cooccurs_filtered(term: str, docs, term_list: TermList) -> Counter`
+  - [x] Only count terms in curated list
+  - [x] Tests: 4 tests for filtering behavior
 
-- [ ] **6.3 Paragraph-level co-occurrence**
-  - [ ] `cooccurs_in_paragraph(term: str, docs) -> Counter`
-  - [ ] Requires paragraph segmentation from Phase 1.7
-  - [ ] Tests: terms in same paragraph counted
+- [x] **6.3 Paragraph-level co-occurrence**
+  - [x] `cooccurs_in_paragraph(term: str, docs) -> Counter`
+  - [x] Currently treats documents as paragraphs (Phase 1.7 pending)
+  - [x] Tests: 2 tests for paragraph-level analysis
 
-- [ ] **6.4 N-level co-occurrence**
-  - [ ] `cooccurs_within_n(term: str, docs, n_sentences: int) -> Counter`
-  - [ ] Sliding window across sentence boundaries
-  - [ ] Tests: window size respected
+- [x] **6.4 N-sentence window co-occurrence**
+  - [x] `cooccurs_within_n(term: str, docs, n_sentences: int) -> Counter`
+  - [x] Sliding window across sentence boundaries
+  - [x] Configurable window size
+  - [x] Tests: 3 tests covering window behavior
 
-- [ ] **6.5 Statistical significance**
-  - [ ] `pmi(term1: str, term2: str, docs) -> float` (pointwise mutual information)
-  - [ ] `log_likelihood_ratio(term1: str, term2: str, docs) -> float`
-  - [ ] Tests: independent terms ≈ 0, associated terms > 0
+- [x] **6.5 Statistical significance**
+  - [x] `pmi(term1: str, term2: str, docs) -> float` (pointwise mutual information)
+  - [x] `log_likelihood_ratio(term1: str, term2: str, docs) -> float`
+  - [x] PMI for measuring association strength
+  - [x] G² (log-likelihood) with significance thresholds
+  - [x] Symmetric measures
+  - [x] Tests: 12 tests covering PMI and LLR
 
-- [ ] **6.6 Co-occurrence matrix**
-  - [ ] `build_cooccurrence_matrix(term_list: TermList, docs, method: str) -> DataFrame`
-  - [ ] Methods: raw count, PMI, log-likelihood
-  - [ ] Symmetric matrix, terms × terms
-  - [ ] `save_matrix(matrix, path: Path)` → CSV
-  - [ ] Tests: matrix dimensions = len(term_list)²
+- [x] **6.6 Co-occurrence matrix**
+  - [x] `build_cooccurrence_matrix(term_list: TermList, docs, method: str) -> Dict`
+  - [x] Methods: "count", "pmi", "llr"
+  - [x] Windows: "sentence", "n_sentences"
+  - [x] Symmetric matrix, terms × terms
+  - [x] `save_cooccurrence_matrix(matrix, path)` → CSV
+  - [x] `get_top_cooccurrences()` for quick exploration
+  - [x] Tests: 18 tests covering matrix building, saving, and top-N selection
 
 ---
 
