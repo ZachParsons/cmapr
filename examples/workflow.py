@@ -31,9 +31,10 @@ def main():
     print("=" * 50)
     print()
 
-    # Configuration
-    input_file = Path("examples/sample_text.txt")
-    output_dir = Path("examples")
+    # Configuration (paths relative to script location)
+    script_dir = Path(__file__).parent.absolute()
+    input_file = script_dir / "sample_text.txt"
+    output_dir = script_dir
     output_dir.mkdir(exist_ok=True)
 
     # Step 1: Load and preprocess

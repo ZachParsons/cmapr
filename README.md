@@ -26,14 +26,16 @@ pytest tests/ -v
 
 ## CLI Usage
 
+Try the example workflow with included sample data:
+
 ```bash
-# Process a document
-concept-mapper ingest document.txt -o corpus.json
+# Process the sample philosophical text
+concept-mapper ingest examples/sample_text.txt -o corpus.json
 
-# Detect philosophical terms
-concept-mapper rarities corpus.json --top-n 30 -o terms.json
+# Detect philosophical terms (Dasein, Being, temporality, etc.)
+concept-mapper rarities corpus.json --top-n 20 -o terms.json
 
-# Build concept graph
+# Build concept graph from co-occurrence
 concept-mapper graph corpus.json -t terms.json -m cooccurrence -o graph.json
 
 # Generate interactive visualization
@@ -43,7 +45,25 @@ concept-mapper export graph.json --format html -o viz/
 open viz/index.html
 ```
 
-See `concept-mapper --help` for full command reference.
+Or run the complete example workflow (from project root):
+```bash
+bash examples/workflow.sh
+# Or: python examples/workflow.py
+```
+
+For your own documents:
+```bash
+# Analyze your own text file
+concept-mapper ingest your_document.txt -o my_corpus.json
+concept-mapper rarities my_corpus.json -o my_terms.json
+concept-mapper graph my_corpus.json -t my_terms.json -o my_graph.json
+concept-mapper export my_graph.json --format html -o my_viz/
+
+# Or process a directory of texts
+concept-mapper ingest path/to/corpus/ -r -o my_corpus.json
+```
+
+See `concept-mapper --help` for full command reference and [examples/README.md](examples/README.md) for detailed walkthrough.
 
 ## Features (Complete: Phases 0-11)
 

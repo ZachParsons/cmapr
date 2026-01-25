@@ -9,9 +9,12 @@ echo "Concept Mapper: Complete Workflow"
 echo "=================================="
 echo ""
 
-# Configuration
-INPUT_TEXT="examples/sample_text.txt"
-OUTPUT_DIR="examples"
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Configuration (paths relative to script directory)
+INPUT_TEXT="$SCRIPT_DIR/sample_text.txt"
+OUTPUT_DIR="$SCRIPT_DIR"
 CORPUS_FILE="$OUTPUT_DIR/corpus.json"
 TERMS_FILE="$OUTPUT_DIR/terms.json"
 GRAPH_COOCCUR="$OUTPUT_DIR/graph_cooccur.json"
