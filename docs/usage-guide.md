@@ -919,6 +919,257 @@ for r in relations:
 
 ---
 
+## Phase 8: Graph Construction
+
+Build network graphs from co-occurrence and relation data.
+
+### What It Enables
+
+- **Graph Data Structure**: Represent concepts as nodes with relationships as edges
+- **Build from Co-occurrence**: Create graphs from statistical co-occurrence matrices
+- **Build from Relations**: Create graphs from extracted grammatical relations
+- **Graph Operations**: Merge, prune, filter, and extract subgraphs
+- **Graph Metrics**: Compute centrality, detect communities, find paths
+
+### Example: Build Graph from Co-occurrence
+
+```python
+from concept_mapper.analysis.cooccurrence import build_cooccurrence_matrix
+from concept_mapper.graph import graph_from_cooccurrence, centrality
+from concept_mapper.terms.models import TermList
+
+# Build co-occurrence matrix
+terms = TermList([
+    {"term": "consciousness", "pos": "NN"},
+    {"term": "intentionality", "pos": "NN"},
+    {"term": "being", "pos": "NN"},
+    {"term": "presence", "pos": "NN"}
+])
+
+matrix = build_cooccurrence_matrix(
+    term_list=terms,
+    docs=docs,
+    method="pmi",  # Use PMI scores as edge weights
+    window="sentence"
+)
+
+# Create graph with threshold
+graph = graph_from_cooccurrence(matrix, threshold=0.5)
+
+print(graph)
+# ConceptGraph(Undirected, nodes=4, edges=3)
+
+# Check what's connected
+print(graph.nodes())
+# ['consciousness', 'intentionality', 'being', 'presence']
+
+print(graph.edges())
+# [('consciousness', 'intentionality'), ('consciousness', 'being'), ...]
+
+# Get edge weight
+edge = graph.get_edge("consciousness", "intentionality")
+print(f"PMI: {edge['weight']:.2f}")
+# PMI: 0.85
+```
+
+### Example: Build Graph from Relations
+
+```python
+from concept_mapper.analysis.relations import get_relations
+from concept_mapper.graph import graph_from_relations
+
+# Extract relations
+relations = get_relations("consciousness", docs, types=["copular", "prep"])
+
+# Build directed graph
+graph = graph_from_relations(relations)
+
+print(graph)
+# ConceptGraph(Directed, nodes=5, edges=8)
+
+# Examine a relation
+edge = graph.get_edge("consciousness", "intentional")
+print(f"Type: {edge['relation_type']}")
+# Type: copular
+
+print(f"Evidence count: {edge['weight']}")
+# Evidence count: 3
+
+print(f"Example: {edge['evidence'][0]}")
+# Example: Consciousness is intentional.
+```
+
+### Example: Graph Operations
+
+```python
+from concept_mapper.graph import (
+    merge_graphs,
+    prune_edges,
+    prune_nodes,
+    get_subgraph,
+    filter_by_relation_type
+)
+
+# Merge two graphs
+cooccur_graph = graph_from_cooccurrence(matrix, threshold=0.3)
+relation_graph = graph_from_relations(relations)
+combined = merge_graphs(cooccur_graph, relation_graph.copy())  # Must have same directedness
+
+# Prune weak edges
+strong_graph = prune_edges(graph, min_weight=0.7)
+print(f"Removed {graph.edge_count() - strong_graph.edge_count()} weak edges")
+# Removed 12 weak edges
+
+# Remove isolated nodes
+connected_graph = prune_nodes(graph, min_degree=1)
+print(f"Removed {graph.node_count() - connected_graph.node_count()} isolated nodes")
+# Removed 3 isolated nodes
+
+# Extract subgraph for specific terms
+key_terms = {"consciousness", "being", "intentionality"}
+subgraph = get_subgraph(graph, key_terms)
+print(subgraph)
+# ConceptGraph(Directed, nodes=3, edges=4)
+
+# Filter to only copular relations
+copular_graph = filter_by_relation_type(graph, {"copular"})
+print(f"Copular relations: {copular_graph.edge_count()}")
+# Copular relations: 15
+```
+
+### Example: Graph Metrics
+
+```python
+from concept_mapper.graph import (
+    centrality,
+    detect_communities,
+    assign_communities,
+    get_connected_components,
+    graph_density
+)
+
+# Compute centrality (find most important concepts)
+degree_scores = centrality(graph, method="degree")
+betweenness_scores = centrality(graph, method="betweenness")
+
+# Most central concepts
+for term, score in sorted(degree_scores.items(), key=lambda x: x[1], reverse=True)[:5]:
+    print(f"{term:20} {score:.3f}")
+# consciousness        0.425
+# being                0.380
+# intentionality       0.315
+# ...
+
+# Detect communities (conceptual clusters)
+communities = detect_communities(graph, method="greedy")
+print(f"Found {len(communities)} communities")
+# Found 3 communities
+
+for i, community in enumerate(communities):
+    print(f"Community {i}: {', '.join(sorted(community)[:5])}")
+# Community 0: being, presence, time, consciousness
+# Community 1: intentionality, object, awareness
+# Community 2: abstraction, commodity, fetishism
+
+# Assign communities as node attributes
+assign_communities(graph, communities)
+node = graph.get_node("consciousness")
+print(f"Consciousness is in community {node['community']}")
+# Consciousness is in community 0
+
+# Check graph connectivity
+components = get_connected_components(graph)
+print(f"Graph has {len(components)} connected components")
+# Graph has 2 connected components
+
+# Compute graph density
+density = graph_density(graph)
+print(f"Graph density: {density:.3f}")
+# Graph density: 0.147
+```
+
+### Example: Complete Workflow
+
+```python
+from pathlib import Path
+from concept_mapper.corpus.loader import load_document
+from concept_mapper.preprocessing.pipeline import preprocess
+from concept_mapper.analysis.reference import load_reference_corpus
+from concept_mapper.analysis.rarity import PhilosophicalTermScorer
+from concept_mapper.terms.models import TermList
+from concept_mapper.analysis.relations import get_relations
+from concept_mapper.analysis.cooccurrence import build_cooccurrence_matrix
+from concept_mapper.graph import (
+    graph_from_relations,
+    graph_from_cooccurrence,
+    centrality,
+    detect_communities,
+    assign_communities,
+)
+
+# 1. Load and preprocess
+doc = load_document("data/sample/philosopher_1920_cc.txt")
+docs = [preprocess(doc)]
+
+# 2. Detect key terms
+reference = load_reference_corpus()
+scorer = PhilosophicalTermScorer(docs, reference)
+candidates = scorer.score_all(min_score=2.0, top_n=30)
+
+# 3. Create term list
+terms = TermList([{"term": term, "pos": "NN"} for term, _, _ in candidates])
+
+# 4. Build co-occurrence graph
+matrix = build_cooccurrence_matrix(terms, docs, method="pmi")
+cooccur_graph = graph_from_cooccurrence(matrix, threshold=0.3)
+
+# 5. Build relation graph
+all_relations = []
+for term_data in terms:
+    relations = get_relations(term_data["term"], docs)
+    all_relations.extend(relations)
+
+relation_graph = graph_from_relations(all_relations)
+
+# 6. Compute centrality
+central = centrality(cooccur_graph, method="betweenness")
+top_concepts = sorted(central.items(), key=lambda x: x[1], reverse=True)[:10]
+
+print("Top 10 central concepts:")
+for term, score in top_concepts:
+    print(f"  {term:20} {score:.3f}")
+
+# 7. Detect communities
+communities = detect_communities(cooccur_graph)
+assign_communities(cooccur_graph, communities)
+
+print(f"\nFound {len(communities)} conceptual clusters")
+for i, community in enumerate(communities[:3]):
+    print(f"  Cluster {i}: {', '.join(sorted(community)[:5])}")
+```
+
+**Expected Output:**
+```
+Top 10 central concepts:
+  abstraction          0.425
+  consciousness        0.380
+  commodity            0.315
+  proletariat          0.298
+  bourgeoisie          0.275
+  fetishism            0.251
+  totality             0.228
+  praxis               0.210
+  dialectic            0.195
+  object               0.180
+
+Found 3 conceptual clusters
+  Cluster 0: commodity, fetishism, abstraction, value, exchange
+  Cluster 1: consciousness, proletariat, bourgeoisie, class, totality
+  Cluster 2: praxis, dialectic, subject, object, history
+```
+
+---
+
 ## Output Files
 
 The analysis produces these output files:
@@ -953,14 +1204,15 @@ pytest tests/test_terms.py -v           # Phase 4
 pytest tests/test_search.py -v          # Phase 5
 pytest tests/test_cooccurrence.py -v    # Phase 6
 pytest tests/test_relations.py -v       # Phase 7
+pytest tests/test_graph.py -v           # Phase 8
 ```
 
 ---
 
 ## Next Steps
 
-- **Phase 8:** Build concept graphs from co-occurrence and relations
 - **Phase 9:** Export to D3.js for interactive visualization
 - **Phase 10:** CLI interface for batch processing
+- **Phase 11:** Documentation and deployment
 
 See the [roadmap](concept-mapper-roadmap.md) for details on upcoming phases.

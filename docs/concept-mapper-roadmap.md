@@ -19,8 +19,9 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 - ✅ Phase 5 Complete: Search & concordance (find, KWIC displays, context windows, dispersion)
 - ✅ Phase 6 Complete: Co-occurrence analysis (PMI, LLR, matrices)
 - ✅ Phase 7 Complete: Relation extraction (SVO, copular, prepositional - pattern-based)
-- 🚧 Phase 8 Next: Graph construction (networkx, node/edge attributes)
-- 📊 406 tests passing, all green
+- ✅ Phase 8 Complete: Graph construction (networkx, builders, operations, metrics)
+- 🚧 Phase 9 Next: Export & visualization (D3 JSON, GraphML, DOT formats)
+- 📊 468 tests passing, all green
 
 **Acronym Reference:**
 - **POS** = Part of Speech (noun, verb, adjective, etc.)
@@ -548,39 +549,53 @@ due to Python 3.14 compatibility issues. Pattern-based approach is effective for
 
 ---
 
-## Phase 8: Graph Construction
+## Phase 8: Graph Construction ✅ COMPLETE
 
 Transform analysis into network structure.
 
-- [ ] **8.1 Graph data structure** (`src/concept_mapper/graph/model.py`)
-  - [ ] Add networkx to dependencies
-  - [ ] `ConceptGraph` class wrapping `nx.Graph` or `nx.DiGraph`
-  - [ ] Node attributes: label, frequency, pos, definition
-  - [ ] Edge attributes: weight, relation_type, evidence
+- [x] **8.1 Graph data structure** (`src/concept_mapper/graph/model.py`)
+  - [x] Add networkx to dependencies
+  - [x] `ConceptGraph` class wrapping `nx.Graph` or `nx.DiGraph`
+  - [x] Node attributes: label, frequency, pos, definition
+  - [x] Edge attributes: weight, relation_type, evidence
+  - [x] Tests: 19 tests for ConceptGraph model
 
-- [ ] **8.2 Graph from co-occurrence** (`src/concept_mapper/graph/builders.py`)
-  - [ ] `graph_from_cooccurrence(matrix: DataFrame, threshold: float) -> ConceptGraph`
-  - [ ] Nodes = terms, edges where co-occurrence > threshold
-  - [ ] Edge weight = count or PMI score
-  - [ ] Tests: threshold filters edges correctly
+- [x] **8.2 Graph from co-occurrence** (`src/concept_mapper/graph/builders.py`)
+  - [x] `graph_from_cooccurrence(matrix: Dict, threshold: float) -> ConceptGraph`
+  - [x] Nodes = terms, edges where co-occurrence > threshold
+  - [x] Edge weight = count or PMI (Pointwise Mutual Information) score
+  - [x] `graph_from_terms(terms: List[str], term_data: Optional[Dict]) -> ConceptGraph`
+  - [x] Tests: 12 tests for all builder functions
 
-- [ ] **8.3 Graph from relations**
-  - [ ] `graph_from_relations(relations: list[Relation]) -> ConceptGraph`
-  - [ ] Directed edges, labeled by relation type
-  - [ ] Tests: relation types preserved as edge labels
+- [x] **8.3 Graph from relations**
+  - [x] `graph_from_relations(relations: list[Relation]) -> ConceptGraph`
+  - [x] Directed edges, labeled by relation type
+  - [x] Evidence aggregation for duplicate relations
+  - [x] Tests: relation types preserved as edge labels
 
-- [ ] **8.4 Graph operations** (`src/concept_mapper/graph/operations.py`)
-  - [ ] `merge_graphs(g1: ConceptGraph, g2: ConceptGraph) -> ConceptGraph`
-  - [ ] `prune_edges(graph, min_weight: float) -> ConceptGraph`
-  - [ ] `prune_nodes(graph, min_degree: int) -> ConceptGraph`
-  - [ ] `get_subgraph(graph, terms: set[str]) -> ConceptGraph`
-  - [ ] Tests: prune removes correct elements
+- [x] **8.4 Graph operations** (`src/concept_mapper/graph/operations.py`)
+  - [x] `merge_graphs(g1: ConceptGraph, g2: ConceptGraph) -> ConceptGraph`
+  - [x] `prune_edges(graph, min_weight: float) -> ConceptGraph`
+  - [x] `prune_nodes(graph, min_degree: int) -> ConceptGraph`
+  - [x] `get_subgraph(graph, terms: set[str]) -> ConceptGraph`
+  - [x] `filter_by_relation_type(graph, relation_types: Set[str]) -> ConceptGraph`
+  - [x] Tests: 11 tests covering all operations
 
-- [ ] **8.5 Graph metrics** (`src/concept_mapper/graph/metrics.py`)
-  - [ ] `centrality(graph, method: str = "betweenness") -> dict[str, float]`
-  - [ ] `detect_communities(graph) -> list[set[str]]`
-  - [ ] Assign community as node attribute (for visualization grouping)
-  - [ ] Tests: centrality values sum correctly
+- [x] **8.5 Graph metrics** (`src/concept_mapper/graph/metrics.py`)
+  - [x] `centrality(graph, method: str = "betweenness") -> dict[str, float]`
+  - [x] Methods: betweenness, degree, closeness, eigenvector, pagerank
+  - [x] `detect_communities(graph) -> list[set[str]]`
+  - [x] `assign_communities(graph, communities)` - assign community as node attribute
+  - [x] `get_connected_components(graph) -> list[set[str]]`
+  - [x] `graph_density(graph) -> float`
+  - [x] `get_shortest_path(graph, source, target) -> list[str]`
+  - [x] Tests: 17 tests covering all metrics
+
+**Test Coverage:**
+- 62 comprehensive tests for graph construction and analysis
+- Tests for model, builders, operations, metrics, and integration workflows
+- All edge cases covered (empty graphs, disconnected components, errors)
+- 468 total tests passing
 
 ---
 

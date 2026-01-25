@@ -41,7 +41,9 @@ stack-data==0.6.3
 traitlets==5.14.3
 wcwidth==0.3.1
 
+# Phase 8: Graph construction
+networkx>=3.2
+
 # Future dependencies (uncomment when needed):
 # spacy>=3.7.0  # Dependency parsing - pending Python 3.14 compatibility (Phase 7 uses pattern-based extraction)
-# networkx>=3.2  # Graph construction (Phase 8)
 # pandas>=2.1.0  # Data manipulation for matrices
