@@ -18,8 +18,9 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 - ✅ Phase 4 Complete: Term list management (curation, import/export, auto-population)
 - ✅ Phase 5 Complete: Search & concordance (find, KWIC displays, context windows, dispersion)
 - ✅ Phase 6 Complete: Co-occurrence analysis (PMI, LLR, matrices)
-- 🚧 Phase 7 Next: Relation extraction (dependency parsing, SVO triples)
-- 📊 368 tests passing, all green
+- ✅ Phase 7 Complete: Relation extraction (SVO, copular, prepositional - pattern-based)
+- 🚧 Phase 8 Next: Graph construction (networkx, node/edge attributes)
+- 📊 406 tests passing, all green
 
 **Acronym Reference:**
 - **POS** = Part of Speech (noun, verb, adjective, etc.)
@@ -500,39 +501,50 @@ Relational structure from proximity.
 
 ---
 
-## Phase 7: Relation Extraction
+## Phase 7: Relation Extraction ✅ COMPLETE
 
 Grammatical relations, not just proximity.
 
-- [ ] **7.1 Dependency parsing setup** (`src/concept_mapper/analysis/relations.py`)
-  - [ ] Add spaCy to dependencies
-  - [ ] Download `en_core_web_sm` model
-  - [ ] `parse_sentence(sentence: str) -> Doc`
-  - [ ] Tests: parse returns valid spaCy Doc
+**Note:** Pattern-based implementation using NLTK POS tagging. SpaCy dependency parsing deferred
+due to Python 3.14 compatibility issues. Pattern-based approach is effective for philosophical texts.
 
-- [ ] **7.2 SVO (Subject-Verb-Object) extraction**
-  - [ ] `SVOTriple` dataclass: subject, verb, object, sentence - captures who does what to whom
-  - [ ] `extract_svo(doc: Doc) -> list[SVOTriple]`
-  - [ ] `extract_svo_for_term(term: str, docs) -> list[SVOTriple]`
-  - [ ] Tests: "The dog bites the man" → (dog, bites, man)
+- [x] **7.1 Parsing setup** (`src/concept_mapper/analysis/relations.py`)
+  - [x] `parse_sentence(sentence: str) -> list[tuple[str, str]]` - POS-tagged tokens
+  - [x] Uses existing NLTK tokenization and POS tagging infrastructure
+  - [x] Tests: 2 tests for parsing functionality
+  - Note: spaCy integration pending Python 3.14 compatibility resolution
 
-- [ ] **7.3 Copular definitions**
-  - [ ] `CopularRelation` dataclass: subject, complement, sentence
-  - [ ] `extract_copular(term: str, docs) -> list[CopularRelation]`
-  - [ ] Pattern: X is Y, X are Y, X was Y
-  - [ ] Tests: "Being is presence" → (Being, presence)
+- [x] **7.2 SVO (Subject-Verb-Object) extraction**
+  - [x] `SVOTriple` dataclass with subject, verb, object, sentence, doc_id
+  - [x] `extract_svo(sentence: str, doc_id: str) -> list[SVOTriple]`
+  - [x] `extract_svo_for_term(term: str, docs, case_sensitive) -> list[SVOTriple]`
+  - [x] Pattern-based: NOUN + VERB + NOUN with modifiers
+  - [x] Captures "who does what to whom" relationships
+  - [x] Tests: 8 tests covering SVO extraction and filtering
 
-- [ ] **7.4 Prepositional relations**
-  - [ ] `PrepRelation` dataclass: head, prep, object, sentence
-  - [ ] `extract_prepositional(term: str, docs) -> list[PrepRelation]`
-  - [ ] "consciousness of objects" → (consciousness, of, objects)
-  - [ ] Tests: known prep phrases extracted
+- [x] **7.3 Copular definitions**
+  - [x] `CopularRelation` dataclass with subject, complement, copula, sentence, doc_id
+  - [x] `extract_copular(term: str, docs, case_sensitive) -> list[CopularRelation]`
+  - [x] Patterns: X {is|are|was|were|becomes|seems} Y
+  - [x] Extracts definitional relationships (Being is presence)
+  - [x] Multi-word complement extraction
+  - [x] Tests: 7 tests for copular extraction
 
-- [ ] **7.5 Relation aggregation**
-  - [ ] `Relation` dataclass: source, relation_type, target, evidence (list[str])
-  - [ ] `get_relations(term: str, docs, types: list[str]) -> list[Relation]`
-  - [ ] Aggregate evidence sentences for same relation
-  - [ ] Tests: multiple evidence sentences grouped
+- [x] **7.4 Prepositional relations**
+  - [x] `PrepRelation` dataclass with head, prep, object, sentence, doc_id
+  - [x] `extract_prepositional(term: str, docs, case_sensitive) -> list[PrepRelation]`
+  - [x] Patterns: NOUN + PREP + NOUN (consciousness of objects)
+  - [x] Common prepositions: of, from, to, in, by, with, through, etc.
+  - [x] Multi-word object extraction
+  - [x] Tests: 7 tests for prepositional extraction
+
+- [x] **7.5 Relation aggregation**
+  - [x] `Relation` dataclass with source, relation_type, target, evidence, metadata
+  - [x] `get_relations(term: str, docs, types, case_sensitive) -> list[Relation]`
+  - [x] Aggregates multiple occurrences with evidence sentences
+  - [x] Type filtering: ["svo", "copular", "prep"]
+  - [x] Metadata includes verb, copula, or preposition
+  - [x] Tests: 11 tests covering aggregation and integration
 
 ---
 

@@ -8,6 +8,7 @@ Provides functions for:
 - TF-IDF calculations
 - Rarity detection and corpus-comparative analysis
 - Co-occurrence analysis and relationship discovery
+- Relation extraction (SVO, copular, prepositional)
 """
 
 from .frequency import (
@@ -64,6 +65,18 @@ from .cooccurrence import (
     save_cooccurrence_matrix,
     get_top_cooccurrences,
 )
+from .relations import (
+    SVOTriple,
+    CopularRelation,
+    PrepRelation,
+    Relation,
+    parse_sentence,
+    extract_svo,
+    extract_svo_for_term,
+    extract_copular,
+    extract_prepositional,
+    get_relations,
+)
 
 __all__ = [
     # Frequency
@@ -119,4 +132,15 @@ __all__ = [
     "build_cooccurrence_matrix",
     "save_cooccurrence_matrix",
     "get_top_cooccurrences",
+    # Relation extraction (Phase 7)
+    "SVOTriple",
+    "CopularRelation",
+    "PrepRelation",
+    "Relation",
+    "parse_sentence",
+    "extract_svo",
+    "extract_svo_for_term",
+    "extract_copular",
+    "extract_prepositional",
+    "get_relations",
 ]

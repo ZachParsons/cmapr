@@ -42,6 +42,6 @@ traitlets==5.14.3
 wcwidth==0.3.1
 
 # Future dependencies (uncomment when needed):
-# spacy>=3.7.0  # Dependency parsing (Phase 7)
+# spacy>=3.7.0  # Dependency parsing - pending Python 3.14 compatibility (Phase 7 uses pattern-based extraction)
 # networkx>=3.2  # Graph construction (Phase 8)
 # pandas>=2.1.0  # Data manipulation for matrices
