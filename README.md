@@ -17,11 +17,35 @@ pip install -r requirements.txt
 # Install package in development mode
 pip install -e .
 
+# Verify CLI installation
+concept-mapper --help
+
 # Run tests
 pytest tests/ -v
 ```
 
-## Features (Phases 0-9 Complete)
+## CLI Usage
+
+```bash
+# Process a document
+concept-mapper ingest document.txt -o corpus.json
+
+# Detect philosophical terms
+concept-mapper rarities corpus.json --top-n 30 -o terms.json
+
+# Build concept graph
+concept-mapper graph corpus.json -t terms.json -m cooccurrence -o graph.json
+
+# Generate interactive visualization
+concept-mapper export graph.json --format html -o viz/
+
+# Open visualization in browser
+open viz/index.html
+```
+
+See `concept-mapper --help` for full command reference.
+
+## Features (Complete: Phases 0-11)
 
 ### ✅ Phase 1: Corpus Preprocessing
 - Load documents from text files
@@ -90,11 +114,20 @@ pytest tests/ -v
 - Standalone HTML visualizations with force-directed layouts
 - **[See examples →](docs/usage-guide.md#phase-9-export--visualization)**
 
+### ✅ Phase 10: CLI Interface
+- Unified command-line interface (`concept-mapper`)
+- Commands: ingest, rarities, search, concordance, graph, export
+- Global options: `--verbose`, `--output-dir`
+- Progress bars for batch operations
+- End-to-end workflow support
+- **[See examples →](docs/usage-guide.md#phase-10-cli-interface)**
+
 ## Documentation
 
 - **[Usage Guide](docs/usage-guide.md)** - Practical examples for each phase
+- **[API Reference](docs/api-reference.md)** - Complete Python API reference
 - **[Development Roadmap](docs/concept-mapper-roadmap.md)** - Complete project plan
-- **[API Reference](src/concept_mapper/)** - Module documentation
+- **[Examples](examples/)** - Complete workflow examples and sample data
 
 ## Example Workflow
 
@@ -165,7 +198,7 @@ The `data/sample/` directory contains test corpora:
 
 ## Testing
 
-All 498 tests passing (2 skipped):
+All 521 tests passing (2 skipped):
 
 ```bash
 # Run all tests
@@ -179,6 +212,7 @@ pytest tests/test_cooccurrence.py -v
 pytest tests/test_relations.py -v
 pytest tests/test_graph.py -v
 pytest tests/test_export.py -v
+pytest tests/test_cli.py -v
 
 # Run with coverage
 pytest tests/ --cov=src/concept_mapper
@@ -186,13 +220,19 @@ pytest tests/ --cov=src/concept_mapper
 
 ## Roadmap
 
-- ✅ **Phase 0-9:** Complete (preprocessing, analysis, search, relations, graphs, export)
-- 🚧 **Phase 10:** CLI interface
-- 📋 **Phase 11:** Documentation and deployment
-- 📋 **Phase 10:** CLI interface
-- 📋 **Phase 11:** Documentation and examples
+- ✅ **Phases 0-11:** Complete
+  - ✅ Phase 0-1: Corpus loading and preprocessing
+  - ✅ Phase 2-3: Frequency analysis and rarity detection
+  - ✅ Phase 4: Term list management
+  - ✅ Phase 5: Search and concordance
+  - ✅ Phase 6: Co-occurrence analysis
+  - ✅ Phase 7: Relation extraction
+  - ✅ Phase 8: Graph construction
+  - ✅ Phase 9: Export and visualization
+  - ✅ Phase 10: CLI interface
+  - ✅ Phase 11: Documentation and examples
 
-**See [Development Roadmap](docs/concept-mapper-roadmap.md) for details.**
+**See [Development Roadmap](docs/concept-mapper-roadmap.md) for detailed phase breakdown.**
 
 ## Development
 

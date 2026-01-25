@@ -36,7 +36,12 @@
       "Bash(python -m pytest:*)",
       "Bash(pip install:*)",
       "Bash(black:*)",
-      "Bash(ruff check:*)"
+      "Bash(ruff check:*)",
+      "Bash(concept-mapper:*)",
+      "Bash(python examples/workflow.py:*)",
+      "Bash(wc:*)",
+      "Bash(python -c:*)",
+      "Bash(venv/bin/concept-mapper:*)"
     ]
   }
 }

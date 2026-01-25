@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional, List
 from .models import TermList, TermEntry
 import csv
+import json
 
 
 class TermManager:
@@ -285,3 +286,72 @@ class TermManager:
         stats["pos_distribution"] = pos_counts
 
         return stats
+
+    def export_to_json(
+        self,
+        path: Path,
+        encoding: str = "utf-8",
+        indent: int = 2,
+    ) -> int:
+        """
+        Export terms to JSON file.
+
+        Args:
+            path: Path to output JSON
+            encoding: File encoding (default: utf-8)
+            indent: JSON indentation (default: 2)
+
+        Returns:
+            Number of terms exported
+        """
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        terms = self.term_list.list_terms()
+
+        # Convert to list of dicts
+        data = [
+            {
+                "term": entry.term,
+                "lemma": entry.lemma,
+                "pos": entry.pos,
+                "definition": entry.definition,
+                "notes": entry.notes,
+                "examples": entry.examples,
+                "metadata": entry.metadata,
+            }
+            for entry in terms
+        ]
+
+        with open(path, "w", encoding=encoding) as f:
+            json.dump(data, f, indent=indent, ensure_ascii=False)
+
+        return len(terms)
+
+    def import_from_json(
+        self,
+        path: Path,
+        encoding: str = "utf-8",
+    ) -> int:
+        """
+        Import terms from JSON file.
+
+        Args:
+            path: Path to JSON file
+            encoding: File encoding (default: utf-8)
+
+        Returns:
+            Number of terms imported
+        """
+        path = Path(path)
+
+        with open(path, "r", encoding=encoding) as f:
+            data = json.load(f)
+
+        # Convert to TermEntry objects
+        count = 0
+        for item in data:
+            self.add(item.get("term"), **{k: v for k, v in item.items() if k != "term"})
+            count += 1
+
+        return count

@@ -1411,13 +1411,256 @@ pytest tests/test_cooccurrence.py -v    # Phase 6
 pytest tests/test_relations.py -v       # Phase 7
 pytest tests/test_graph.py -v           # Phase 8
 pytest tests/test_export.py -v          # Phase 9
+pytest tests/test_cli.py -v             # Phase 10
+```
+
+---
+
+## Phase 10: CLI Interface
+
+Unified command-line interface for all functionality.
+
+### What It Enables
+
+- **Batch Processing**: Process entire corpora from the command line
+- **Workflow Automation**: Chain commands together in scripts
+- **No Code Required**: Full functionality without writing Python
+- **Progress Feedback**: Visual progress bars and verbose output
+- **File-Based I/O**: Work with JSON, CSV, and other file formats
+
+### Installation
+
+After installing the package, the `concept-mapper` command is available:
+
+```bash
+# Install package
+pip install -e .
+
+# Verify installation
+concept-mapper --help
+
+# Show version and available commands
+concept-mapper --help
+```
+
+### Example: Complete Workflow
+
+```bash
+# 1. Ingest and preprocess documents
+concept-mapper ingest data/sample/philosopher_1920_cc.txt -o output/corpus.json
+
+# 2. Detect philosophical terms
+concept-mapper rarities output/corpus.json \
+  --method hybrid \
+  --threshold 2.0 \
+  --top-n 30 \
+  -o output/terms.json
+
+# 3. Search for a specific term
+concept-mapper search output/corpus.json "abstraction" \
+  --context 2 \
+  -o output/abstraction.txt
+
+# 4. Generate concordance
+concept-mapper concordance output/corpus.json "consciousness" \
+  --width 60 \
+  -o output/concordance.txt
+
+# 5. Build concept graph
+concept-mapper graph output/corpus.json \
+  -t output/terms.json \
+  --method cooccurrence \
+  --threshold 0.3 \
+  -o output/graph.json
+
+# 6. Export to HTML visualization
+concept-mapper export output/graph.json \
+  --format html \
+  --title "Philosopher Conceptual Network" \
+  -o output/visualization/
+
+# 7. Open in browser
+open output/visualization/index.html
+```
+
+### Command Reference
+
+#### Ingest Command
+
+Load and preprocess documents:
+
+```bash
+# Single file
+concept-mapper ingest document.txt -o corpus.json
+
+# Directory (recursive)
+concept-mapper ingest corpus/ \
+  --recursive \
+  --pattern "*.txt" \
+  -o corpus.json
+
+# With verbose output
+concept-mapper --verbose ingest document.txt -o corpus.json
+```
+
+#### Rarities Command
+
+Detect philosophical/rare terms:
+
+```bash
+# Basic usage
+concept-mapper rarities corpus.json -o terms.json
+
+# Specify method and threshold
+concept-mapper rarities corpus.json \
+  --method hybrid \
+  --threshold 2.5 \
+  --top-n 50 \
+  -o terms.json
+
+# Different methods: ratio, tfidf, neologism, hybrid
+concept-mapper rarities corpus.json --method tfidf -o terms.json
+```
+
+#### Search Command
+
+Search for term occurrences:
+
+```bash
+# Basic search
+concept-mapper search corpus.json "consciousness"
+
+# With context sentences
+concept-mapper search corpus.json "being" --context 2
+
+# Save to file
+concept-mapper search corpus.json "abstraction" -o results.txt
+```
+
+#### Concordance Command
+
+Display KWIC concordance:
+
+```bash
+# Basic concordance
+concept-mapper concordance corpus.json "consciousness"
+
+# Custom context width
+concept-mapper concordance corpus.json "being" --width 80
+
+# Save to file
+concept-mapper concordance corpus.json "fetishism" -o concordance.txt
+```
+
+#### Graph Command
+
+Build concept graphs:
+
+```bash
+# From co-occurrence
+concept-mapper graph corpus.json \
+  -t terms.json \
+  --method cooccurrence \
+  --threshold 0.3 \
+  -o graph.json
+
+# From relations
+concept-mapper graph corpus.json \
+  -t terms.json \
+  --method relations \
+  -o graph.json
+```
+
+#### Export Command
+
+Export graphs to various formats:
+
+```bash
+# HTML visualization
+concept-mapper export graph.json \
+  --format html \
+  --title "My Network" \
+  -o viz/
+
+# GraphML for Gephi
+concept-mapper export graph.json \
+  --format graphml \
+  -o graph.graphml
+
+# CSV for spreadsheets
+concept-mapper export graph.json \
+  --format csv \
+  -o output/
+
+# D3 JSON
+concept-mapper export graph.json \
+  --format d3 \
+  -o network.json
+
+# GEXF for Gephi
+concept-mapper export graph.json \
+  --format gexf \
+  -o graph.gexf
+```
+
+### Global Options
+
+Available for all commands:
+
+```bash
+# Verbose output
+concept-mapper --verbose ingest document.txt
+
+# Custom output directory
+concept-mapper --output-dir /path/to/output ingest document.txt
+
+# Combined
+concept-mapper -v -o output/ rarities corpus.json
+```
+
+### Batch Processing Example
+
+Process multiple documents:
+
+```bash
+#!/bin/bash
+
+# Process entire corpus
+for corpus_dir in data/corpora/*; do
+    author=$(basename "$corpus_dir")
+
+    echo "Processing $author..."
+
+    # Ingest
+    concept-mapper ingest "$corpus_dir" \
+        --recursive \
+        -o "output/$author/corpus.json"
+
+    # Detect terms
+    concept-mapper rarities "output/$author/corpus.json" \
+        --top-n 30 \
+        -o "output/$author/terms.json"
+
+    # Build graph
+    concept-mapper graph "output/$author/corpus.json" \
+        -t "output/$author/terms.json" \
+        -m cooccurrence \
+        -o "output/$author/graph.json"
+
+    # Export visualization
+    concept-mapper export "output/$author/graph.json" \
+        --format html \
+        --title "$author Conceptual Network" \
+        -o "output/$author/viz/"
+done
+
+echo "Done! Open output/*/viz/index.html to view networks"
 ```
 
 ---
 
 ## Next Steps
 
-- **Phase 10:** CLI interface for batch processing
 - **Phase 11:** Documentation and deployment
 - **Phase 12:** Advanced features (temporal analysis, cross-corpus comparison)
 
