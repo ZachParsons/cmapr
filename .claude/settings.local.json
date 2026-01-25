@@ -32,7 +32,11 @@
       "Bash(make test:*)",
       "Bash(venv/bin/ipython:*)",
       "Bash(venv/bin/pytest:*)",
-      "Bash(venv/bin/python3:*)"
+      "Bash(venv/bin/python3:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(pip install:*)",
+      "Bash(black:*)",
+      "Bash(ruff check:*)"
     ]
   }
 }

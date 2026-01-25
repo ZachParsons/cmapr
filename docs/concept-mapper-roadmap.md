@@ -16,8 +16,9 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 - ✅ Phase 2 Complete: Frequency analysis, Brown corpus reference, TF-IDF
 - ✅ Phase 3 Complete: Philosophical term detection (multi-method rarity analysis)
 - ✅ Phase 4 Complete: Term list management (curation, import/export, auto-population)
-- 🚧 Phase 5 Next: Search & concordance
-- 📊 268 tests passing, all green
+- ✅ Phase 5 Complete: Search & concordance (find, KWIC, context windows, dispersion)
+- 🚧 Phase 6 Next: Co-occurrence analysis
+- 📊 320 tests passing, all green
 
 **References:**
 - Lane 2019, *Natural Language Processing in Action*
@@ -402,32 +403,43 @@ Human-in-the-loop curation.
 
 ---
 
-## Phase 5: Search & Concordance
+## Phase 5: Search & Concordance ✅ COMPLETE
 
 Find where and how terms appear.
 
-- [ ] **5.1 Basic search** (`src/concept_mapper/search/find.py`)
-  - [ ] `SentenceMatch` dataclass: sentence, doc_id, sent_index, term_positions
-  - [x] `find_sentences(term: str, docs) -> list[SentenceMatch]` *(spike: pos_tagger.py:150-157 has basic implementation)*
-  - [ ] Support lemma matching option
-  - [ ] Tests: find all occurrences of known term
-  - **Note:** Basic sentence filtering exists. Returns sentences containing target verb. Needs structured return type.
+- [x] **5.1 Basic search** (`src/concept_mapper/search/find.py`)
+  - [x] `SentenceMatch` dataclass: sentence, doc_id, sent_index, term_positions
+  - [x] `find_sentences(term: str, docs) -> list[SentenceMatch]`
+  - [x] `find_sentences_any()`, `find_sentences_all()` for multiple terms
+  - [x] `count_term_occurrences()` for frequency counting
+  - [x] Case-sensitive and case-insensitive search
+  - [ ] Support lemma matching option *(deferred: TODO in code)*
+  - [x] Tests: 12 tests covering all search functionality
 
-- [ ] **5.2 Concordance (KWIC)** (`src/concept_mapper/search/concordance.py`)
-  - [ ] `KWICLine` dataclass: left_context, keyword, right_context, doc_id
-  - [ ] `concordance(term: str, docs, width: int = 50) -> list[KWICLine]`
-  - [ ] Align output on keyword for scanning
-  - [ ] Tests: width parameter respected
+- [x] **5.2 Concordance (KWIC)** (`src/concept_mapper/search/concordance.py`)
+  - [x] `KWICLine` dataclass: left_context, keyword, right_context, doc_id
+  - [x] `concordance(term: str, docs, width: int = 50) -> list[KWICLine]`
+  - [x] `concordance_sorted()` for sorting by left/right context
+  - [x] `concordance_filtered()` for co-occurrence patterns
+  - [x] Aligned output on keyword for scanning
+  - [x] Tests: 12 tests covering KWIC display and formatting
 
-- [ ] **5.3 Context window**
-  - [ ] `ContextWindow` dataclass: before (list[str]), match (str), after (list[str])
-  - [ ] `get_context(term: str, docs, n_sentences: int = 1) -> list[ContextWindow]`
-  - [ ] Tests: n_sentences before/after included
+- [x] **5.3 Context window** (`src/concept_mapper/search/context.py`)
+  - [x] `ContextWindow` dataclass: before (list[str]), match (str), after (list[str])
+  - [x] `get_context(term: str, docs, n_sentences: int = 1) -> list[ContextWindow]`
+  - [x] `get_context_by_match()` for expanding existing search results
+  - [x] `get_context_with_highlights()` for term highlighting
+  - [x] `format_context_windows()` for display
+  - [x] Tests: 12 tests covering context extraction and formatting
 
-- [ ] **5.4 Dispersion**
-  - [ ] `dispersion(term: str, docs) -> dict[str, list[int]]` (doc_id → positions)
-  - [ ] Position as sentence index or character offset
-  - [ ] Tests: term in specific locations detected
+- [x] **5.4 Dispersion** (`src/concept_mapper/search/dispersion.py`)
+  - [x] `dispersion(term: str, docs) -> dict[str, list[int]]` (doc_id → positions)
+  - [x] `get_dispersion_summary()` with coverage statistics
+  - [x] `compare_dispersion()` for multi-term comparison
+  - [x] `dispersion_plot_data()` for visualization preparation
+  - [x] `get_concentrated_regions()` for finding dense usage areas
+  - [x] Position as sentence index or character offset
+  - [x] Tests: 16 tests covering all dispersion functionality
 
 ---
 
