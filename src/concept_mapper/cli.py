@@ -31,7 +31,6 @@ from concept_mapper.export import (
 from concept_mapper.validation import (
     validate_corpus,
     validate_term_list,
-    validate_graph,
     validate_concept_graph,
 )
 
@@ -234,8 +233,7 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
 
     # Create term list
     term_data = [
-        {"term": term, "metadata": {"score": score}}
-        for term, score, _ in candidates
+        {"term": term, "metadata": {"score": score}} for term, score, _ in candidates
     ]
 
     # Validate before saving (should never fail here since we checked above)

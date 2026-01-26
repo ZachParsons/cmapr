@@ -11,7 +11,7 @@ import csv
 from pathlib import Path
 import networkx as nx
 from concept_mapper.graph.model import ConceptGraph
-from concept_mapper.validation import validate_concept_graph, validate_csv_data
+from concept_mapper.validation import validate_concept_graph
 
 
 def export_graphml(

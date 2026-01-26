@@ -1,40 +1,33 @@
-[tool.poetry]
+[project]
 name = "concept-mapper"
-version = "0.1.0"
+version = "1.0.0"
 description = "A tool for extracting and visualizing an author's idiosyncratic conceptual vocabulary from primary texts"
+authors = [{name = "Zach"}]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    # Core NLP dependencies
+    "nltk>=3.8",          # Tokenization, POS tagging, lemmatization
+    "stanza>=1.8",        # Dependency parsing for sentence diagrams
+    "networkx>=3.2",      # Graph construction and algorithms
+    "click>=8.1",         # Command-line interface
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-# Core NLP dependencies
-nltk = "^3.8"          # Tokenization, POS tagging, lemmatization ⭐
-# spacy = "^3.7"         # Dependency parsing (Phase 7) - TODO: uncomment when needed
-# networkx = "^3.2"      # Graph construction (Phase 8) - TODO: uncomment when needed
-# click = "^8.1"         # CLI interface (Phase 10) - TODO: uncomment when needed
-# pandas = "^2.1"        # Data manipulation for matrices - TODO: uncomment when needed
+[project.optional-dependencies]
+dev = [
+    # Essential dev tools
+    "pytest>=8.3",        # Tests ⭐
+    "black>=24.8",        # Formatter ⭐
+    "ruff>=0.6",          # Linter + format alt ⭐
+    "ipython>=8.27",      # REPL w/ autoreload ⭐
+]
 
-# Previously installed (not needed for NLP project)
-# httpx = "^0.27"        # HTTP
-# jinja2 = "^3.1"        # Templates
-# cryptography = "^43"   # Crypto
-# celery = "^5.4"        # Jobs
+[project.scripts]
+concept-mapper = "concept_mapper.cli:cli"
 
-[tool.poetry.group.dev.dependencies]
-# Essential dev tools
-pytest = "^8.3"        # Tests ⭐
-black = "^24.8"        # Formatter ⭐
-ruff = "^0.6"          # Linter + format alt ⭐
-ipython = "^8.27"      # REPL w/ autoreload ⭐
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
-# Optional dev tools (commented out for now)
-# pytest-mock = "^3.14"  # Mocking
-# hypothesis = "^6.1"    # Property tests
-# mypy = "^1.11"         # Types
-# playwright = "^1.48"   # E2E tests (not needed for NLP)
-# tox = "^4.16"          # Task runner/multi-env
-# uv = "^0.4"            # Fast pip/install (CLI)
-
-[tool.poetry.scripts]
-format = "scripts.format:main"
-lint = "scripts.lint:main"
-test = "scripts.test:main"
-check = "scripts.check:main"
+[tool.setuptools.packages.find]
+where = ["src"]

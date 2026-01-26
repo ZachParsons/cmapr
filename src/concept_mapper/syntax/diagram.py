@@ -5,10 +5,9 @@ Uses Stanza for deep syntactic analysis to create dependency parse trees
 and traditional sentence diagrams.
 """
 
-from typing import List, Optional
+from typing import List
 import stanza
 from pathlib import Path
-
 
 # Global pipeline cache
 _pipeline = None
@@ -19,9 +18,7 @@ def get_pipeline():
     global _pipeline
     if _pipeline is None:
         _pipeline = stanza.Pipeline(
-            'en',
-            processors='tokenize,pos,lemma,depparse',
-            verbose=False
+            "en", processors="tokenize,pos,lemma,depparse", verbose=False
         )
     return _pipeline
 
@@ -117,8 +114,7 @@ def format_as_tree(sentence) -> str:
 
         # Add children
         children = sorted(
-            [w for w in sentence.words if w.head == word.id],
-            key=lambda w: w.id
+            [w for w in sentence.words if w.head == word.id], key=lambda w: w.id
         )
         for child in children:
             build_tree(child, indent + 1, words_dict)

@@ -45,7 +45,9 @@
       "Bash(bash:*)",
       "Bash(python /Users/zach/se/projects/nlp/spike/examples/workflow.py:*)",
       "Bash(git checkout:*)",
-      "Bash(jobs:*)"
+      "Bash(jobs:*)",
+      "Bash(poetry add:*)",
+      "Bash(grep:*)"
     ]
   }
 }

@@ -92,15 +92,17 @@ def sample_terms_json(tmp_path):
     from concept_mapper.terms.models import TermList
     from concept_mapper.terms.manager import TermManager
 
-    terms = TermList.from_dict({
-        "terms": [
-            {"term": "Geist", "pos": "NN"},
-            {"term": "Aufhebung", "pos": "NN"},
-            {"term": "Selbstbewusstsein", "pos": "NN"},
-            {"term": "Anerkennung", "pos": "NN"},
-            {"term": "Sittlichkeit", "pos": "NN"},
-        ]
-    })
+    terms = TermList.from_dict(
+        {
+            "terms": [
+                {"term": "Geist", "pos": "NN"},
+                {"term": "Aufhebung", "pos": "NN"},
+                {"term": "Selbstbewusstsein", "pos": "NN"},
+                {"term": "Anerkennung", "pos": "NN"},
+                {"term": "Sittlichkeit", "pos": "NN"},
+            ]
+        }
+    )
 
     terms_file = tmp_path / "terms.json"
     manager = TermManager(terms)
@@ -261,9 +263,7 @@ class TestSearchCommand:
 
     def test_search_basic(self, runner, sample_corpus_json):
         """Test basic search."""
-        result = runner.invoke(
-            cli, ["search", str(sample_corpus_json), "Geist"]
-        )
+        result = runner.invoke(cli, ["search", str(sample_corpus_json), "Geist"])
 
         assert result.exit_code == 0
         assert "occurrence" in result.output.lower()
@@ -312,9 +312,7 @@ class TestConcordanceCommand:
 
     def test_concordance_basic(self, runner, sample_corpus_json):
         """Test basic concordance."""
-        result = runner.invoke(
-            cli, ["concordance", str(sample_corpus_json), "Geist"]
-        )
+        result = runner.invoke(cli, ["concordance", str(sample_corpus_json), "Geist"])
 
         assert result.exit_code == 0
         assert "KWIC" in result.output

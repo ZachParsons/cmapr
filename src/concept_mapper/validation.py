@@ -3,6 +3,7 @@
 
 class EmptyOutputError(ValueError):
     """Raised when attempting to write empty or meaningless output."""
+
     pass
 
 
@@ -32,24 +33,18 @@ def validate_corpus(corpus_data: list | dict, min_docs: int = 1) -> None:
         docs = corpus_data
 
     if not docs:
-        raise EmptyOutputError(
-            "Cannot save empty corpus. No documents were processed."
-        )
+        raise EmptyOutputError("Cannot save empty corpus. No documents were processed.")
 
     if len(docs) < min_docs:
         raise EmptyOutputError(
-            f"Corpus has only {len(docs)} document(s), "
-            f"minimum {min_docs} required."
+            f"Corpus has only {len(docs)} document(s), " f"minimum {min_docs} required."
         )
 
     # Check if documents have actual content (only for list format)
     if isinstance(docs, list) and docs:
         # Only validate tokens if docs have the expected structure
         if isinstance(docs[0], dict) and "tokens" in docs[0]:
-            total_tokens = sum(
-                len(doc.get("tokens", []))
-                for doc in docs
-            )
+            total_tokens = sum(len(doc.get("tokens", [])) for doc in docs)
             if total_tokens == 0:
                 raise EmptyOutputError(
                     "Corpus documents contain no tokens. Documents may be empty or "
@@ -130,9 +125,7 @@ def validate_networkx_graph(graph, require_edges: bool = True) -> None:
         EmptyOutputError: If graph has no nodes or edges (when required)
     """
     if graph.number_of_nodes() == 0:
-        raise EmptyOutputError(
-            "Cannot export empty graph. No nodes were created."
-        )
+        raise EmptyOutputError("Cannot export empty graph. No nodes were created.")
 
     if require_edges and graph.number_of_edges() == 0:
         raise EmptyOutputError(
@@ -177,9 +170,7 @@ def validate_search_results(matches: list, query: str) -> None:
         EmptyOutputError: If no matches found
     """
     if not matches:
-        raise EmptyOutputError(
-            f"No matches found for query: '{query}'"
-        )
+        raise EmptyOutputError(f"No matches found for query: '{query}'")
 
 
 def validate_csv_data(rows: list, file_type: str = "CSV") -> None:
