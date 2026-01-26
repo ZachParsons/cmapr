@@ -173,10 +173,10 @@ The core algorithm (`analysis/rarity.py`) uses **five complementary signals**:
 
 **Types of terms the tool targets:**
 
-1. **Neologisms** - Coined terms (e.g., Heidegger's "Dasein", Derrida's "différance")
+1. **Neologisms** - Coined terms (e.g., Spinoza's "Conatus", Kant's "Noumena", Hegel's "Aufhebung")
 2. **Technical appropriations** - Ordinary words with specialized meaning (e.g., "substance" in Spinoza)
-3. **Reified abstractions** - Abstract concepts treated as entities (e.g., "Being", "Truth")
-4. **Theoretical vocabulary** - Discipline-specific jargon (e.g., "dialectical materialism")
+3. **Reified abstractions** - Abstract concepts treated as entities (e.g., "Truth", "Goodness", "Beauty")
+4. **Theoretical vocabulary** - Discipline-specific jargon (e.g., "historical materialism")
 
 ### NLP Concepts
 

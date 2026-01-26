@@ -75,7 +75,6 @@ concept-mapper rarities output/corpus/corpus.json --top-n 10
 
 ## Design Notes
 
-- **No Heideggerian language in examples**: The examples/ directory uses critical theory instead to avoid overusing one philosopher
-- **Diverse traditions**: Samples cover analytic, continental, political, and philosophy of mind
+- **Diverse traditions**: Samples include continental & analytic, philosophy of mind & society.
 - **Test-driven**: Each sample has expected terms for validation
 - **Realistic vs. Synthetic**: philosopher_1920_cc.txt is real text; others are constructed for testing specific terms

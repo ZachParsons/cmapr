@@ -772,9 +772,7 @@ class TestWordNetNeologisms:
     def test_proper_noun_filtering(self):
         """Test that proper nouns can be filtered out."""
         # Create document with proper noun
-        doc = Document(
-            text="Heidegger Heidegger philosophy neologism neologism", metadata={}
-        )
+        doc = Document(text="Kant KAnt philosophy neologism neologism", metadata={})
         docs = [preprocess(doc)]
 
         try:
@@ -842,9 +840,7 @@ class TestCapitalizedTechnicalTerms:
 
     def test_proper_noun_exclusion(self):
         """Test that proper nouns (NNP tags) can be excluded with flag."""
-        doc = Document(
-            text="Heidegger and Kant discussed Being and Being again.", metadata={}
-        )
+        doc = Document(text="Kant discussed Being and Being again.", metadata={})
         docs = [preprocess(doc)]
 
         # Without proper noun filtering - all capitalized terms included
@@ -1534,7 +1530,7 @@ class TestCompoundTerms:
     def docs_with_compounds(self):
         """Documents with compound terms."""
         text = """
-        Being-in-the-world is a key concept in Heidegger's philosophy.
+        The Thing-in-itself is a key concept in Kant's philosophy.
         The phenomenological reduction involves bracketing natural attitude.
         Intentional consciousness exhibits directedness toward objects.
         """
@@ -1546,7 +1542,7 @@ class TestCompoundTerms:
         compounds = get_compound_terms(docs_with_compounds, min_freq=1)
 
         # Should find hyphenated philosophical terms
-        assert "Being-in-the-world" in compounds or "being-in-the-world" in compounds
+        assert "Thing-in-itself" in compounds or "thing-in-itself" in compounds
 
     def test_extract_noun_phrases(self, docs_with_compounds):
         """Test extraction of noun phrases."""

@@ -630,9 +630,8 @@ def get_capitalized_technical_terms(
     Identify capitalized terms that may indicate reified philosophical abstractions.
 
     Philosophers often capitalize abstract concepts to signal technical usage:
-    - Hegel: "Being", "Concept", "Spirit", "Absolute"
-    - Heidegger: "Being", "Dasein"
-    - Lacan: "Other", "Real", "Symbolic"
+    - Kant: "Theory", "Practice", "Judgment"
+    - Hegel: "Logic", "Nature", "Spirit"
 
     Note: POS taggers often misclassify capitalized philosophical terms as proper
     nouns. Setting exclude_proper_nouns=True will filter both person names AND
