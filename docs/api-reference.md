@@ -1,790 +1,1597 @@
-# Concept Mapper: API Reference
+# Concept Mapper: Usage Guide
 
-Complete reference for the Concept Mapper Python API.
+Practical examples demonstrating the functionality of each completed phase.
 
-## Table of Contents
+## Prerequisites
 
-- [Corpus & Preprocessing](#corpus--preprocessing)
-  - [Loading Documents](#loading-documents)
-  - [Preprocessing Pipeline](#preprocessing-pipeline)
-  - [Data Models](#data-models)
-- [Analysis](#analysis)
-  - [Frequency Analysis](#frequency-analysis)
-  - [Rarity Detection](#rarity-detection)
-  - [Co-occurrence Analysis](#co-occurrence-analysis)
-  - [Relation Extraction](#relation-extraction)
-- [Term Management](#term-management)
-- [Search & Concordance](#search--concordance)
-- [Graph Construction](#graph-construction)
-- [Export & Visualization](#export--visualization)
+```bash
+# Install package with all dependencies
+uv pip install -e .
+```
 
 ---
 
-## Corpus & Preprocessing
+## Phase 0: Project Setup
 
-### Loading Documents
+**What it enables:** Basic project infrastructure, storage, and test data.
 
-#### `concept_mapper.corpus.loader`
-
-Load documents from files and directories.
+### Example: Verify Installation
 
 ```python
-from concept_mapper.corpus.loader import load_file, load_directory
+from concept_mapper.corpus.models import Document, Corpus
+from pathlib import Path
 
-# Load single file
-doc = load_file("path/to/document.txt")
-
-# Load directory
-docs = load_directory("path/to/corpus/", pattern="*.txt")
+# Check that sample corpus exists
+sample_dir = Path("data/sample")
+files = list(sample_dir.glob("*.txt"))
+print(f"Found {len(files)} sample documents")
 ```
 
-**Functions:**
+**Expected output:**
+```
+Found 5 sample documents
+  - hegel_phenomenology_excerpt.txt
+  - philosopher_1920_cc.txt
+  - test_philosophical_terms.txt
+  - ...
+```
 
-- **`load_file(path: Path) -> Document`**
-  Load a single text file.
-  - `path`: Path to text file
-  - Returns: `Document` object with text and metadata
+---
 
-- **`load_directory(path: Path, pattern: str = "*.txt") -> List[Document]`**
-  Load all matching files from a directory.
-  - `path`: Directory path
-  - `pattern`: Glob pattern for file matching
-  - Returns: List of `Document` objects
+## Phase 1: Corpus Preprocessing
 
-### Preprocessing Pipeline
+**What it enables:** Load and preprocess text documents (tokenization, POS tagging, lemmatization).
 
-#### `concept_mapper.preprocessing.pipeline`
-
-Unified preprocessing pipeline.
+### Example: Process a Text File
 
 ```python
+from concept_mapper.corpus.loader import load_file
 from concept_mapper.preprocessing.pipeline import preprocess
 
-processed = preprocess(document)
+# Load a document
+doc = load_file("data/sample/philosopher_1920_cc.txt")
+print(f"Loaded: {doc.metadata.get('title', 'untitled')}")
+print(f"Length: {len(doc.text)} characters\n")
+
+# Preprocess it
+processed = preprocess(doc)
+
+# Inspect results
+print(f"Sentences: {processed.num_sentences}")
+print(f"Tokens: {processed.num_tokens}\n")
+
+# View first sentence with POS tags
+print("First sentence:")
+print(f"  Text: {processed.sentences[0]}\n")
+print("  Tokens with POS tags:")
+for token, pos in processed.pos_tags[:10]:  # First 10 tokens
+    print(f"    {token:15} {pos}")
 ```
 
-**Functions:**
+**Expected output:**
+```
+Loaded: History and Class Consciousness
+Length: 93284 characters
 
-- **`preprocess(document: Document) -> ProcessedDocument`**
-  Run full preprocessing pipeline: tokenization → POS tagging → lemmatization.
-  - `document`: Input Document object
-  - Returns: `ProcessedDocument` with linguistic annotations
+Sentences: 347
+Tokens: 19234
 
-- **`preprocess_corpus(documents: List[Document]) -> List[ProcessedDocument]`**
-  Preprocess multiple documents.
-  - `documents`: List of Document objects
-  - Returns: List of ProcessedDocument objects
+First sentence:
+  Text: The historical knowledge of the proletariat...
 
-### Data Models
+  Tokens with POS tags:
+    The             DT
+    historical      JJ
+    knowledge       NN
+    of              IN
+    the             DT
+    proletariat     NN
+    ...
+```
 
-#### `concept_mapper.corpus.models`
-
-Core data structures for documents.
+### Example: Lemmatization
 
 ```python
-from concept_mapper.corpus.models import Document, ProcessedDocument
+from concept_mapper.preprocessing.lemmatize import lemmatize_tagged
 
-# Create a document
-doc = Document(
-    text="Your text here",
-    metadata={"title": "Document Title", "author": "Author Name"}
-)
+# Get lemmas for the first sentence
+first_sent_tokens = processed.pos_tags[:20]
+lemmas = lemmatize_tagged(first_sent_tokens)
 
-# ProcessedDocument attributes
-processed.raw_text        # Original text
-processed.sentences       # List of sentence strings
-processed.tokens          # List of word tokens
-processed.lemmas          # List of lemmatized words
-processed.pos_tags        # List of (word, POS) tuples
-processed.metadata        # Metadata dict
+print("Word → Lemma:")
+for (word, pos), lemma in zip(first_sent_tokens, lemmas):
+    if word.lower() != lemma:  # Only show where lemma differs
+        print(f"  {word:15} → {lemma}")
 ```
 
-**Classes:**
-
-- **`Document`**
-  Raw text document with metadata.
-  - `text: str` - Document text
-  - `metadata: Dict[str, Any]` - Metadata (title, author, date, etc.)
-
-- **`ProcessedDocument`**
-  Preprocessed document with linguistic annotations.
-  - `raw_text: str` - Original text
-  - `sentences: List[str]` - Sentence-segmented text
-  - `tokens: List[str]` - Word tokens
-  - `lemmas: List[str]` - Lemmatized words
-  - `pos_tags: List[Tuple[str, str]]` - POS-tagged tokens
-  - `metadata: Dict[str, Any]` - Metadata
+**Expected output:**
+```
+Word → Lemma:
+  begins          → begin
+  developing      → develop
+  consciousness   → consciousness
+```
 
 ---
 
-## Analysis
+## Phase 2: Frequency Analysis & TF-IDF
 
-### Frequency Analysis
+**What it enables:** Analyze term frequencies, compare to reference corpus, compute TF-IDF scores.
 
-#### `concept_mapper.analysis.frequency`
-
-Word frequency distributions.
+### Example: Word Frequency Distribution
 
 ```python
-from concept_mapper.analysis.frequency import (
-    word_frequencies,
-    corpus_frequencies,
-    document_frequencies
-)
+from concept_mapper.corpus.loader import load_directory
+from concept_mapper.preprocessing.pipeline import preprocess_corpus
+from concept_mapper.analysis.frequency import corpus_frequencies
 
-# Single document frequencies
-freq = word_frequencies(processed_doc, use_lemmas=True)
+# Load and preprocess corpus
+corpus = load_directory("data/sample")
+docs = preprocess_corpus(corpus.documents)
 
-# Corpus-wide frequencies
-corpus_freq = corpus_frequencies(processed_docs, use_lemmas=True)
+# Get word frequencies (lemmatized)
+freqs = corpus_frequencies(docs, use_lemmas=True)
 
-# Document frequencies (in how many docs does term appear?)
-doc_freq = document_frequencies(processed_docs)
+# Top 20 most common words
+print("Top 20 most common words:")
+for word, count in freqs.most_common(20): print(f"  {word:20} {count:5}")
 ```
 
-**Functions:**
+**Expected output:**
+```
+Top 20 most common words:
+  the                  1247
+  of                    856
+  be                    623
+  to                    589
+  and                   512
+  in                    487
+  abstraction           156
+  consciousness         142
+  ...
+```
 
-- **`word_frequencies(doc: ProcessedDocument, use_lemmas: bool = True) -> Counter`**
-  Count word frequencies in a single document.
-
-- **`corpus_frequencies(docs: List[ProcessedDocument], use_lemmas: bool = True) -> Counter`**
-  Aggregate word frequencies across all documents.
-
-- **`document_frequencies(docs: List[ProcessedDocument]) -> Counter`**
-  Count in how many documents each term appears.
-
-- **`pos_filtered_frequencies(doc: ProcessedDocument, pos_tags: Set[str]) -> Counter`**
-  Count only words with specific POS tags.
-
-### Rarity Detection
-
-#### `concept_mapper.analysis.rarity`
-
-Detect philosophical terms through statistical rarity analysis.
+### Example: TF-IDF Scores
 
 ```python
-from concept_mapper.analysis.rarity import PhilosophicalTermScorer
+from concept_mapper.analysis.tfidf import corpus_tfidf_scores
+
+# Compute TF-IDF across corpus
+tfidf_scores = corpus_tfidf_scores(docs)
+
+# Top distinctive terms
+print("\nTop 10 terms by TF-IDF:")
+sorted_terms = sorted(tfidf_scores.items(), key=lambda x: x[1], reverse=True)
+for term, score in sorted_terms[:10]: print(f"  {term:20} {score:.4f}")
+```
+
+**Expected output:**
+```
+Top 10 terms by TF-IDF:
+  abstraction          0.0156
+  proletariat          0.0089
+  bourgeoisie          0.0067
+  commodity            0.0054
+  ...
+```
+
+### Example: Compare to Brown Corpus
+
+```python
 from concept_mapper.analysis.reference import load_reference_corpus
+from concept_mapper.analysis.rarity import compare_to_reference
 
 # Load reference corpus
 reference = load_reference_corpus()
+print(f"Reference corpus size: {sum(reference.values()):,} words\n")
 
-# Create scorer
-scorer = PhilosophicalTermScorer(
-    docs=processed_docs,
-    reference_corpus=reference,
-    use_lemmas=True
-)
+# Compare author's usage to general English
+comparison = compare_to_reference(docs, reference)
 
-# Score all terms
-candidates = scorer.score_all(min_score=2.0, top_n=50)
-
-# Get high-confidence terms (multiple signals agree)
-high_conf = scorer.get_high_confidence_terms(min_signals=3)
+# Terms overused compared to Brown corpus
+print("Terms highly distinctive vs. general English:")
+sorted_comp = sorted(comparison.items(), key=lambda x: x[1], reverse=True)
+for term, ratio in sorted_comp[:15]:
+    print(f"  {term:20} {ratio:8.2f}x more common")
 ```
 
-**Class: `PhilosophicalTermScorer`**
-
-Multi-method term detection with weighted scoring.
-
-**Methods:**
-
-- **`score_term(term: str) -> Dict[str, float]`**
-  Score a single term with breakdown of all components.
-  - Returns: Dictionary with `total_score` and component scores
-
-- **`score_all(min_score: float = 0, top_n: Optional[int] = None) -> List[Tuple[str, float, Dict]]`**
-  Score all terms in corpus.
-  - `min_score`: Minimum score threshold
-  - `top_n`: Maximum number of results
-  - Returns: List of (term, score, components) tuples, sorted by score
-
-- **`get_high_confidence_terms(min_signals: int = 2) -> Set[str]`**
-  Get terms detected by multiple methods.
-  - `min_signals`: Minimum number of detection methods that must agree
-  - Returns: Set of high-confidence terms
-
-**Component Functions:**
-
-- **`compare_to_reference(docs, reference_corpus, use_lemmas=True) -> Dict[str, float]`**
-  Calculate relative frequency ratios.
-
-- **`tfidf_vs_reference(docs, reference_corpus, use_lemmas=True) -> Dict[str, float]`**
-  Calculate TF-IDF scores against reference.
-
-- **`get_neologism_candidates(docs, use_lemmas=True) -> Set[str]`**
-  Detect terms not in WordNet dictionary.
-
-- **`get_definitional_contexts(docs) -> List[Tuple]`**
-  Find sentences where terms are explicitly defined.
-
-### Co-occurrence Analysis
-
-#### `concept_mapper.analysis.cooccurrence`
-
-Term co-occurrence and association strength.
-
-```python
-from concept_mapper.analysis.cooccurrence import (
-    cooccurs_in_sentence,
-    pmi,
-    build_cooccurrence_matrix
-)
-from concept_mapper.terms.models import TermList
-
-# Find terms co-occurring with target
-cooccur = cooccurs_in_sentence("consciousness", docs)
-
-# Calculate PMI (Pointwise Mutual Information)
-association = pmi("consciousness", "intentionality", docs)
-
-# Build full co-occurrence matrix
-term_list = TermList([{"term": "being"}, {"term": "time"}, {"term": "dasein"}])
-matrix = build_cooccurrence_matrix(
-    term_list,
-    docs,
-    method="pmi",      # or "count", "llr"
-    window="sentence"  # or "n_sentences"
-)
+**Expected output:**
 ```
+Reference corpus size: 1,161,192 words
 
-**Functions:**
-
-- **`cooccurs_in_sentence(term: str, docs: List[ProcessedDocument]) -> Counter`**
-  Count terms appearing in same sentences.
-
-- **`cooccurs_within_n(term: str, docs: List[ProcessedDocument], n_sentences: int = 3) -> Counter`**
-  Count terms within N-sentence window.
-
-- **`pmi(term1: str, term2: str, docs: List[ProcessedDocument]) -> float`**
-  Calculate Pointwise Mutual Information (association strength).
-  - Positive values = terms co-occur more than expected by chance
-  - ~0 = independent
-  - Negative = avoid each other
-
-- **`log_likelihood_ratio(term1: str, term2: str, docs: List[ProcessedDocument]) -> float`**
-  Calculate G² statistic for co-occurrence significance.
-  - >3.84 = significant at p<0.05
-  - >6.63 = significant at p<0.01
-  - >10.83 = significant at p<0.001
-
-- **`build_cooccurrence_matrix(term_list: TermList, docs: List[ProcessedDocument], method: str = "pmi", window: str = "sentence") -> Dict`**
-  Build symmetric co-occurrence matrix.
-  - `method`: "count", "pmi", or "llr"
-  - `window`: "sentence" or "n_sentences"
-  - Returns: Nested dict `{term1: {term2: score}}`
-
-### Relation Extraction
-
-#### `concept_mapper.analysis.relations`
-
-Extract grammatical relationships between terms.
-
-```python
-from concept_mapper.analysis.relations import (
-    extract_svo,
-    extract_copular,
-    extract_prepositional,
-    get_relations
-)
-
-# Extract all relation types for a term
-relations = get_relations("consciousness", docs, types=["svo", "copular", "prep"])
-
-for rel in relations:
-    print(f"{rel.source} --[{rel.relation_type}]--> {rel.target}")
-    print(f"  Evidence: {rel.evidence[0]}")
+Terms highly distinctive vs. general English:
+  abstraction            2847.56x more common
+  proletariat             892.34x more common
+  bourgeoisie             654.21x more common
+  commodity               423.12x more common
+  ...
 ```
-
-**Classes:**
-
-- **`Relation`**
-  Aggregated relation between two concepts.
-  - `source: str` - Source term
-  - `relation_type: str` - Type of relation (svo, copular, prep)
-  - `target: str` - Target term
-  - `evidence: List[str]` - Example sentences
-  - `metadata: Dict` - Additional info (verb, preposition, etc.)
-
-**Functions:**
-
-- **`extract_svo(sentence: str, doc_id: str = "") -> List[SVOTriple]`**
-  Extract Subject-Verb-Object triples.
-
-- **`extract_copular(term: str, docs: List[ProcessedDocument]) -> List[CopularRelation]`**
-  Extract copular definitions (X is Y).
-
-- **`extract_prepositional(term: str, docs: List[ProcessedDocument]) -> List[PrepRelation]`**
-  Extract prepositional relations (X of Y, X through Y, etc.).
-
-- **`get_relations(term: str, docs: List[ProcessedDocument], types: List[str] = None, case_sensitive: bool = False) -> List[Relation]`**
-  Extract and aggregate all relations for a term.
-  - `types`: List of relation types to extract (default: all)
-  - Returns: List of Relation objects with evidence aggregation
 
 ---
 
-## Term Management
+## Phase 3: Philosophical Term Detection
 
-### `concept_mapper.terms.models`
+**What it enables:** Automatically identify author-specific conceptual vocabulary using multiple detection methods.
 
-Data structures for term lists.
+### Example: Hybrid Philosophical Term Scorer
 
 ```python
-from concept_mapper.terms.models import TermEntry, TermList
+from concept_mapper.analysis.rarity import PhilosophicalTermScorer
 
-# Create term entry
-entry = TermEntry(
+# Initialize scorer with multiple detection methods
+scorer = PhilosophicalTermScorer(docs=docs, reference_corpus=reference, use_lemmas=True, min_author_freq=3, weights={'ratio': 1.0, 'tfidf': 1.0, 'neologism': 0.5, 'definitional': 0.3, 'capitalized': 0.2})
+
+# Score all terms
+results = scorer.score_all(min_score=1.0, top_n=20)
+
+print("Top 20 philosophical term candidates:")
+print(f"{'Term':<25} {'Score':>8} {'Signals':>8}")
+print("-" * 45)
+
+for term, total_score, components in results:
+    # Count how many signals detected this term
+    signal_count = sum(1 for k, v in components.items()
+                      if k != 'raw_total' and v > 0)
+    print(f"{term:<25} {total_score:8.2f} {signal_count:8} signals")
+```
+
+**Expected output:**
+```
+Top 20 philosophical term candidates:
+Term                      Score  Signals
+---------------------------------------------
+abstraction               4.87   5 signals
+proletariat               3.45   4 signals
+bourgeoisie               3.21   4 signals
+commodification           2.98   3 signals
+fetishism                 2.76   3 signals
+praxis                    2.54   4 signals
+...
+```
+
+### Example: High-Confidence Terms (Multiple Signal Agreement)
+
+```python
+# Get terms detected by multiple methods (at least 3 detection methods agree)
+high_confidence = scorer.get_high_confidence_terms(min_signals=3, min_score=1.5)
+
+print("\nHigh-confidence philosophical terms (3+ signals):")
+for term, total_score, components in high_confidence:
+    print(f"\n{term} (score: {total_score:.2f})")
+    print("  Detected by:")
+    if components['ratio'] > 0:
+        print(f"    ✓ Corpus comparison (ratio: {components['ratio']:.2f})")
+    if components['tfidf'] > 0:
+        print(f"    ✓ TF-IDF (score: {components['tfidf']:.4f})")
+    if components['neologism'] > 0:
+        print(f"    ✓ Neologism (not in WordNet)")
+    if components['definitional'] > 0:
+        print(f"    ✓ Definitional context ({components['definitional']:.0f} occurrences)")
+    if components['capitalized'] > 0:
+        print(f"    ✓ Capitalized term ({components['capitalized']:.0f} occurrences)")
+```
+
+**Expected output:**
+```
+High-confidence philosophical terms (3+ signals):
+
+abstraction (score: 4.87)
+  Detected by:
+    ✓ Corpus comparison (ratio: 2847.56)
+    ✓ TF-IDF (score: 0.0156)
+    ✓ Neologism (not in WordNet)
+    ✓ Definitional context (12 occurrences)
+    ✓ Capitalized term (8 occurrences)
+
+proletariat (score: 3.45)
+  Detected by:
+    ✓ Corpus comparison (ratio: 892.34)
+    ✓ TF-IDF (score: 0.0089)
+    ✓ Definitional context (7 occurrences)
+    ✓ Capitalized term (15 occurrences)
+...
+```
+
+---
+
+## Phase 4: Term List Management
+
+**What it enables:** Curate and manage a list of philosophical terms with metadata, import/export in multiple formats.
+
+### Example: Create and Populate Term List
+
+```python
+from concept_mapper.terms.models import TermList, TermEntry
+from concept_mapper.terms.suggester import suggest_terms_from_analysis
+
+# Auto-populate from Phase 3 analysis
+suggested_terms = suggest_terms_from_analysis(docs=docs, reference_corpus=reference, min_score=2.0, top_n=30, max_examples=3)
+
+print(f"Auto-suggested {len(suggested_terms.list_terms())} terms\n")
+
+# Inspect suggested terms
+for entry in suggested_terms.list_terms()[:5]:
+    print(f"\nTerm: {entry.term}")
+    print(f"  POS: {entry.pos}")
+    if entry.examples:
+        print(f"  Examples:")
+        for ex in entry.examples[:2]:
+            print(f"    - {ex[:80]}...")
+```
+
+**Expected output:**
+```
+Auto-suggested 30 terms
+
+Term: abstraction
+  POS: NN
+  Examples:
+    - The historical knowledge of the proletariat begins with abstraction...
+    - Abstraction transforms social relations into things...
+
+Term: proletariat
+  POS: NN
+  Examples:
+    - The consciousness of the proletariat...
+    - Only the proletariat can overcome abstraction...
+...
+```
+
+### Example: Manual Curation
+
+```python
+# Add custom terms with definitions
+term_list = TermList()
+
+term_list.add(TermEntry(
     term="Geist",
     lemma="geist",
     pos="NN",
-    definition="Spirit; self-developing rational principle (Hegel)",
-    examples=["Geist actualizes itself through history."],
-    notes="Central concept in Phenomenology of Spirit"
-)
+    definition="Spirit; the self-developing rational principle in Hegel's philosophy",
+    notes="Central concept in Phenomenology of Spirit",
+    examples=[
+        "Geist is the process of becoming itself.",
+        "Absolute Geist reconciles subject and substance."
+    ]
+))
 
-# Create term list
-term_list = TermList([
-    {"term": "dasein", "pos": "NN"},
-    {"term": "being", "pos": "NN"},
-    {"term": "temporality", "pos": "NN"}
-])
+term_list.add(TermEntry(
+    term="praxis",
+    lemma="praxis",
+    pos="NN",
+    definition="Practical action informed by theory",
+    notes="Key Thinkerist concept"
+))
 
-# Access terms
-entry = term_list.get("dasein")
-all_terms = term_list.list_terms()
-```
+# Save to file
+term_list.save("output/philosophical_terms.json")
+print(f"Saved {len(term_list.list_terms())} terms to file")
 
-**Classes:**
-
-- **`TermEntry`**
-  Single philosophical term with metadata.
-  - `term: str` - The term itself
-  - `lemma: str` - Lemmatized form
-  - `pos: str` - Part of speech tag
-  - `definition: str` - Definition or description
-  - `notes: str` - Additional notes
-  - `examples: List[str]` - Example sentences
-  - `metadata: Dict` - Custom metadata
-
-- **`TermList`**
-  Collection of terms with CRUD operations.
-
-**TermList Methods:**
-
-- **`add(entry: TermEntry)`** - Add a term
-- **`remove(term: str)`** - Remove a term
-- **`update(term: str, **kwargs)`** - Update term fields
-- **`get(term: str) -> Optional[TermEntry]`** - Retrieve a term
-- **`list_terms() -> List[TermEntry]`** - Get all terms (sorted)
-- **`__contains__(term: str) -> bool`** - Check if term exists
-- **`__len__() -> int`** - Number of terms
-
-### `concept_mapper.terms.manager`
-
-Import/export and bulk operations.
-
-```python
+# Export to CSV for spreadsheet editing
 from concept_mapper.terms.manager import TermManager
-
 manager = TermManager(term_list)
+manager.export_to_csv("output/terms.csv")
+print("Also exported to CSV for editing in Excel")
+```
 
-# Export
-manager.export_to_json("terms.json")
-manager.export_to_csv("terms.csv")
-manager.export_to_txt("terms.txt")
+### Example: Import and Merge
 
-# Import
-manager.import_from_json("terms.json")
-manager.import_from_csv("terms.csv")
+```python
+# Load saved term list
+loaded_terms = TermList.load("output/philosophical_terms.json")
+print(f"Loaded {len(loaded_terms.list_terms())} terms")
 
-# Operations
+# Merge with suggested terms (without overwriting)
+merged = loaded_terms.merge(suggested_terms, overwrite=False)
+print(f"After merge: {len(merged.list_terms())} terms")
+
+# Get statistics
+manager = TermManager(merged)
 stats = manager.get_statistics()
-nouns = manager.filter_by_pos({"NN", "NNS"})
+print(f"\nTerm list statistics:")
+print(f"  Total terms: {stats['total_terms']}")
+print(f"  With definitions: {stats['with_definitions']}")
+print(f"  With examples: {stats['with_examples']}")
+print(f"  POS distribution: {stats['pos_distribution']}")
 ```
 
-**Methods:**
+---
 
-- **`export_to_json(path: Path, indent: int = 2)`** - Export to JSON
-- **`import_from_json(path: Path)`** - Import from JSON
-- **`export_to_csv(path: Path)`** - Export to CSV
-- **`import_from_csv(path: Path)`** - Import from CSV
-- **`export_to_txt(path: Path)`** - Export term names to text file
-- **`filter_by_pos(tags: Set[str]) -> TermList`** - Filter by POS tags
-- **`get_statistics() -> Dict`** - Get term list statistics
+## Phase 5: Search & Concordance
 
-### `concept_mapper.terms.suggester`
+**What it enables:** Find and view terms in context with various display formats.
 
-Auto-populate term lists from analysis.
+### Example: Basic Search
 
 ```python
-from concept_mapper.terms.suggester import suggest_terms_from_analysis
+from concept_mapper.search import find_sentences
+
+# Find all sentences containing a term
+matches = find_sentences("abstraction", docs)
+
+print(f"Found {len(matches)} sentences containing 'abstraction'\n")
+
+# Display first 3 matches
+for i, match in enumerate(matches[:3], 1):
+    print(f"{i}. [{match.doc_id}:{match.sent_index}]")
+    print(f"   {match.sentence}\n")
+```
+
+**Expected output:**
+```
+Found 23 sentences containing 'abstraction'
+
+1. [philosopher_1920_cc.txt:45]
+   The historical knowledge of the proletariat begins with abstraction.
+
+2. [philosopher_1920_cc.txt:78]
+   Abstraction transforms social relations into thing-like structures.
+
+3. [philosopher_1920_cc.txt:112]
+   Only by understanding abstraction can consciousness overcome it.
+```
+
+### Example: KWIC Concordance Display
+
+```python
+from concept_mapper.search import concordance, format_kwic_lines
+
+# Generate KWIC display (aligned on keyword)
+kwic_lines = concordance("abstraction", docs, width=40)
+
+print("KWIC Concordance for 'abstraction':")
+print(format_kwic_lines(kwic_lines[:10], width=40))
+```
+
+**Expected output:**
+```
+KWIC Concordance for 'abstraction':
+    historical knowledge begins with [abstraction] as the fundamental category of
+              social relations into [abstraction] transforms them into thing-like
+     consciousness can overcome this [abstraction] by recognizing its own role in
+...
+```
+
+### Example: Context Windows
+
+```python
+from concept_mapper.search import get_context, format_context_windows
+
+# Get sentences before and after each match
+windows = get_context("abstraction", docs, n_sentences=2)
+
+print("Context windows (2 sentences before/after):\n")
+print(format_context_windows(windows[:2], separator="---"))
+```
+
+**Expected output:**
+```
+Context windows (2 sentences before/after):
+
+[philosopher_1920_cc.txt:45]
+
+  The proletariat must understand its historical position.
+  This understanding requires grasping fundamental categories.
+> The historical knowledge begins with abstraction.
+  Abstraction is the transformation of social relations.
+  These relations appear as independent things.
+---
+
+[philosopher_1920_cc.txt:78]
+...
+```
+
+### Example: Term Dispersion Analysis
+
+```python
+from concept_mapper.search import get_dispersion_summary, dispersion_plot_data
+
+# Analyze where term appears across documents
+summary = get_dispersion_summary("abstraction", docs)
+
+print(f"Dispersion analysis for '{summary['term']}':")
+print(f"  Appears in: {summary['docs_with_term']}/{summary['total_docs']} documents ({summary['coverage']:.1f}%)")
+print(f"  Total occurrences: {summary['total_occurrences']}")
+print(f"  Average per document: {summary['avg_occurrences_per_doc']:.1f}")
+print("\nDocument distribution:")
+for doc_id, positions in summary['positions'].items():
+    print(f"  {doc_id}: {len(positions)} occurrences at sentences {positions[:5]}...")
+```
+
+**Expected output:**
+```
+Dispersion analysis for 'abstraction':
+  Appears in: 3/5 documents (60.0%)
+  Total occurrences: 23
+  Average per document: 7.7
+
+Document distribution:
+  philosopher_1920_cc.txt: 18 occurrences at sentences [45, 78, 112, 156, 203]...
+  hegel_excerpt.txt: 3 occurrences at sentences [12, 34, 67]...
+  test_philosophical_terms.txt: 2 occurrences at sentences [5, 8]...
+```
+
+---
+
+## Phase 6: Co-occurrence Analysis
+
+**What it enables:** Discover which terms appear together and measure association strength.
+
+### Example: Sentence-level Co-occurrence
+
+```python
+from concept_mapper.analysis import cooccurs_in_sentence
+
+# Find terms that co-occur with "abstraction"
+cooccurs = cooccurs_in_sentence("abstraction", docs)
+
+print("Top 15 terms co-occurring with 'abstraction':")
+for term, count in cooccurs.most_common(15):
+    print(f"  {term:20} {count:3} times")
+```
+
+**Expected output:**
+```
+Top 15 terms co-occurring with 'abstraction':
+  consciousness        12 times
+  social                9 times
+  relations             8 times
+  commodity             7 times
+  proletariat           6 times
+  fetishism             5 times
+  ...
+```
+
+### Example: Statistical Significance (PMI)
+
+```python
+from concept_mapper.analysis import pmi, log_likelihood_ratio
+
+# Measure association between terms
+term1 = "abstraction"
+term2 = "consciousness"
+
+pmi_score = pmi(term1, term2, docs)
+llr_score = log_likelihood_ratio(term1, term2, docs)
+
+print(f"Association between '{term1}' and '{term2}':")
+print(f"  PMI score: {pmi_score:.3f}", end="")
+if pmi_score > 0:
+    print(" (positive association)")
+elif pmi_score < 0:
+    print(" (negative association)")
+else:
+    print(" (independent)")
+
+print(f"  LLR (G²): {llr_score:.2f}", end="")
+if llr_score > 10.83:
+    print(" (highly significant, p < 0.001)")
+elif llr_score > 6.63:
+    print(" (significant, p < 0.01)")
+elif llr_score > 3.84:
+    print(" (significant, p < 0.05)")
+else:
+    print(" (not significant)")
+```
+
+**Expected output:**
+```
+Association between 'abstraction' and 'consciousness':
+  PMI score: 2.456 (positive association)
+  LLR (G²): 15.67 (highly significant, p < 0.001)
+```
+
+### Example: Co-occurrence Matrix
+
+```python
+from concept_mapper.analysis import (
+    build_cooccurrence_matrix,
+    save_cooccurrence_matrix,
+    get_top_cooccurrences
+)
+
+# Build matrix for curated terms (method: "pmi", "count", or "llr")
+matrix = build_cooccurrence_matrix(merged, docs, method="pmi", window="sentence")
+
+print(f"Built {len(matrix)}×{len(matrix)} co-occurrence matrix")
+
+# Save to CSV
+save_cooccurrence_matrix(matrix, "output/cooccurrence_pmi.csv")
+print("Saved to output/cooccurrence_pmi.csv (open in Excel)\n")
+
+# Quick exploration: top associations for a term
+top = get_top_cooccurrences("abstraction", docs, n=10, method="pmi")
+print("Top 10 terms associated with 'abstraction' (by PMI):")
+for term, score in top:
+    print(f"  {term:20} {score:6.3f}")
+```
+
+**Expected output:**
+```
+Built 30×30 co-occurrence matrix
+Saved to output/cooccurrence_pmi.csv (open in Excel)
+
+Top 10 terms associated with 'abstraction' (by PMI):
+  fetishism            3.245
+  commodity            2.987
+  consciousness        2.456
+  separation           2.234
+  ...
+```
+
+---
+
+## Phase 7: Relation Extraction
+
+**What it enables:** Extract grammatical relationships (SVO, copular definitions, prepositional phrases).
+
+### Example: Subject-Verb-Object Triples
+
+```python
+from concept_mapper.analysis import extract_svo_for_term
+
+# Find all SVO triples involving "consciousness"
+triples = extract_svo_for_term("consciousness", docs)
+
+print(f"Found {len(triples)} SVO triples involving 'consciousness'\n")
+
+print("Sample SVO triples:")
+for triple in triples[:5]:
+    print(f"  {triple}")
+    print(f"    From: {triple.sentence[:80]}...\n")
+```
+
+**Expected output:**
+```
+Found 8 SVO triples involving 'consciousness'
+
+Sample SVO triples:
+  (consciousness, involves, intentionality)
+    From: Consciousness involves intentionality in all its forms...
+
+  (proletariat, develops, consciousness)
+    From: The proletariat develops consciousness through struggle...
+
+  (consciousness, overcomes, abstraction)
+    From: Only consciousness can overcome abstraction...
+```
+
+### Example: Copular Definitions (X is Y)
+
+```python
+from concept_mapper.analysis import extract_copular
+
+# Find definitional relationships
+definitions = extract_copular("being", docs)
+
+print("Definitional relations for 'being':")
+for defn in definitions[:5]:
+    print(f"\n  {defn.subject} {defn.copula} {defn.complement}")
+    print(f"    Source: {defn.sentence[:80]}...")
+```
+
+**Expected output:**
+```
+Definitional relations for 'being':
+
+  Being is presence
+    Source: Being is presence in time and nothing else...
+
+  being was conceived as
+    Source: In the tradition, being was conceived as substance...
+
+  Being becomes actual
+    Source: Being becomes actual through consciousness...
+```
+
+### Example: Prepositional Relations
+
+```python
+from concept_mapper.analysis import extract_prepositional
+
+# Find prepositional phrases
+prep_relations = extract_prepositional("consciousness", docs)
+
+print("Prepositional relations for 'consciousness':")
+for rel in prep_relations[:5]:
+    print(f"  {rel.head} {rel.prep} {rel.object}")
+```
+
+**Expected output:**
+```
+Prepositional relations for 'consciousness':
+  consciousness of objects
+  consciousness in time
+  consciousness of self
+  consciousness through praxis
+  consciousness from abstraction
+```
+
+### Example: Aggregated Relations with Evidence
+
+```python
+from concept_mapper.analysis import get_relations
+
+# Get all relations for a term with evidence sentences
+relations = get_relations("abstraction", docs, types=["copular", "prep"])
+
+print(f"Found {len(relations)} unique relations for 'abstraction'\n")
+
+# Show relations with evidence
+for rel in relations[:3]:
+    print(f"\n{rel}")
+    print(f"  Type: {rel.relation_type}")
+    print(f"  Evidence ({len(rel.evidence)} sentences):")
+    for evidence in rel.evidence[:2]:
+        print(f"    - {evidence[:80]}...")
+```
+
+**Expected output:**
+```
+Found 7 unique relations for 'abstraction'
+
+abstraction --[copular]--> transformation ({'copula': 'is'})
+  Type: copular
+  Evidence (3 sentences):
+    - Abstraction is the transformation of social relations into things...
+    - What is abstraction? It is the transformation of human activity...
+
+abstraction --[prep]--> consciousness ({'preposition': 'of'})
+  Type: prep
+  Evidence (2 sentences):
+    - The abstraction of consciousness prevents self-awareness...
+    - Through abstraction of its own activity, consciousness becomes...
+```
+
+---
+
+## Complete Workflow Example
+
+Putting it all together to analyze a philosophical text:
+
+```python
+#!/usr/bin/env python3
+"""
+Complete workflow: Analyze a philosophical text to extract key concepts
+and their relationships.
+"""
+
+from concept_mapper.corpus.loader import load_file
+from concept_mapper.preprocessing.pipeline import preprocess
 from concept_mapper.analysis.reference import load_reference_corpus
+from concept_mapper.analysis.rarity import PhilosophicalTermScorer
+from concept_mapper.terms.suggester import suggest_terms_from_analysis
+from concept_mapper.analysis import (
+    get_top_cooccurrences,
+    get_relations
+)
 
+# 1. Load and preprocess
+print("Loading document...")
+doc = load_file("data/sample/philosopher_1920_cc.txt")
+processed = preprocess(doc)
+print(f"✓ Processed {processed.num_sentences} sentences\n")
+
+# 2. Detect philosophical terms
+print("Detecting philosophical terms...")
 reference = load_reference_corpus()
+scorer = PhilosophicalTermScorer([processed], reference)
+candidates = scorer.score_all(min_score=2.0, top_n=10)
+print(f"✓ Found {len(candidates)} term candidates\n")
 
-# Automatically suggest terms
-suggested = suggest_terms_from_analysis(
-    docs=processed_docs,
-    reference=reference,
-    min_score=2.0,
-    top_n=50,
-    max_examples=3  # Include up to 3 example sentences per term
-)
+# 3. Create term list
+print("Top 10 philosophical terms:")
+for term, score, _ in candidates:
+    print(f"  {term:20} (score: {score:.2f})")
+print()
+
+# 4. Analyze relationships for top term
+top_term = candidates[0][0]
+print(f"Analyzing '{top_term}'...\n")
+
+# Co-occurrence
+print("Top associated terms:")
+cooccurs = get_top_cooccurrences(top_term, [processed], n=5, method="pmi")
+for term, pmi in cooccurs:
+    print(f"  {term:20} (PMI: {pmi:.2f})")
+print()
+
+# Relations
+print("Grammatical relations:")
+relations = get_relations(top_term, [processed])
+for rel in relations[:5]:
+    print(f"  {rel.source} --[{rel.relation_type}]--> {rel.target}")
+print()
+
+print("✓ Analysis complete!")
+```
+
+**Run it:**
+```bash
+python workflow_example.py
+```
+
+**Expected output:**
+```
+Loading document...
+✓ Processed 347 sentences
+
+Detecting philosophical terms...
+✓ Found 10 term candidates
+
+Top 10 philosophical terms:
+  abstraction          (score: 4.87)
+  proletariat          (score: 3.45)
+  bourgeoisie          (score: 3.21)
+  commodity            (score: 2.98)
+  fetishism            (score: 2.76)
+  ...
+
+Analyzing 'abstraction'...
+
+Top associated terms:
+  consciousness        (PMI: 2.46)
+  fetishism            (PMI: 3.25)
+  commodity            (PMI: 2.99)
+  separation           (PMI: 2.23)
+  proletariat          (PMI: 1.87)
+
+Grammatical relations:
+  abstraction --[copular]--> transformation
+  consciousness --[svo]--> abstraction
+  abstraction --[prep]--> consciousness
+  proletariat --[svo]--> abstraction
+  abstraction --[copular]--> process
+
+✓ Analysis complete!
 ```
 
 ---
 
-## Search & Concordance
+## Interactive Exploration with IPython
 
-### `concept_mapper.search.find`
+For interactive exploration, use IPython:
 
-Find term occurrences in corpus.
-
-```python
-from concept_mapper.search.find import (
-    find_sentences,
-    find_sentences_any,
-    count_term_occurrences
-)
-
-# Find all sentences containing term
-matches = find_sentences("consciousness", docs, case_sensitive=False)
-
-for match in matches:
-    print(f"[{match.doc_id}] {match.sentence}")
-
-# Find sentences with any of multiple terms
-matches = find_sentences_any(["being", "dasein", "time"], docs)
-
-# Count occurrences
-count = count_term_occurrences("intentionality", docs)
+```bash
+ipython
 ```
 
-**Classes:**
-
-- **`SentenceMatch`**
-  A single match result.
-  - `sentence: str` - Matching sentence
-  - `doc_id: str` - Document identifier
-  - `sent_index: int` - Sentence index in document
-  - `term_positions: List[int]` - Word positions of matches
-
-### `concept_mapper.search.concordance`
-
-KWIC (Key Word In Context) displays.
-
 ```python
-from concept_mapper.search.concordance import concordance
+# Quick setup
+from concept_mapper.corpus.loader import load_directory
+from concept_mapper.preprocessing.pipeline import preprocess_corpus
 
-# Generate KWIC lines
-lines = concordance("consciousness", docs, width=50)
+corpus = load_directory("data/sample")
+docs = preprocess_corpus(corpus)
 
-for line in lines:
-    print(f"{line.left_context:>50} | {line.keyword} | {line.right_context:<50}")
-```
+# Now explore with tab completion
+from concept_mapper.search import *
+from concept_mapper.analysis import *
 
-**Classes:**
+# Find and view term in context
+matches = find_sentences("consciousness", docs)
+windows = get_context("consciousness", docs, n_sentences=2)
+print(windows[0])
 
-- **`KWICLine`**
-  A single concordance line.
-  - `left_context: str` - Text before keyword
-  - `keyword: str` - The search term
-  - `right_context: str` - Text after keyword
-  - `doc_id: str` - Document identifier
+# Measure associations
+pmi("consciousness", "being", docs)
+cooccurs = cooccurs_in_sentence("consciousness", docs)
+cooccurs.most_common(10)
 
-### `concept_mapper.search.context`
-
-Context windows around matches.
-
-```python
-from concept_mapper.search.context import get_context
-
-# Get N sentences before/after each match
-windows = get_context("dasein", docs, n_sentences=2)
-
-for window in windows:
-    for sent in window.before:
-        print(f"    {sent}")
-    print(f">>> {window.match}")
-    for sent in window.after:
-        print(f"    {sent}")
-```
-
-### `concept_mapper.search.dispersion`
-
-Analyze term distribution across corpus.
-
-```python
-from concept_mapper.search.dispersion import dispersion, get_dispersion_summary
-
-# Get positions where term appears
-positions = dispersion("being", docs)
-
-# Get summary statistics
-summary = get_dispersion_summary("being", docs)
-print(f"Appears in {summary['num_docs']} documents")
-print(f"Coverage: {summary['coverage']:.1%}")
+# Extract relations
+relations = get_relations("consciousness", docs)
+for r in relations:
+    print(r)
 ```
 
 ---
 
-## Graph Construction
+## Phase 8: Graph Construction
 
-### `concept_mapper.graph.model`
+Build network graphs from co-occurrence and relation data.
 
-Graph data structure for concept networks.
+### What It Enables
+
+- **Graph Data Structure**: Represent concepts as nodes with relationships as edges
+- **Build from Co-occurrence**: Create graphs from statistical co-occurrence matrices
+- **Build from Relations**: Create graphs from extracted grammatical relations
+- **Graph Operations**: Merge, prune, filter, and extract subgraphs
+- **Graph Metrics**: Compute centrality, detect communities, find paths
+
+### Example: Build Graph from Co-occurrence
 
 ```python
-from concept_mapper.graph import ConceptGraph
+from concept_mapper.analysis.cooccurrence import build_cooccurrence_matrix
+from concept_mapper.graph import graph_from_cooccurrence, centrality
+from concept_mapper.terms.models import TermList
 
-# Create graph
-graph = ConceptGraph(directed=True)
+# Build co-occurrence matrix
+terms = TermList.from_dict({"terms": [{"term": "consciousness", "pos": "NN"}, {"term": "intentionality", "pos": "NN"}, {"term": "being", "pos": "NN"}, {"term": "presence", "pos": "NN"}]})
 
-# Add nodes
-graph.add_node("consciousness", label="Consciousness", frequency=42)
-graph.add_node("intentionality", label="Intentionality", frequency=28)
+matrix = build_cooccurrence_matrix(term_list=terms, docs=docs, method="pmi", window="sentence")  # Use PMI scores as edge weights
 
-# Add edges
-graph.add_edge(
-    "consciousness",
-    "intentionality",
-    weight=0.85,
-    relation_type="copular",
-    evidence=["Consciousness is intentional."]
-)
+# Create graph with threshold
+graph = graph_from_cooccurrence(matrix, threshold=0.5)
 
-# Query
-print(f"Nodes: {graph.node_count()}")
-print(f"Edges: {graph.edge_count()}")
-neighbors = graph.neighbors("consciousness")
+print(graph)
+# ConceptGraph(Undirected, nodes=4, edges=3)
+
+# Check what's connected
+print(graph.nodes())
+# ['consciousness', 'intentionality', 'being', 'presence']
+
+print(graph.edges())
+# [('consciousness', 'intentionality'), ('consciousness', 'being'), ...]
+
+# Get edge weight
+edge = graph.get_edge("consciousness", "intentionality")
+print(f"PMI: {edge['weight']:.2f}")
+# PMI: 0.85
 ```
 
-**Class: `ConceptGraph`**
+### Example: Build Graph from Relations
 
-**Methods:**
+```python
+from concept_mapper.analysis.relations import get_relations
+from concept_mapper.graph import graph_from_relations
 
-- **`add_node(node_id, label=None, frequency=None, pos=None, **attrs)`** - Add a node
-- **`add_edge(source, target, weight=None, relation_type=None, **attrs)`** - Add an edge
-- **`has_node(node_id) -> bool`** - Check if node exists
-- **`has_edge(source, target) -> bool`** - Check if edge exists
-- **`get_node_attrs(node_id) -> Dict`** - Get node attributes
-- **`get_edge_attrs(source, target) -> Dict`** - Get edge attributes
-- **`neighbors(node_id) -> List[str]`** - Get neighboring nodes
-- **`node_count() -> int`** - Number of nodes
-- **`edge_count() -> int`** - Number of edges
+# Extract relations
+relations = get_relations("consciousness", docs, types=["copular", "prep"])
 
-### `concept_mapper.graph.builders`
+# Build directed graph
+graph = graph_from_relations(relations)
 
-Build graphs from analysis results.
+print(graph)
+# ConceptGraph(Directed, nodes=5, edges=8)
+
+# Examine a relation
+edge = graph.get_edge("consciousness", "intentional")
+print(f"Type: {edge['relation_type']}")
+# Type: copular
+
+print(f"Evidence count: {edge['weight']}")
+# Evidence count: 3
+
+print(f"Example: {edge['evidence'][0]}")
+# Example: Consciousness is intentional.
+```
+
+### Example: Graph Operations
 
 ```python
 from concept_mapper.graph import (
-    graph_from_cooccurrence,
-    graph_from_relations,
-    graph_from_terms
-)
-
-# From co-occurrence matrix
-graph = graph_from_cooccurrence(matrix, threshold=0.3)
-
-# From relation extraction
-graph = graph_from_relations(relations)
-
-# From term list (nodes only)
-graph = graph_from_terms(["being", "time", "dasein"])
-```
-
-### `concept_mapper.graph.operations`
-
-Graph manipulation operations.
-
-```python
-from concept_mapper.graph.operations import (
     merge_graphs,
     prune_edges,
     prune_nodes,
-    get_subgraph
+    get_subgraph,
+    filter_by_relation_type
 )
 
 # Merge two graphs
-combined = merge_graphs(graph1, graph2)
+cooccur_graph = graph_from_cooccurrence(matrix, threshold=0.3)
+relation_graph = graph_from_relations(relations)
+combined = merge_graphs(cooccur_graph, relation_graph.copy())  # Must have same directedness
 
 # Prune weak edges
-pruned = prune_edges(graph, min_weight=0.5)
+strong_graph = prune_edges(graph, min_weight=0.7)
+print(f"Removed {graph.edge_count() - strong_graph.edge_count()} weak edges")
+# Removed 12 weak edges
 
-# Prune isolated nodes
-pruned = prune_nodes(graph, min_degree=1)
+# Remove isolated nodes
+connected_graph = prune_nodes(graph, min_degree=1)
+print(f"Removed {graph.node_count() - connected_graph.node_count()} isolated nodes")
+# Removed 3 isolated nodes
 
-# Extract subgraph
-subgraph = get_subgraph(graph, {"being", "time", "dasein"})
+# Extract subgraph for specific terms
+key_terms = {"consciousness", "being", "intentionality"}
+subgraph = get_subgraph(graph, key_terms)
+print(subgraph)
+# ConceptGraph(Directed, nodes=3, edges=4)
+
+# Filter to only copular relations
+copular_graph = filter_by_relation_type(graph, {"copular"})
+print(f"Copular relations: {copular_graph.edge_count()}")
+# Copular relations: 15
 ```
 
-### `concept_mapper.graph.metrics`
-
-Graph analysis metrics.
+### Example: Graph Metrics
 
 ```python
-from concept_mapper.graph.metrics import (
+from concept_mapper.graph import (
     centrality,
     detect_communities,
+    assign_communities,
+    get_connected_components,
     graph_density
 )
 
-# Calculate centrality
-scores = centrality(graph, method="betweenness")
-top_terms = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:5]
+# Compute centrality (find most important concepts)
+degree_scores = centrality(graph, method="degree")
+betweenness_scores = centrality(graph, method="betweenness")
 
-# Detect communities
-communities = detect_communities(graph)
+# Most central concepts
+for term, score in sorted(degree_scores.items(), key=lambda x: x[1], reverse=True)[:5]:
+    print(f"{term:20} {score:.3f}")
+# consciousness        0.425
+# being                0.380
+# intentionality       0.315
+# ...
+
+# Detect communities (conceptual clusters)
+communities = detect_communities(graph, method="greedy")
+print(f"Found {len(communities)} communities")
+# Found 3 communities
+
 for i, community in enumerate(communities):
-    print(f"Community {i}: {community}")
+    print(f"Community {i}: {', '.join(sorted(community)[:5])}")
+# Community 0: being, presence, time, consciousness
+# Community 1: intentionality, object, awareness
+# Community 2: abstraction, commodity, fetishism
 
-# Graph density
+# Assign communities as node attributes
+assign_communities(graph, communities)
+node = graph.get_node("consciousness")
+print(f"Consciousness is in community {node['community']}")
+# Consciousness is in community 0
+
+# Check graph connectivity
+components = get_connected_components(graph)
+print(f"Graph has {len(components)} connected components")
+# Graph has 2 connected components
+
+# Compute graph density
 density = graph_density(graph)
-print(f"Density: {density:.3f}")
+print(f"Graph density: {density:.3f}")
+# Graph density: 0.147
 ```
 
-**Centrality methods:**
-- `"betweenness"` - Nodes on many shortest paths (bridges)
-- `"degree"` - Number of connections
-- `"closeness"` - Average distance to all other nodes
-- `"eigenvector"` - Connected to highly-connected nodes
-- `"pagerank"` - PageRank algorithm
+### Example: Complete Workflow
+
+```python
+from pathlib import Path
+from concept_mapper.corpus.loader import load_file
+from concept_mapper.preprocessing.pipeline import preprocess
+from concept_mapper.analysis.reference import load_reference_corpus
+from concept_mapper.analysis.rarity import PhilosophicalTermScorer
+from concept_mapper.terms.models import TermList
+from concept_mapper.analysis.relations import get_relations
+from concept_mapper.analysis.cooccurrence import build_cooccurrence_matrix
+from concept_mapper.graph import (
+    graph_from_relations,
+    graph_from_cooccurrence,
+    centrality,
+    detect_communities,
+    assign_communities,
+)
+
+# 1. Load and preprocess
+doc = load_file("data/sample/philosopher_1920_cc.txt")
+docs = [preprocess(doc)]
+
+# 2. Detect key terms
+reference = load_reference_corpus()
+scorer = PhilosophicalTermScorer(docs, reference)
+candidates = scorer.score_all(min_score=2.0, top_n=30)
+
+# 3. Create term list
+terms = TermList.from_dict({"terms": [{"term": term, "pos": "NN"} for term, _, _ in candidates]})
+
+# 4. Build co-occurrence graph
+matrix = build_cooccurrence_matrix(terms, docs, method="pmi")
+cooccur_graph = graph_from_cooccurrence(matrix, threshold=0.3)
+
+# 5. Build relation graph
+all_relations = []
+for term_data in terms:
+    relations = get_relations(term_data["term"], docs)
+    all_relations.extend(relations)
+
+relation_graph = graph_from_relations(all_relations)
+
+# 6. Compute centrality
+central = centrality(cooccur_graph, method="betweenness")
+top_concepts = sorted(central.items(), key=lambda x: x[1], reverse=True)[:10]
+
+print("Top 10 central concepts:")
+for term, score in top_concepts:
+    print(f"  {term:20} {score:.3f}")
+
+# 7. Detect communities
+communities = detect_communities(cooccur_graph)
+assign_communities(cooccur_graph, communities)
+
+print(f"\nFound {len(communities)} conceptual clusters")
+for i, community in enumerate(communities[:3]):
+    print(f"  Cluster {i}: {', '.join(sorted(community)[:5])}")
+```
+
+**Expected Output:**
+```
+Top 10 central concepts:
+  abstraction          0.425
+  consciousness        0.380
+  commodity            0.315
+  proletariat          0.298
+  bourgeoisie          0.275
+  fetishism            0.251
+  totality             0.228
+  praxis               0.210
+  dialectic            0.195
+  object               0.180
+
+Found 3 conceptual clusters
+  Cluster 0: commodity, fetishism, abstraction, value, exchange
+  Cluster 1: consciousness, proletariat, bourgeoisie, class, totality
+  Cluster 2: praxis, dialectic, subject, object, history
+```
 
 ---
 
-## Export & Visualization
+## Phase 9: Export & Visualization
 
-### `concept_mapper.export.d3`
+Export graphs to various formats for visualization and analysis.
 
-Export graphs for D3.js visualization.
+### What It Enables
+
+- **D3.js JSON**: Interactive web visualizations with force-directed layouts
+- **GraphML**: Import into Gephi, yEd, Cytoscape for advanced graph analysis
+- **DOT**: Render with Graphviz for publication-quality diagrams
+- **CSV**: Export to spreadsheets for manual inspection and editing
+- **HTML**: Standalone interactive visualizations that run in any web browser
+
+### Example: Export to D3 JSON
 
 ```python
+from pathlib import Path
 from concept_mapper.export import export_d3_json, load_d3_json
 
-# Export
-export_d3_json(
-    graph,
-    "output/graph.json",
-    size_by="betweenness",  # or "frequency", "degree"
-    include_evidence=True,
-    max_evidence=5
-)
+# Export graph to D3 JSON
+export_d3_json(graph=cooccur_graph, path=Path("output/network.json"), include_evidence=False, size_by="betweenness", compute_communities=True)
 
-# Load
-data = load_d3_json("output/graph.json")
+# Load the exported data
+data = load_d3_json(Path("output/network.json"))
+print(f"Exported {len(data['nodes'])} nodes and {len(data['links'])} links")
+# Exported 30 nodes and 45 links
 ```
 
-### `concept_mapper.export.formats`
-
-Export to various graph formats.
-
-```python
-from concept_mapper.export import (
-    export_graphml,
-    export_csv,
-    export_gexf,
-    export_dot
-)
-
-# GraphML for Gephi, yEd, Cytoscape
-export_graphml(graph, "output/graph.graphml")
-
-# CSV for spreadsheets
-export_csv(graph, "output/csv/")  # Creates nodes.csv and edges.csv
-
-# GEXF for Gephi
-export_gexf(graph, "output/graph.gexf")
-
-# DOT for Graphviz (requires pydot)
-export_dot(graph, "output/graph.dot")
-```
-
-### `concept_mapper.export.html`
-
-Generate standalone HTML visualizations.
+### Example: Generate Interactive HTML Visualization
 
 ```python
 from concept_mapper.export import generate_html
 
-# Generate interactive visualization
-html_path = generate_html(
-    graph,
-    output_dir="output/visualization/",
-    title="My Concept Network",
-    width=1200,
-    height=800,
-    include_evidence=True
-)
+# Generate standalone HTML visualization
+html_path = generate_html(graph=cooccur_graph, output_dir=Path("output/visualization"), title="Philosopher Conceptual Network", width=1200, height=800, include_evidence=True)
 
-print(f"Open in browser: file://{html_path.absolute()}")
+print(f"Open {html_path} in your browser")
+# Open output/visualization/index.html in your browser
 ```
 
-**Features:**
-- Force-directed graph layout (D3 force simulation)
-- Interactive: drag nodes, zoom/pan
-- Color-coded by community detection
+**The generated HTML includes:**
+- Force-directed graph layout
+- Interactive node dragging
+- Zoom and pan controls
+- Tooltips showing node/edge information
+- Color-coded communities
 - Node size by centrality or frequency
-- Tooltips with node/edge details
-- Self-contained HTML file (no external dependencies)
+- Edge width by weight
 
----
-
-## CLI Reference
-
-See `concept-mapper --help` for full command-line interface documentation.
-
-```bash
-# Main commands
-concept-mapper ingest <path>           # Load and preprocess
-concept-mapper rarities <corpus>       # Detect terms
-concept-mapper search <corpus> <term>  # Search
-concept-mapper concordance <corpus> <term>  # KWIC display
-concept-mapper graph <corpus> -t <terms>    # Build graph
-concept-mapper export <graph> -f <format>   # Export/visualize
-```
-
-See [Usage Guide](usage-guide.md#phase-10-cli-interface) for detailed CLI examples.
-
----
-
-## Type Hints
-
-All public APIs include full type hints for IDE autocomplete and static type checking:
+### Example: Export to Multiple Formats
 
 ```python
-from typing import List, Dict, Optional, Counter
-from concept_mapper.corpus.models import ProcessedDocument
+from concept_mapper.export import (
+    export_graphml,
+    export_dot,
+    export_csv,
+    export_gexf,
+)
 
-def my_function(
-    docs: List[ProcessedDocument],
-    threshold: float = 0.5,
-    max_results: Optional[int] = None
-) -> Dict[str, float]:
-    ...
+# For Gephi (GraphML)
+export_graphml(cooccur_graph, Path("output/network.graphml"))
+
+# For Graphviz (DOT) - requires pydot
+try:
+    export_dot(cooccur_graph, Path("output/network.dot"), layout="neato")
+    # Then render: dot -Tpng output/network.dot -o output/network.png
+except ImportError:
+    print("Install pydot for DOT export: uv pip install pydot")
+
+# For spreadsheets (CSV)
+export_csv(cooccur_graph, Path("output/csv/"))
+# Creates: output/csv/nodes.csv, output/csv/edges.csv
+
+# For Gephi (GEXF)
+export_gexf(cooccur_graph, Path("output/network.gexf"))
 ```
 
-Use with mypy or pyright for static type checking:
+### Example: Export with Evidence
+
+```python
+from concept_mapper.export import export_d3_json
+
+# Export relation graph with evidence sentences (limit to 3 example sentences per edge)
+export_d3_json(graph=relation_graph, path=Path("output/relations.json"), include_evidence=True, max_evidence=3)
+
+# The resulting JSON will have evidence in link objects:
+# {
+#   "nodes": [...],
+#   "links": [
+#     {
+#       "source": "consciousness",
+#       "target": "intentional",
+#       "weight": 3,
+#       "label": "copular",
+#       "evidence": [
+#         "Consciousness is intentional.",
+#         "Consciousness is always intentional.",
+#         "All consciousness is intentional."
+#       ]
+#     }
+#   ]
+# }
+```
+
+### Example: Complete Visualization Workflow
+
+```python
+from pathlib import Path
+from concept_mapper.corpus.loader import load_file
+from concept_mapper.preprocessing.pipeline import preprocess
+from concept_mapper.analysis.reference import load_reference_corpus
+from concept_mapper.analysis.rarity import PhilosophicalTermScorer
+from concept_mapper.terms.models import TermList
+from concept_mapper.analysis.cooccurrence import build_cooccurrence_matrix
+from concept_mapper.graph import graph_from_cooccurrence, centrality, detect_communities, assign_communities
+from concept_mapper.export import generate_html, export_csv
+
+# 1. Load and analyze text
+doc = load_file("data/sample/philosopher_1920_cc.txt")
+docs = [preprocess(doc)]
+
+reference = load_reference_corpus()
+scorer = PhilosophicalTermScorer(docs, reference)
+candidates = scorer.score_all(min_score=2.0, top_n=30)
+
+# 2. Create term list
+terms = TermList.from_dict({"terms": [{"term": term, "pos": "NN"} for term, _, _ in candidates]})
+
+# 3. Build co-occurrence graph
+matrix = build_cooccurrence_matrix(terms, docs, method="pmi", window="sentence")
+graph = graph_from_cooccurrence(matrix, threshold=0.3)
+
+# 4. Compute metrics
+communities = detect_communities(graph)
+assign_communities(graph, communities)
+
+central = centrality(graph, method="betweenness")
+for node_id in graph.nodes():
+    node_attrs = graph.get_node(node_id)
+    node_attrs["centrality"] = central.get(node_id, 0.0)
+    # Update node with centrality
+    graph.graph.nodes[node_id].update(node_attrs)
+
+# 5. Export to multiple formats
+output_dir = Path("output/philosopher_network")
+
+# Interactive HTML visualization
+html_path = generate_html(graph, output_dir, title="Philosopher: History and Class Consciousness", width=1400, height=900)
+
+# CSV for spreadsheet analysis
+export_csv(graph, output_dir / "csv")
+
+print(f"""
+Visualization complete!
+
+Interactive HTML: {html_path}
+CSV data: {output_dir}/csv/
+
+Open the HTML file in a web browser to explore the network.
+- Drag nodes to rearrange
+- Hover for term information
+- Use mouse wheel to zoom
+- Colors show conceptual communities
+""")
+```
+
+**Expected Output:**
+```
+Visualization complete!
+
+Interactive HTML: output/philosopher_network/index.html
+CSV data: output/philosopher_network/csv/
+
+Open the HTML file in a web browser to explore the network.
+- Drag nodes to rearrange
+- Hover for term information
+- Use mouse wheel to zoom
+- Colors show conceptual communities
+```
+
+---
+
+## Output Files
+
+The analysis produces these output files:
+
+```
+output/
+├── philosophical_terms.json       # Curated term list
+├── terms.csv                      # CSV for Excel editing
+├── cooccurrence_pmi.csv          # Co-occurrence matrix
+└── analysis_results.txt          # Text report
+```
+
+**View co-occurrence matrix in Excel:**
 ```bash
-mypy src/concept_mapper/
+open output/cooccurrence_pmi.csv
 ```
 
 ---
 
-## Examples
+## Running Tests
 
-See the [examples/](../examples/) directory for:
-- Complete workflow examples (CLI and Python API)
-- Sample philosophical text
-- Step-by-step walkthrough
+Verify everything works:
 
-See the [Usage Guide](usage-guide.md) for detailed phase-by-phase examples.
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run specific phase tests
+pytest tests/test_corpus.py -v          # Phase 1
+pytest tests/test_analysis.py -v        # Phases 2-3
+pytest tests/test_terms.py -v           # Phase 4
+pytest tests/test_search.py -v          # Phase 5
+pytest tests/test_cooccurrence.py -v    # Phase 6
+pytest tests/test_relations.py -v       # Phase 7
+pytest tests/test_graph.py -v           # Phase 8
+pytest tests/test_export.py -v          # Phase 9
+pytest tests/test_cli.py -v             # Phase 10
+```
 
 ---
 
-## Further Reading
+## Phase 10: CLI Interface
 
-- [Usage Guide](usage-guide.md) - Practical examples for each feature
-- [Development Roadmap](concept-mapper-roadmap.md) - Project architecture
-- [README](../README.md) - Quick start and overview
+Unified command-line interface for all functionality.
+
+### What It Enables
+
+- **Batch Processing**: Process entire corpora from the command line
+- **Workflow Automation**: Chain commands together in scripts
+- **No Code Required**: Full functionality without writing Python
+- **Progress Feedback**: Visual progress bars and verbose output
+- **File-Based I/O**: Work with JSON, CSV, and other file formats
+
+### Installation
+
+After installing the package, the `concept-mapper` command is available:
+
+```bash
+# Install package
+uv pip install -e .
+
+# Verify installation
+concept-mapper --help
+```
+
+### Example: Complete Workflow
+
+```bash
+# 1. Ingest and preprocess documents
+concept-mapper ingest data/sample/philosopher_1920_cc.txt -o output/corpus.json
+
+# 2. Detect philosophical terms
+concept-mapper rarities output/corpus.json \
+  --method hybrid \
+  --threshold 2.0 \
+  --top-n 30 \
+  -o output/terms.json
+
+# 3. Search for a specific term
+concept-mapper search output/corpus.json "abstraction" \
+  --context 2 \
+  -o output/abstraction.txt
+
+# 4. Generate concordance
+concept-mapper concordance output/corpus.json "consciousness" \
+  --width 60 \
+  -o output/concordance.txt
+
+# 5. Build concept graph
+concept-mapper graph output/corpus.json \
+  -t output/terms.json \
+  --method cooccurrence \
+  --threshold 0.3 \
+  -o output/graph.json
+
+# 6. Export to HTML visualization
+concept-mapper export output/graph.json \
+  --format html \
+  --title "Philosopher Conceptual Network" \
+  -o output/visualization/
+
+# 7. Open in browser
+open output/visualization/index.html
+```
+
+### Command Reference
+
+#### Ingest Command
+
+Load and preprocess documents:
+
+```bash
+# Single file
+concept-mapper ingest document.txt -o corpus.json
+
+# Directory (recursive)
+concept-mapper ingest corpus/ \
+  --recursive \
+  --pattern "*.txt" \
+  -o corpus.json
+
+# With verbose output
+concept-mapper --verbose ingest document.txt -o corpus.json
+```
+
+#### Rarities Command
+
+Detect philosophical/rare terms:
+
+```bash
+# Basic usage
+concept-mapper rarities corpus.json -o terms.json
+
+# Specify method and threshold
+concept-mapper rarities corpus.json \
+  --method hybrid \
+  --threshold 2.5 \
+  --top-n 50 \
+  -o terms.json
+
+# Different methods: ratio, tfidf, neologism, hybrid
+concept-mapper rarities corpus.json --method tfidf -o terms.json
+```
+
+#### Search Command
+
+Search for term occurrences:
+
+```bash
+# Basic search
+concept-mapper search corpus.json "consciousness"
+
+# With context sentences
+concept-mapper search corpus.json "being" --context 2
+
+# Save to file
+concept-mapper search corpus.json "abstraction" -o results.txt
+```
+
+#### Concordance Command
+
+Display KWIC concordance:
+
+```bash
+# Basic concordance
+concept-mapper concordance corpus.json "consciousness"
+
+# Custom context width
+concept-mapper concordance corpus.json "being" --width 80
+
+# Save to file
+concept-mapper concordance corpus.json "fetishism" -o concordance.txt
+```
+
+#### Graph Command
+
+Build concept graphs:
+
+```bash
+# From co-occurrence
+concept-mapper graph corpus.json \
+  -t terms.json \
+  --method cooccurrence \
+  --threshold 0.3 \
+  -o graph.json
+
+# From relations
+concept-mapper graph corpus.json \
+  -t terms.json \
+  --method relations \
+  -o graph.json
+```
+
+#### Export Command
+
+Export graphs to various formats:
+
+```bash
+# HTML visualization
+concept-mapper export graph.json \
+  --format html \
+  --title "My Network" \
+  -o viz/
+
+# GraphML for Gephi
+concept-mapper export graph.json \
+  --format graphml \
+  -o graph.graphml
+
+# CSV for spreadsheets
+concept-mapper export graph.json \
+  --format csv \
+  -o output/
+
+# D3 JSON
+concept-mapper export graph.json \
+  --format d3 \
+  -o network.json
+
+# GEXF for Gephi
+concept-mapper export graph.json \
+  --format gexf \
+  -o graph.gexf
+```
+
+### Global Options
+
+Available for all commands:
+
+```bash
+# Verbose output
+concept-mapper --verbose ingest document.txt
+
+# Custom output directory
+concept-mapper --output-dir /path/to/output ingest document.txt
+
+# Combined
+concept-mapper -v -o output/ rarities corpus.json
+```
+
+### Batch Processing Example
+
+Process multiple documents:
+
+```bash
+#!/bin/bash
+
+# Process entire corpus
+for corpus_dir in data/corpora/*; do
+    author=$(basename "$corpus_dir")
+
+    echo "Processing $author..."
+
+    # Ingest
+    concept-mapper ingest "$corpus_dir" \
+        --recursive \
+        -o "output/$author/corpus.json"
+
+    # Detect terms
+    concept-mapper rarities "output/$author/corpus.json" \
+        --top-n 30 \
+        -o "output/$author/terms.json"
+
+    # Build graph
+    concept-mapper graph "output/$author/corpus.json" \
+        -t "output/$author/terms.json" \
+        -m cooccurrence \
+        -o "output/$author/graph.json"
+
+    # Export visualization
+    concept-mapper export "output/$author/graph.json" \
+        --format html \
+        --title "$author Conceptual Network" \
+        -o "output/$author/viz/"
+done
+
+echo "Done! Open output/*/viz/index.html to view networks"
+```
+
+---
+
+## Next Steps
+
+- **Phase 11:** Documentation and deployment
+- **Phase 12:** Advanced features (temporal analysis, cross-corpus comparison)
+
+See the [roadmap](concept-mapper-roadmap.md) for details on upcoming phases.

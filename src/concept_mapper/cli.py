@@ -258,7 +258,10 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
     "--context", "-c", type=int, default=0, help="Number of context sentences"
 )
 @click.option(
-    "--lemma", "-l", is_flag=True, help="Match lemmatized forms (e.g., 'run' matches 'running', 'ran')"
+    "--lemma",
+    "-l",
+    is_flag=True,
+    help="Match lemmatized forms (e.g., 'run' matches 'running', 'ran')",
 )
 @click.option("--output", "-o", type=click.Path(), help="Output file")
 @click.pass_context
@@ -283,7 +286,9 @@ def search(ctx, corpus, term, context, lemma, output):
 
     if verbose:
         search_type = "lemma-based" if lemma else "exact"
-        click.echo(f"Searching ({search_type}) for '{term}' in {len(docs)} document(s)...")
+        click.echo(
+            f"Searching ({search_type}) for '{term}' in {len(docs)} document(s)..."
+        )
 
     # Search
     matches = find_sentences(term, docs, match_lemma=lemma)

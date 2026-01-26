@@ -288,13 +288,13 @@ concept-mapper export graph.json --format html -o viz/
 - Sentence and word tokenization
 - POS (Part of Speech) tagging
 - Lemmatization
-- **[See examples →](docs/usage-guide.md#phase-1-corpus-preprocessing)**
+- **[See examples →](docs/api-reference.md#phase-1-corpus-preprocessing)**
 
 ### ✅ Phase 2: Frequency Analysis
 - Word frequency distributions
 - TF-IDF (Term Frequency-Inverse Document Frequency) scoring
 - Comparison to Brown corpus reference
-- **[See examples →](docs/usage-guide.md#phase-2-frequency-analysis--tf-idf)**
+- **[See examples →](docs/api-reference.md#phase-2-frequency-analysis--tf-idf)**
 
 ### ✅ Phase 3: Philosophical Term Detection
 - Multi-method rarity detection (5 signals)
@@ -302,14 +302,14 @@ concept-mapper export graph.json --format html -o viz/
 - Neologism detection (WordNet lookup)
 - Definitional context identification
 - Hybrid scorer with weighted signals
-- **[See examples →](docs/usage-guide.md#phase-3-philosophical-term-detection)**
+- **[See examples →](docs/api-reference.md#phase-3-philosophical-term-detection)**
 
 ### ✅ Phase 4: Term List Management
 - CRUD operations for curated terms
 - Import/export (JSON, CSV, TXT)
 - Auto-population from statistical analysis
 - Metadata: definitions, notes, examples, POS tags
-- **[See examples →](docs/usage-guide.md#phase-4-term-list-management)**
+- **[See examples →](docs/api-reference.md#phase-4-term-list-management)**
 
 ### ✅ Phase 5: Search & Concordance
 - Find sentences containing terms
@@ -317,7 +317,7 @@ concept-mapper export graph.json --format html -o viz/
 - Context windows (N sentences before/after)
 - Dispersion analysis (where terms appear)
 - Sentence diagramming with dependency parsing
-- **[See examples →](docs/usage-guide.md#phase-5-search--concordance)**
+- **[See examples →](docs/api-reference.md#phase-5-search--concordance)**
 
 ### ✅ Phase 6: Co-occurrence Analysis
 - Sentence-level co-occurrence
@@ -325,7 +325,7 @@ concept-mapper export graph.json --format html -o viz/
 - PMI (Pointwise Mutual Information)
 - LLR (Log-Likelihood Ratio) significance testing
 - Co-occurrence matrices (count/PMI/LLR)
-- **[See examples →](docs/usage-guide.md#phase-6-co-occurrence-analysis)**
+- **[See examples →](docs/api-reference.md#phase-6-co-occurrence-analysis)**
 
 ### ✅ Phase 7: Relation Extraction
 - SVO (Subject-Verb-Object) triples
@@ -333,7 +333,7 @@ concept-mapper export graph.json --format html -o viz/
 - Prepositional relations (X of Y)
 - Evidence aggregation
 - Pattern-based extraction using NLTK
-- **[See examples →](docs/usage-guide.md#phase-7-relation-extraction)**
+- **[See examples →](docs/api-reference.md#phase-7-relation-extraction)**
 
 ### ✅ Phase 8: Graph Construction
 - ConceptGraph data structure (directed/undirected)
@@ -341,7 +341,7 @@ concept-mapper export graph.json --format html -o viz/
 - Build graphs from relation extraction
 - Graph operations (merge, prune, filter, subgraph)
 - Graph metrics (centrality, communities, paths, density)
-- **[See examples →](docs/usage-guide.md#phase-8-graph-construction)**
+- **[See examples →](docs/api-reference.md#phase-8-graph-construction)**
 
 ### ✅ Phase 9: Export & Visualization
 - D3.js JSON export for interactive web visualizations
@@ -349,7 +349,7 @@ concept-mapper export graph.json --format html -o viz/
 - DOT export for Graphviz
 - CSV export for spreadsheets and databases
 - Standalone HTML visualizations with force-directed layouts
-- **[See examples →](docs/usage-guide.md#phase-9-export--visualization)**
+- **[See examples →](docs/api-reference.md#phase-9-export--visualization)**
 
 ### ✅ Phase 10: CLI Interface
 - Unified command-line interface (`concept-mapper`)
@@ -357,55 +357,67 @@ concept-mapper export graph.json --format html -o viz/
 - Global options: `--verbose`, `--output-dir`
 - Progress bars for batch operations
 - End-to-end workflow support
-- **[See examples →](docs/usage-guide.md#phase-10-cli-interface)**
+- **[See examples →](docs/api-reference.md#phase-10-cli-interface)**
 
 ## Python API Usage
 
-For programmatic access, use the Python API directly:
+Complete workflow demonstrating all features:
 
 ```python
+from pathlib import Path
 from concept_mapper.corpus.loader import load_file
 from concept_mapper.preprocessing.pipeline import preprocess
 from concept_mapper.analysis.reference import load_reference_corpus
 from concept_mapper.analysis.rarity import PhilosophicalTermScorer
-from concept_mapper.graph import graph_from_cooccurrence
 from concept_mapper.analysis.cooccurrence import build_cooccurrence_matrix
-from concept_mapper.export import export_d3_json, generate_html
+from concept_mapper.graph import graph_from_cooccurrence, graph_from_relations
+from concept_mapper.analysis.relations import get_relations
 from concept_mapper.terms.models import TermList
+from concept_mapper.terms.manager import TermManager
+from concept_mapper.export import export_d3_json, export_graphml, export_csv, export_gexf, generate_html
 
-# Load and preprocess
-doc = load_file("examples/sample_text.txt")
+# 1. Load and preprocess
+doc = load_file("data/sample/philosopher_1920_cc.txt")
 processed = preprocess(doc)
+print(f"✓ Processed {len(processed.sentences)} sentences")
 
-# Detect terms
+# 2. Load reference corpus
 reference = load_reference_corpus()
-scorer = PhilosophicalTermScorer([processed], reference)
+
+# 3. Detect philosophical terms
+scorer = PhilosophicalTermScorer([processed], reference, use_lemmas=True)
 candidates = scorer.score_all(min_score=1.5, top_n=20)
+print(f"\n✓ Top terms:")
+for term, score, _ in candidates[:5]:
+    print(f"  {term:20} {score:.2f}")
 
-# Create term list
-term_list = TermList.from_dict({
-    "terms": [{"term": term, "metadata": {"score": score}}
-              for term, score, _ in candidates]
-})
+# 4. Create term list and save
+term_list = TermList.from_dict({"terms": [{"term": term, "metadata": {"score": score}} for term, score, _ in candidates]})
+manager = TermManager(term_list)
+manager.export_to_json(Path("output/terms.json"))
 
-# Build graph
-matrix = build_cooccurrence_matrix(term_list, [processed], method="pmi")
-graph = graph_from_cooccurrence(matrix, threshold=0.3)
+# 5. Build co-occurrence graph
+matrix = build_cooccurrence_matrix(term_list, [processed], method="pmi", window="sentence")
+graph_cooccur = graph_from_cooccurrence(matrix, threshold=0.3)
+print(f"\n✓ Co-occurrence graph: {graph_cooccur.node_count()} nodes, {graph_cooccur.edge_count()} edges")
 
-# Export
-generate_html(graph, "examples/viz/", title="My Concept Network")
+# 6. Build relations graph
+all_relations = []
+for term_data in term_list:
+    relations = get_relations(term_data["term"], [processed])
+    all_relations.extend(relations)
+graph_relations = graph_from_relations(all_relations)
+print(f"✓ Relations graph: {graph_relations.node_count()} nodes, {graph_relations.edge_count()} edges")
+
+# 7. Export and visualize
+viz_dir = Path("output/visualization")
+html_path = generate_html(graph_cooccur, viz_dir, title="Concept Network")
+export_graphml(graph_cooccur, Path("output/graph.graphml"))
+export_csv(graph_cooccur, Path("output/csv"))
+print(f"\n✓ Visualization ready: {html_path}")
 ```
 
-**Expected output:**
-```
-abstraction          4.87
-proletariat          3.45
-bourgeoisie          3.21
-commodity            2.98
-...
-```
-
-**See [Usage Guide](docs/usage-guide.md) for complete API documentation.**
+**See [API Reference](docs/api-reference.md) for complete documentation.**
 
 ## Understanding Results
 
@@ -533,8 +545,7 @@ make check     # Run all checks
 
 ## Documentation
 
-- **[Usage Guide](docs/usage-guide.md)** - Practical examples for each phase
-- **[API Reference](docs/api-reference.md)** - Complete Python API reference
+- **[API Reference](docs/api-reference.md)** - Complete guide with examples and API documentation
 - **[Development Roadmap](docs/concept-mapper-roadmap.md)** - Complete project plan
 - **[Validation](VALIDATION.md)** - Output validation and error handling
 
