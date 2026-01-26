@@ -62,13 +62,13 @@ concept-mapper rarities examples/corpus.json \
 ```
 Top 20 rare terms:
 ------------------------------------------------------------
-Dasein                         5.42
-temporality                    4.87
-thrownness                     4.65
-Being-in-the-world            4.23
-ontological                    3.98
-existential                    3.76
-potentiality-for-Being        3.54
+Geist                          5.42
+Aufhebung                      4.87
+Sittlichkeit                   4.65
+Selbstbewusstsein             4.23
+dialectical                    3.98
+Anerkennung                    3.76
+sublation                      3.54
 [...]
 
 ✓ Saved 20 terms to examples/terms.json
@@ -99,22 +99,22 @@ Find where specific terms appear:
 
 ```bash
 # Basic search
-concept-mapper search examples/corpus.json "Dasein"
+concept-mapper search examples/corpus.json "Geist"
 
 # Search with context (2 sentences before/after)
-concept-mapper search examples/corpus.json "Being" --context 2
+concept-mapper search examples/corpus.json "dialectical" --context 2
 
 # KWIC concordance
-concept-mapper concordance examples/corpus.json "Dasein" --width 40
+concept-mapper concordance examples/corpus.json "Geist" --width 40
 ```
 
 **Expected KWIC output:**
 ```
-KWIC Concordance for 'Dasein' (3 occurrences):
+KWIC Concordance for 'Geist' (3 occurrences):
 ================================================================================
-                            ... degree it does so explicitly.  | Dasein |  is an entity which does not ju...
-                 ... totality is grounded in temporality.  | Dasein | 's Being as their thematic object...
-                          ... factical 'attitude' and  | Dasein | . Anxiety individualizes Dasein an...
+                            ... degree it does so explicitly.  | Geist |  is the self-developing spirit...
+                 ... totality is grounded in the dialectic.  | Geist | 's development as their object...
+                          ... concrete universal and  | Geist | . Recognition actualizes Geist in...
 ```
 
 ### Step 4: Build Concept Graph
@@ -159,9 +159,9 @@ Building graph...
 ```
 
 Edges represent grammatical relationships:
-- **SVO triples**: "Dasein understands Being"
-- **Copular**: "Dasein is Being-in-the-world"
-- **Prepositional**: "structure of Dasein"
+- **SVO triples**: "Geist actualizes itself"
+- **Copular**: "Geist is self-consciousness"
+- **Prepositional**: "development of Geist"
 
 ### Step 5: Export and Visualize
 
@@ -170,7 +170,7 @@ Generate an interactive HTML visualization:
 ```bash
 concept-mapper export examples/graph_cooccur.json \
   --format html \
-  --title "Heidegger Concept Network" \
+  --title "Hegel Concept Network" \
   -o examples/visualization/
 ```
 
@@ -285,9 +285,9 @@ Then rebuild the graph with the curated list.
 5. Are capitalized mid-sentence (reified abstractions)
 
 **Examples from this text:**
-- ✓ "Dasein" - Heideggerian neologism, high frequency
-- ✓ "thrownness" - Philosophical neologism
-- ✓ "Being" (capitalized) - Reified abstraction
+- ✓ "Geist" - Hegelian concept, high frequency
+- ✓ "Aufhebung" - Philosophical neologism (sublation)
+- ✓ "Sittlichkeit" - Technical term (ethical life)
 - ✗ "question" - Common word, even if frequent in philosophy
 
 ### Graph interpretation

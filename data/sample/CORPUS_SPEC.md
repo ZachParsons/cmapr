@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains a diverse philosophical test corpus designed to verify the concept-mapper's ability to detect and analyze rare, domain-specific terminology across multiple philosophical traditions. The corpus intentionally avoids heavy Heideggerian language and instead samples from:
+This directory contains a diverse philosophical test corpus designed to verify the concept-mapper's ability to detect and analyze rare, domain-specific terminology across multiple philosophical traditions. The corpus samples from:
 
 1. **Analytic Philosophy & Pragmatism** - Quine, Davidson, Dewey, Peirce
 2. **Post-structuralism & Political Philosophy** - Foucault, Derrida, Deleuze, Rawls, Nozick, Sen
@@ -14,7 +14,7 @@ This directory contains a diverse philosophical test corpus designed to verify t
 1. `philosopher_1920_cc.txt` - Philosopher' "Class Consciousness" excerpt (90KB, real text with terms like "abstraction")
 
 ### Test Files with Invented Terms
-2. `test_philosophical_terms.txt` - Simple test file with pure neologisms (daseinology, temporalization, ekstatic)
+2. `test_philosophical_terms.txt` - Simple test file with pure neologisms (dialectology, sublation, concrete universality)
 3. `sample1_analytic_pragmatism.txt` - Analytic philosophy & pragmatism (~1500 words)
 4. `sample2_poststructural_political.txt` - Post-structuralism & political philosophy (~1600 words)
 5. `sample3_mind_consciousness.txt` - Philosophy of mind & consciousness studies (~1800 words)
@@ -151,7 +151,7 @@ Suggested terms to populate (by tradition):
 ## Validation Checklist
 
 - [x] Three diverse sample files created
-- [x] No heavy Heideggerian jargon
+- [x] Diverse philosophical traditions represented
 - [x] Mix of 5 philosophical traditions
 - [x] Each file contains 6-8 technical/neologistic terms
 - [x] Terms span pure neologisms to established-but-rare
@@ -190,8 +190,8 @@ for term in ['meaning-variance', 'différance', 'zombie-conceivability']:
 
 ## Notes
 
-- These samples intentionally avoid Continental philosophy jargon (Heidegger, Husserl)
-- Terms are selected to represent diverse philosophical methodologies
+- These samples represent diverse philosophical methodologies and traditions
+- Terms are selected to span analytic, continental, and political philosophy
 - Some hyphenated terms may be tokenized differently by NLTK
 - This corpus provides ground truth for testing term detection algorithms
 - Real philosophical texts would have more variation and context

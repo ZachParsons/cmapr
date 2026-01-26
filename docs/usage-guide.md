@@ -372,14 +372,14 @@ Term: proletariat
 term_list = TermList()
 
 term_list.add(TermEntry(
-    term="dasein",
-    lemma="dasein",
+    term="Geist",
+    lemma="geist",
     pos="NN",
-    definition="Being-there; human existence in Heidegger's philosophy",
-    notes="Central concept in Being and Time",
+    definition="Spirit; the self-developing rational principle in Hegel's philosophy",
+    notes="Central concept in Phenomenology of Spirit",
     examples=[
-        "Dasein is always my Dasein.",
-        "The being of Dasein is care."
+        "Geist is the process of becoming itself.",
+        "Absolute Geist reconciles subject and substance."
     ]
 ))
 

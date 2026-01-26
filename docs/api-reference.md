@@ -335,12 +335,12 @@ from concept_mapper.terms.models import TermEntry, TermList
 
 # Create term entry
 entry = TermEntry(
-    term="dasein",
-    lemma="dasein",
+    term="Geist",
+    lemma="geist",
     pos="NN",
-    definition="Human being or existence (Heidegger)",
-    examples=["Dasein is Being-in-the-world."],
-    notes="Central concept in Being and Time"
+    definition="Spirit; self-developing rational principle (Hegel)",
+    examples=["Geist actualizes itself through history."],
+    notes="Central concept in Phenomenology of Spirit"
 )
 
 # Create term list

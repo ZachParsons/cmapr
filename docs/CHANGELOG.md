@@ -8,7 +8,7 @@ All notable changes to the Concept Mapper project.
 
 **Added:**
 - Complete example workflow in `examples/` directory
-  - Sample philosophical text (Heidegger style)
+  - Sample philosophical text (Hegelian style)
   - Step-by-step walkthrough documentation
   - Bash workflow script (`workflow.sh`)
   - Python API workflow script (`workflow.py`)

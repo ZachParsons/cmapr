@@ -56,7 +56,7 @@ echo ""
 echo "[5/5] Generating HTML visualization..."
 concept-mapper export "$GRAPH_COOCCUR" \
   --format html \
-  --title "Heidegger Concept Network" \
+  --title "Hegel Concept Network" \
   --output "$VIZ_DIR"
 echo ""
 

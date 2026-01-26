@@ -20,22 +20,22 @@ def sample_text_file(tmp_path):
     text_file = tmp_path / "sample.txt"
     # Use a more substantial text that will produce detectable rare terms
     text_file.write_text(
-        "Dasein is a fundamental concept in Heidegger's phenomenology. "
-        "Dasein refers to the distinctive way humans exist in the world. "
-        "Thrownness describes our factical situation in the world. "
-        "We find ourselves already thrown into existence without choice. "
-        "Being-in-the-world characterizes the fundamental structure of Dasein. "
-        "Being-in-the-world cannot be decomposed into separate components. "
-        "Temporality grounds the entire structure of care and understanding. "
-        "Temporality is not mere succession but ecstatic unity of past, present, and future. "
-        "The ontological difference distinguishes Being itself from particular beings. "
-        "Understanding the ontological difference is crucial for phenomenology. "
-        "Authenticity involves owning one's existence through resoluteness and anticipation. "
-        "Authenticity contrasts with everyday inauthentic modes of being. "
-        "Phenomenology investigates the structures of consciousness and intentional experience. "
-        "The phenomenological method involves bracketing natural assumptions about reality. "
-        "Hermeneutics plays a crucial role in the interpretation of Dasein's being. "
-        "The hermeneutic circle describes how understanding always presupposes some foreknowledge."
+        "Geist is a fundamental concept in Hegel's dialectical philosophy. "
+        "Geist refers to the self-developing rationality that animates history and thought. "
+        "Aufhebung describes the dialectical movement of sublation and preservation. "
+        "Through Aufhebung, contradictions are both negated and preserved at a higher level. "
+        "Selbstbewusstsein characterizes the fundamental structure of self-consciousness. "
+        "Selbstbewusstsein cannot be understood apart from recognition by another consciousness. "
+        "The dialectical process grounds the entire structure of thought and reality. "
+        "The dialectic is not mere succession but the negation of negation. "
+        "Anerkennung distinguishes mutual recognition from mere acknowledgment. "
+        "Understanding Anerkennung is crucial for Hegel's social philosophy. "
+        "Sittlichkeit involves the actualization of ethical life through social institutions. "
+        "Sittlichkeit contrasts with abstract morality and immediate desire. "
+        "The Phenomenology investigates the structures of consciousness and spirit. "
+        "The phenomenological method involves the dialectical unfolding of shapes of consciousness. "
+        "Mediation plays a crucial role in the interpretation of concrete universals. "
+        "The dialectical circle describes how the end returns to the beginning enriched by development."
     )
     return text_file
 
@@ -49,18 +49,18 @@ def sample_corpus_json(tmp_path):
     # Create a text file with philosophical terms that should be detected
     text_file = tmp_path / "source.txt"
     text_file.write_text(
-        "Dasein is a fundamental concept in Heidegger's phenomenology. "
-        "Dasein refers to the distinctive way humans exist in the world. "
-        "Thrownness describes our factical situation in the world. "
-        "We find ourselves already thrown into existence without choice. "
-        "Being-in-the-world characterizes the fundamental structure of Dasein. "
-        "Being-in-the-world cannot be decomposed into separate components. "
-        "Temporality grounds the entire structure of care and understanding. "
-        "Temporality is not mere succession but ecstatic unity. "
-        "The ontological difference distinguishes Being itself from particular beings. "
-        "Understanding the ontological difference is crucial for phenomenology. "
-        "Authenticity involves owning one's existence through resoluteness. "
-        "Authenticity contrasts with everyday inauthentic modes of being."
+        "Geist is a fundamental concept in Hegel's dialectical philosophy. "
+        "Geist refers to the self-developing rationality that animates history. "
+        "Aufhebung describes the dialectical movement of sublation. "
+        "Through Aufhebung, contradictions are both negated and preserved. "
+        "Selbstbewusstsein characterizes the fundamental structure of self-consciousness. "
+        "Selbstbewusstsein cannot be understood apart from recognition. "
+        "The dialectical process grounds the entire structure of thought. "
+        "The dialectic is not mere succession but negation of negation. "
+        "Anerkennung distinguishes mutual recognition from acknowledgment. "
+        "Understanding Anerkennung is crucial for social philosophy. "
+        "Sittlichkeit involves the actualization of ethical life. "
+        "Sittlichkeit contrasts with abstract morality and immediate desire."
     )
 
     # Process it
@@ -94,11 +94,11 @@ def sample_terms_json(tmp_path):
 
     terms = TermList.from_dict({
         "terms": [
-            {"term": "Dasein", "pos": "NN"},
-            {"term": "thrownness", "pos": "NN"},
-            {"term": "Being-in-the-world", "pos": "NN"},
-            {"term": "temporality", "pos": "NN"},
-            {"term": "authenticity", "pos": "NN"},
+            {"term": "Geist", "pos": "NN"},
+            {"term": "Aufhebung", "pos": "NN"},
+            {"term": "Selbstbewusstsein", "pos": "NN"},
+            {"term": "Anerkennung", "pos": "NN"},
+            {"term": "Sittlichkeit", "pos": "NN"},
         ]
     })
 
@@ -231,6 +231,8 @@ class TestRaritiesCommand:
                     str(sample_corpus_json),
                     "--method",
                     method,
+                    "--threshold",
+                    "0.0",
                     "--output",
                     str(output_file),
                 ],
@@ -260,7 +262,7 @@ class TestSearchCommand:
     def test_search_basic(self, runner, sample_corpus_json):
         """Test basic search."""
         result = runner.invoke(
-            cli, ["search", str(sample_corpus_json), "Dasein"]
+            cli, ["search", str(sample_corpus_json), "Geist"]
         )
 
         assert result.exit_code == 0
@@ -290,7 +292,7 @@ class TestSearchCommand:
             [
                 "search",
                 str(sample_corpus_json),
-                "Dasein",
+                "Geist",
                 "--output",
                 str(output_file),
             ],
@@ -311,7 +313,7 @@ class TestConcordanceCommand:
     def test_concordance_basic(self, runner, sample_corpus_json):
         """Test basic concordance."""
         result = runner.invoke(
-            cli, ["concordance", str(sample_corpus_json), "Dasein"]
+            cli, ["concordance", str(sample_corpus_json), "Geist"]
         )
 
         assert result.exit_code == 0
@@ -358,6 +360,8 @@ class TestGraphCommand:
                 str(sample_terms_json),
                 "--method",
                 "cooccurrence",
+                "--threshold",
+                "0.0",
                 "--output",
                 str(output_file),
             ],

@@ -724,7 +724,7 @@ Unified command-line access.
   - [x] Links to all documentation
 
 - [x] **11.2 Example workflow**
-  - [x] Sample corpus in `examples/` (Heidegger-style philosophical text)
+  - [x] Sample corpus in `examples/` (Hegelian-style philosophical text)
   - [x] Complete walkthrough in `examples/README.md`
   - [x] Bash script `examples/workflow.sh` for full pipeline
   - [x] Python script `examples/workflow.py` for API usage
@@ -866,7 +866,7 @@ Phase 5          Phase 6          Phase 7
    - CHANGELOG.md (6KB): Version history
 
 4. **Examples** (working code + data)
-   - Sample philosophical text (Heidegger style)
+   - Sample philosophical text (Hegelian style)
    - Complete workflow walkthrough
    - Bash script for CLI workflow
    - Python script for API workflow

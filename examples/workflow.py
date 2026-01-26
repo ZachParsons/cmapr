@@ -116,7 +116,7 @@ def main():
 
     # HTML visualization
     viz_dir = output_dir / "visualization"
-    html_path = generate_html(graph_cooccur, viz_dir, title="Heidegger Concept Network")
+    html_path = generate_html(graph_cooccur, viz_dir, title="Hegel Concept Network")
     print(f"  HTML visualization: {html_path}")
 
     # Other formats
