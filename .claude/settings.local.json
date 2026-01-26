@@ -44,7 +44,8 @@
       "Bash(venv/bin/concept-mapper:*)",
       "Bash(bash:*)",
       "Bash(python /Users/zach/se/projects/nlp/spike/examples/workflow.py:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(jobs:*)"
     ]
   }
 }

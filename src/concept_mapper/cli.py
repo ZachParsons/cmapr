@@ -605,6 +605,49 @@ def export(ctx, graph_file, format, output, title):
 
 
 # ============================================================================
+# Diagram Command
+# ============================================================================
+
+
+@cli.command()
+@click.argument("sentence")
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["ascii", "table", "tree"]),
+    default="ascii",
+    help="Output format",
+)
+@click.option("--output", "-o", type=click.Path(), help="Save to file")
+@click.pass_context
+def diagram(ctx, sentence, format, output):
+    """
+    Create a dependency parse diagram of a sentence.
+
+    Uses Stanza to perform deep syntactic analysis and visualizes
+    the grammatical structure.
+
+    Examples:
+        concept-mapper diagram "The cat sat on the mat."
+        concept-mapper diagram "Abstraction obscures social processes." --format tree
+        concept-mapper diagram "The question is complex." -o diagram.txt
+    """
+    from concept_mapper.syntax.diagram import diagram_sentence, save_diagram
+
+    verbose = ctx.obj.get("verbose", False)
+
+    if verbose:
+        click.echo("Parsing sentence...")
+
+    if output:
+        save_diagram(sentence, Path(output), output_format=format)
+        click.echo(f"✓ Diagram saved to {output}")
+    else:
+        result = diagram_sentence(sentence, output_format=format)
+        click.echo(result)
+
+
+# ============================================================================
 # Main Entry Point
 # ============================================================================
 
