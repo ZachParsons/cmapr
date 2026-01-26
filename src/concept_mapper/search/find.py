@@ -46,61 +46,101 @@ def find_sentences(
         term: Term to search for
         docs: List of preprocessed documents
         case_sensitive: Whether search is case-sensitive (default: False)
-        match_lemma: Whether to match lemmatized forms (default: False)
+        match_lemma: Whether to match lemmatized forms (default: False).
+                    When True, searches for lemma matches (e.g., "run" matches
+                    "running", "ran", "runs")
 
     Returns:
         List of SentenceMatch objects, in document order
 
     Example:
+        >>> # Exact word search
         >>> matches = find_sentences("abstraction", docs)
         >>> for match in matches:
         ...     print(f"{match.doc_id}: {match.sentence}")
+
+        >>> # Lemma-based search (matches all forms)
+        >>> matches = find_sentences("run", docs, match_lemma=True)
+        >>> # Will match "run", "running", "ran", "runs", etc.
     """
     matches = []
 
-    # Normalize search term
+    # If doing lemma search, get the lemma of the search term
+    search_lemma = None
+    if match_lemma:
+        from ..preprocessing.tokenize import tokenize_words
+        from ..preprocessing.tagging import tag_tokens
+        from ..preprocessing.lemmatize import lemmatize_tagged
+
+        # Get lemma of search term
+        tokens = tokenize_words(term)
+        if tokens:
+            tagged = tag_tokens(tokens)
+            lemmas = lemmatize_tagged(tagged)
+            search_lemma = lemmas[0] if lemmas else term.lower()
+        else:
+            search_lemma = term.lower()
+
+    # Normalize search term for exact matching
     search_term = term if case_sensitive else term.lower()
 
     for doc_idx, doc in enumerate(docs):
         # Get document ID from metadata or use index
         doc_id = doc.metadata.get("source_path", f"doc_{doc_idx}")
 
-        # TODO: Implement lemma-based search (match_lemma parameter)
-        # For now, search uses raw sentence text regardless of match_lemma setting
-
-        # Track which sentences we've already matched
-        # (to avoid duplicate matches if term appears multiple times)
-        matched_sentences = set()
-
         for sent_idx, sentence in enumerate(doc.sentences):
-            if sent_idx in matched_sentences:
-                continue
+            found = False
+            positions = []
 
-            # Normalize sentence for comparison
-            sentence_compare = sentence if case_sensitive else sentence.lower()
+            if match_lemma:
+                # Lemma-based search: tokenize sentence and check lemmas
+                from ..preprocessing.tokenize import tokenize_words
+                from ..preprocessing.tagging import tag_tokens
+                from ..preprocessing.lemmatize import lemmatize_tagged
 
-            # Check if term appears in sentence
-            if search_term in sentence_compare:
-                # Find all positions of the term in the sentence
-                positions = []
-                start = 0
-                while True:
-                    pos = sentence_compare.find(search_term, start)
-                    if pos == -1:
-                        break
-                    positions.append(pos)
-                    start = pos + 1
+                sent_tokens = tokenize_words(sentence)
+                if sent_tokens:
+                    sent_tagged = tag_tokens(sent_tokens)
+                    sent_lemmas = lemmatize_tagged(sent_tagged)
 
+                    # Check if any lemma matches
+                    if search_lemma in sent_lemmas:
+                        found = True
+                        # Find character positions of matching tokens
+                        # This is approximate since we're matching lemmas
+                        sentence_lower = sentence.lower()
+                        for i, lemma in enumerate(sent_lemmas):
+                            if lemma == search_lemma and i < len(sent_tokens):
+                                # Try to find this token in the sentence
+                                token = sent_tokens[i]
+                                pos = sentence_lower.find(token.lower())
+                                if pos != -1:
+                                    positions.append(pos)
+            else:
+                # Exact text search
+                sentence_compare = sentence if case_sensitive else sentence.lower()
+
+                if search_term in sentence_compare:
+                    found = True
+                    # Find all positions of the term in the sentence
+                    start = 0
+                    while True:
+                        pos = sentence_compare.find(search_term, start)
+                        if pos == -1:
+                            break
+                        positions.append(pos)
+                        start = pos + 1
+
+            if found:
                 # Create match object
                 match = SentenceMatch(
                     sentence=sentence.strip(),
                     doc_id=doc_id,
                     sent_index=sent_idx,
-                    term_positions=positions,
+                    term_positions=positions if positions else [0],
                     term=term,
                 )
                 matches.append(match)
-                matched_sentences.add(sent_idx)
 
     return matches
 

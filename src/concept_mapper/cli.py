@@ -257,15 +257,19 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
 @click.option(
     "--context", "-c", type=int, default=0, help="Number of context sentences"
 )
+@click.option(
+    "--lemma", "-l", is_flag=True, help="Match lemmatized forms (e.g., 'run' matches 'running', 'ran')"
+)
 @click.option("--output", "-o", type=click.Path(), help="Output file")
 @click.pass_context
-def search(ctx, corpus, term, context, output):
+def search(ctx, corpus, term, context, lemma, output):
     """
     Search for term occurrences in corpus.
 
     Examples:
         concept-mapper search corpus.json "consciousness"
         concept-mapper search corpus.json "being" --context 2
+        concept-mapper search corpus.json "run" --lemma
     """
     verbose = ctx.obj["verbose"]
 
@@ -278,10 +282,11 @@ def search(ctx, corpus, term, context, output):
     docs = [ProcessedDocument(**doc_data) for doc_data in data]
 
     if verbose:
-        click.echo(f"Searching for '{term}' in {len(docs)} document(s)...")
+        search_type = "lemma-based" if lemma else "exact"
+        click.echo(f"Searching ({search_type}) for '{term}' in {len(docs)} document(s)...")
 
     # Search
-    matches = find_sentences(term, docs)
+    matches = find_sentences(term, docs, match_lemma=lemma)
 
     if not matches:
         click.echo(f"No matches found for '{term}'")

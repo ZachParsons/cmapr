@@ -25,8 +25,6 @@ from pathlib import Path
 sample_dir = Path("data/sample")
 files = list(sample_dir.glob("*.txt"))
 print(f"Found {len(files)} sample documents")
-for f in files:
-    print(f"  - {f.name}")
 ```
 
 **Expected output:**

@@ -206,6 +206,30 @@ class TestFind:
         assert "[doc1.txt:0]" in match_str
         assert "abstraction" in match_str.lower()
 
+    def test_find_sentences_lemma_match(self, sample_docs):
+        """Test lemma-based search matches all word forms."""
+        # Search for lemma "be" which should match "is" and "being"
+        matches = find_sentences("be", sample_docs, match_lemma=True)
+
+        # Should find sentences with "is" in doc1 and "being" in doc2
+        assert len(matches) >= 2
+
+        # Verify we get sentences in document order
+        doc_ids = [m.doc_id for m in matches]
+        assert "doc1.txt" in doc_ids
+        assert "doc2.txt" in doc_ids
+
+    def test_find_sentences_exact_vs_lemma(self, sample_docs):
+        """Test that exact search is more restrictive than lemma search."""
+        # Exact search for "is" should only match "is"
+        exact_matches = find_sentences("is", sample_docs, match_lemma=False)
+
+        # Lemma search for "be" should match "is", "being", etc.
+        lemma_matches = find_sentences("be", sample_docs, match_lemma=True)
+
+        # Lemma search should find at least as many matches
+        assert len(lemma_matches) >= len(exact_matches)
+
 
 # ============================================================================
 # Test Concordance (KWIC)
