@@ -11,7 +11,7 @@ help:
 
 install:
 	@echo "📦 Installing dependencies with uv..."
-	@uv pip install -r requirements.txt
+	@uv pip install -e ".[dev]"
 
 format:
 	@echo "🔧 Formatting code with Black..."

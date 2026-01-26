@@ -13,11 +13,8 @@ Concept Mapper analyzes primary texts to identify author-specific philosophical 
 ### Installation
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Install package in development mode
-pip install -e .
+# Install package in development mode with all dependencies
+uv pip install -e .
 
 # Verify CLI installation
 concept-mapper --help
@@ -524,20 +521,14 @@ pytest tests/ --cov=src/concept_mapper
 ## Development
 
 ```bash
-# Install development dependencies
-pip install -r requirements.txt
+# Install package with development dependencies
+uv pip install -e ".[dev]"
 
-# Install package in editable mode
-pip install -e .
-
-# Format code
-black src/ tests/
-
-# Lint
-ruff check src/ tests/
-
-# Run tests
-pytest tests/ -v
+# Or use the Makefile shortcuts
+make format    # Format code with Black
+make lint      # Lint with Ruff
+make test      # Run tests with pytest
+make check     # Run all checks
 ```
 
 ## Documentation

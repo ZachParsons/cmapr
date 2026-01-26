@@ -5,11 +5,8 @@ Practical examples demonstrating the functionality of each completed phase.
 ## Prerequisites
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Install package in development mode
-pip install -e .
+# Install package with all dependencies
+uv pip install -e .
 ```
 
 ---
@@ -1249,7 +1246,7 @@ try:
     export_dot(cooccur_graph, Path("output/network.dot"), layout="neato")
     # Then render: dot -Tpng output/network.dot -o output/network.png
 except ImportError:
-    print("Install pydot for DOT export: pip install pydot")
+    print("Install pydot for DOT export: uv pip install pydot")
 
 # For spreadsheets (CSV)
 export_csv(cooccur_graph, Path("output/csv/"))
@@ -1434,12 +1431,9 @@ After installing the package, the `concept-mapper` command is available:
 
 ```bash
 # Install package
-pip install -e .
+uv pip install -e .
 
 # Verify installation
-concept-mapper --help
-
-# Show version and available commands
 concept-mapper --help
 ```
 

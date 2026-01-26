@@ -97,7 +97,7 @@ def export_dot(
         - twopi: Radial layout
 
     Note:
-        Requires pydot package: pip install pydot
+        Requires pydot package: uv pip install pydot
     """
     # Validate graph is not empty
     validate_concept_graph(graph, require_edges=False)
@@ -106,7 +106,7 @@ def export_dot(
         import pydot  # noqa: F401
     except ImportError:
         raise ImportError(
-            "DOT export requires pydot package. Install with: pip install pydot"
+            "DOT export requires pydot package. Install with: uv pip install pydot"
         )
 
     path = Path(path)
