@@ -725,7 +725,7 @@ Unified command-line access.
 
 - [x] **11.2 Example workflow**
   - [x] Sample corpus in `examples/` (Hegelian-style philosophical text)
-  - [x] Complete walkthrough in `examples/README.md`
+  - [x] Complete walkthrough in main `README.md`
   - [x] Bash script `examples/workflow.sh` for full pipeline
   - [x] Python script `examples/workflow.py` for API usage
   - [x] Expected outputs and explanation

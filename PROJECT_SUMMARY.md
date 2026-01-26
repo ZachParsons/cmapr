@@ -111,10 +111,10 @@ src/concept_mapper/
 ## Documentation
 
 ### User Documentation
-1. **[README.md](README.md)** - Quick start, installation, overview
+1. **[README.md](README.md)** - Quick start, installation, complete tutorial, overview
 2. **[Usage Guide](docs/usage-guide.md)** - Phase-by-phase examples (15,000+ words)
 3. **[API Reference](docs/api-reference.md)** - Complete Python API documentation
-4. **[Examples](examples/README.md)** - Complete workflow walkthrough
+4. **[Examples](examples/)** - Sample workflows and data
 
 ### Developer Documentation
 5. **[Development Roadmap](docs/concept-mapper-roadmap.md)** - Detailed phase breakdown

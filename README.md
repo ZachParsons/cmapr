@@ -10,6 +10,8 @@ Concept Mapper analyzes primary texts to identify author-specific philosophical 
 
 ## Quick Start
 
+### Installation
+
 ```bash
 # Install dependencies
 pip install -r requirements.txt
@@ -24,25 +26,22 @@ concept-mapper --help
 pytest tests/ -v
 ```
 
-## CLI Usage
+### Try the Example Workflow
 
-Try the example workflow with included sample data:
+Process the included sample philosophical text:
 
 ```bash
-# Process the sample philosophical text
-concept-mapper ingest examples/sample_text.txt
+# Run the complete workflow script
+bash examples/workflow.sh
 
-# Detect philosophical terms (abstraction, praxis, separation, etc.)
-concept-mapper rarities output/corpus/corpus.json --top-n 20
+# Or run commands individually:
+concept-mapper ingest examples/sample_text.txt -o examples/corpus.json
+concept-mapper rarities examples/corpus.json --top-n 20 -o examples/terms.json
+concept-mapper graph examples/corpus.json -t examples/terms.json -o examples/graph.json
+concept-mapper export examples/graph.json --format html -o examples/visualization/
 
-# Build concept graph from co-occurrence
-concept-mapper graph output/corpus/corpus.json -t output/terms/terms.json -m cooccurrence
-
-# Generate interactive visualization
-concept-mapper export output/graphs/graph.json --format html
-
-# Open visualization in browser
-open output/exports/visualization/index.html
+# Open the visualization
+open examples/visualization/index.html
 ```
 
 **Default output structure:**
@@ -55,31 +54,235 @@ output/
 └── cache/          # Reference corpus cache
 ```
 
-Or run the complete example workflow (from project root):
+## Complete Tutorial
+
+### Sample Corpus
+
+The `examples/sample_text.txt` file contains a passage on critical social theory and Thinkerist philosophy, featuring characteristic philosophical terminology:
+
+- **Abstraction** - Transformation of human relations into thing-like entities
+- **Praxis** - Unity of theory and practice through transformative action
+- **Dialectical negation** - Hegelian method of sublation and synthesis
+- **Separation** - Separation of workers from products and species-being
+- **Hegemony** - Cultural leadership and consent (Gramsci)
+- **Recognition** - Mutual acknowledgment between subjects (Hegel/Honneth)
+
+### Step 1: Ingest and Preprocess
+
+Load the sample text and preprocess it (tokenization, POS tagging, lemmatization):
+
 ```bash
-bash examples/workflow.sh
-# Or: python examples/workflow.py
+concept-mapper ingest examples/sample_text.txt -o examples/corpus.json
 ```
 
-For your own documents:
+**Expected output:**
+```
+✓ Saved 1 processed document(s) to examples/corpus.json
+```
+
+**What happens:** The raw text is tokenized into sentences and words, each word is tagged with its part of speech (NN, VB, etc.), and lemmatized (e.g., "entities" → "entity").
+
+### Step 2: Detect Philosophical Terms
+
+Identify author-specific terminology using statistical rarity analysis:
+
 ```bash
-# Analyze your own text file (outputs to ./output/)
+concept-mapper rarities examples/corpus.json \
+  --method hybrid \
+  --threshold 1.5 \
+  --top-n 20 \
+  -o examples/terms.json
+```
+
+**Expected output:**
+```
+Top 20 rare terms:
+------------------------------------------------------------
+abstraction          4.87
+praxis               3.45
+dialectical          3.21
+separation           2.98
+hegemony             2.76
+...
+
+✓ Saved 20 terms to examples/terms.json
+```
+
+**What happens:** Each term is scored based on:
+1. Relative frequency (how often it appears here vs. general English)
+2. TF-IDF score vs. reference corpus
+3. Neologism detection (not in WordNet dictionary)
+4. Definitional context (appears in definitional sentences)
+5. Capitalization (reified abstractions like "Being")
+
+**Try different methods:**
+```bash
+# Corpus-comparative ratio only
+concept-mapper rarities examples/corpus.json --method ratio --top-n 10
+
+# TF-IDF only
+concept-mapper rarities examples/corpus.json --method tfidf --top-n 10
+
+# Neologisms only
+concept-mapper rarities examples/corpus.json --method neologism --top-n 10
+```
+
+### Step 3: Search and Concordance
+
+Find where specific terms appear:
+
+```bash
+# Basic search
+concept-mapper search examples/corpus.json "abstraction"
+
+# Search with context (2 sentences before/after)
+concept-mapper search examples/corpus.json "dialectical" --context 2
+
+# KWIC concordance
+concept-mapper concordance examples/corpus.json "praxis" --width 40
+
+# Create sentence diagram
+concept-mapper diagram "Abstraction transforms social relations into things."
+```
+
+**Expected KWIC output:**
+```
+KWIC Concordance for 'praxis' (3 occurrences):
+================================================================================
+                    ... of theory and practice through  | praxis |  differs from mere contemplation...
+```
+
+### Step 4: Build Concept Graph
+
+Create a network graph showing relationships between terms:
+
+**Method A: Co-occurrence (proximity-based)**
+
+```bash
+concept-mapper graph examples/corpus.json \
+  --terms examples/terms.json \
+  --method cooccurrence \
+  --threshold 0.3 \
+  -o examples/graph.json
+```
+
+**Expected output:**
+```
+✓ Graph: 18 nodes, 42 edges
+✓ Saved graph to examples/graph.json
+```
+
+Edges represent terms that frequently appear together (same sentence or nearby sentences), weighted by PMI (Pointwise Mutual Information).
+
+**Method B: Relations (grammar-based)**
+
+```bash
+concept-mapper graph examples/corpus.json \
+  --terms examples/terms.json \
+  --method relations \
+  -o examples/graph_relations.json
+```
+
+Edges represent grammatical relationships:
+- **SVO triples**: "Praxis unifies theory"
+- **Copular**: "Abstraction is transformation"
+- **Prepositional**: "process of separation"
+
+### Step 5: Export and Visualize
+
+Generate an interactive HTML visualization:
+
+```bash
+concept-mapper export examples/graph.json \
+  --format html \
+  --title "Critical Theory Concept Network" \
+  -o examples/visualization/
+```
+
+**Open the visualization:**
+```bash
+open examples/visualization/index.html
+```
+
+**Features of the visualization:**
+- **Force-directed layout**: Nodes repel, connected nodes attract
+- **Interactive**: Drag nodes, zoom/pan
+- **Color-coded**: Nodes colored by community detection
+- **Sized by importance**: Node size reflects centrality or frequency
+- **Hover for details**: Tooltips show term information
+
+**Export to other formats:**
+
+```bash
+# GraphML for Gephi
+concept-mapper export examples/graph.json --format graphml -o examples/graph.graphml
+
+# CSV for spreadsheets
+concept-mapper export examples/graph.json --format csv -o examples/csv/
+
+# GEXF for Gephi
+concept-mapper export examples/graph.json --format gexf -o examples/graph.gexf
+```
+
+## CLI Reference
+
+### Core Commands
+
+```bash
+# Ingest and preprocess text
+concept-mapper ingest <path> [-o OUTPUT] [-r]
+
+# Detect rare/philosophical terms
+concept-mapper rarities <corpus> [--method METHOD] [--threshold N] [--top-n N] [-o OUTPUT]
+
+# Search for terms in context
+concept-mapper search <corpus> <query> [--context N] [-o OUTPUT]
+
+# KWIC concordance
+concept-mapper concordance <corpus> <term> [--width N] [-o OUTPUT]
+
+# Create sentence diagram
+concept-mapper diagram <sentence> [--format FORMAT] [-o OUTPUT]
+
+# Build concept graph
+concept-mapper graph <corpus> --terms <terms> [--method METHOD] [--threshold N] [-o OUTPUT]
+
+# Export/visualize graph
+concept-mapper export <graph> --format <FORMAT> [-o OUTPUT] [--title TITLE]
+```
+
+### Analyzing Your Own Texts
+
+```bash
+# Single file
 concept-mapper ingest your_document.txt
 concept-mapper rarities output/corpus/corpus.json
 concept-mapper graph output/corpus/corpus.json -t output/terms/terms.json
 concept-mapper export output/graphs/graph.json --format html
 
-# Or specify custom output locations with -o flag
-concept-mapper ingest your_document.txt -o my_corpus.json
+# Directory of files
+concept-mapper ingest path/to/corpus/ -r -o my_corpus.json
 concept-mapper rarities my_corpus.json -o my_terms.json
 concept-mapper graph my_corpus.json -t my_terms.json -o my_graph.json
-concept-mapper export my_graph.json --format html -o my_viz/
+concept-mapper export my_graph.json --format html -o viz/
 
-# Or process a directory of texts
-concept-mapper ingest path/to/corpus/ -r
+# Custom output locations
+concept-mapper ingest doc.txt -o corpus.json
+concept-mapper rarities corpus.json -o terms.json
+concept-mapper graph corpus.json -t terms.json -o graph.json
+concept-mapper export graph.json --format html -o viz/
 ```
 
-See `concept-mapper --help` for full command reference and [examples/README.md](examples/README.md) for detailed walkthrough.
+### Tuning Parameters
+
+**Rarity detection:**
+- `--threshold`: Minimum score (lower = more terms, higher = only very distinctive)
+- `--top-n`: Number of top terms to extract
+- `--method`: Detection method (ratio, tfidf, neologism, hybrid)
+
+**Graph construction:**
+- `--threshold`: Minimum edge weight (higher = sparser graph, only strong connections)
+- `--method`: Construction method (cooccurrence vs. relations)
 
 ## Features (Complete: Phases 0-11)
 
@@ -116,6 +319,7 @@ See `concept-mapper --help` for full command reference and [examples/README.md](
 - KWIC (Key Word In Context) concordance display
 - Context windows (N sentences before/after)
 - Dispersion analysis (where terms appear)
+- Sentence diagramming with dependency parsing
 - **[See examples →](docs/usage-guide.md#phase-5-search--concordance)**
 
 ### ✅ Phase 6: Co-occurrence Analysis
@@ -152,52 +356,107 @@ See `concept-mapper --help` for full command reference and [examples/README.md](
 
 ### ✅ Phase 10: CLI Interface
 - Unified command-line interface (`concept-mapper`)
-- Commands: ingest, rarities, search, concordance, graph, export
+- Commands: ingest, rarities, search, concordance, diagram, graph, export
 - Global options: `--verbose`, `--output-dir`
 - Progress bars for batch operations
 - End-to-end workflow support
 - **[See examples →](docs/usage-guide.md#phase-10-cli-interface)**
 
-## Documentation
+## Python API Usage
 
-- **[Usage Guide](docs/usage-guide.md)** - Practical examples for each phase
-- **[API Reference](docs/api-reference.md)** - Complete Python API reference
-- **[Development Roadmap](docs/concept-mapper-roadmap.md)** - Complete project plan
-- **[Examples](examples/)** - Complete workflow examples and sample data
-
-## Example Workflow
+For programmatic access, use the Python API directly:
 
 ```python
-from concept_mapper.corpus.loader import load_document
+from concept_mapper.corpus.loader import load_file
 from concept_mapper.preprocessing.pipeline import preprocess
 from concept_mapper.analysis.reference import load_reference_corpus
 from concept_mapper.analysis.rarity import PhilosophicalTermScorer
+from concept_mapper.graph import graph_from_cooccurrence
+from concept_mapper.analysis.cooccurrence import build_cooccurrence_matrix
+from concept_mapper.export import export_d3_json, generate_html
+from concept_mapper.terms.models import TermList
 
-# Load and preprocess text
-doc = load_document("data/sample/philosopher_1920_cc.txt")
+# Load and preprocess
+doc = load_file("examples/sample_text.txt")
 processed = preprocess(doc)
 
-# Detect philosophical terms
+# Detect terms
 reference = load_reference_corpus()
 scorer = PhilosophicalTermScorer([processed], reference)
-candidates = scorer.score_all(min_score=2.0, top_n=20)
+candidates = scorer.score_all(min_score=1.5, top_n=20)
 
-# Show results
-for term, score, components in candidates:
-    print(f"{term:20} {score:.2f}")
+# Create term list
+term_list = TermList.from_dict({
+    "terms": [{"term": term, "metadata": {"score": score}}
+              for term, score, _ in candidates]
+})
+
+# Build graph
+matrix = build_cooccurrence_matrix(term_list, [processed], method="pmi")
+graph = graph_from_cooccurrence(matrix, threshold=0.3)
+
+# Export
+generate_html(graph, "examples/viz/", title="My Concept Network")
 ```
 
-**Output:**
+**Expected output:**
 ```
 abstraction          4.87
 proletariat          3.45
 bourgeoisie          3.21
 commodity            2.98
-fetishism            2.76
 ...
 ```
 
-**See [Usage Guide](docs/usage-guide.md#complete-workflow-example) for the complete workflow.**
+**See [Usage Guide](docs/usage-guide.md) for complete API documentation.**
+
+## Understanding Results
+
+### What Makes a Good Philosophical Term?
+
+**High-scoring terms typically:**
+1. Appear frequently in the text (absolute frequency)
+2. Rarely appear in general English (low reference corpus frequency)
+3. Don't appear in standard dictionaries (neologisms)
+4. Appear in definitional contexts ("X is...", "we call this X")
+5. Are capitalized mid-sentence (reified abstractions)
+
+**Examples:**
+- ✓ "abstraction" - Technical term, high frequency in critical theory
+- ✓ "praxis" - Philosophical concept, rare in general English
+- ✓ "Aufhebung" - Hegelian neologism
+- ✗ "question" - Common word, even if frequent in philosophy
+
+### Graph Interpretation
+
+**Dense clusters** indicate:
+- Closely related concepts
+- Co-occurring conceptual families
+
+**Bridge nodes** (high betweenness centrality):
+- Concepts that connect different areas
+- Central to the author's framework
+
+**Peripheral nodes**:
+- Specialized or less-integrated concepts
+- May indicate tangential discussions
+
+## Troubleshooting
+
+**Issue: No terms detected**
+- Try lowering `--threshold` value
+- Check that your text has sufficient length (> 500 words recommended)
+- Verify text is in English
+
+**Issue: Graph has no edges**
+- Lower the `--threshold` in graph command
+- Use `--method relations` instead of cooccurrence
+- Check that term list has multiple terms
+
+**Issue: Visualization won't open**
+- Use absolute path: `file:///full/path/to/index.html`
+- Check browser console for JavaScript errors
+- Verify graph data exists in visualization directory
 
 ## Sample Data
 
@@ -206,6 +465,11 @@ The `data/sample/` directory contains test corpora:
 - `philosopher_1920_cc.txt` - Philosopher' *History and Class Consciousness* (93KB)
 - `hegel_phenomenology_excerpt.txt` - Hegel's *Phenomenology of Spirit* excerpt
 - `test_philosophical_terms.txt` - Synthetic test data with known terms
+
+The `examples/` directory contains:
+- `sample_text.txt` - Critical theory passage for quick testing
+- `workflow.sh` - Complete bash workflow script
+- `workflow.py` - Complete Python workflow script
 
 ## Project Structure
 
@@ -216,9 +480,15 @@ The `data/sample/` directory contains test corpora:
 │   ├── preprocessing/         # Tokenization, POS, lemmatization
 │   ├── analysis/              # Frequency, TF-IDF, rarity, co-occurrence, relations
 │   ├── search/                # Search and concordance
-│   └── terms/                 # Term list management
-├── tests/                     # Test suite (406 tests)
+│   ├── syntax/                # Dependency parsing and sentence diagramming
+│   ├── terms/                 # Term list management
+│   ├── graph/                 # Graph construction and metrics
+│   ├── export/                # Export to various formats
+│   ├── storage/               # Persistence layer
+│   └── cli.py                 # Command-line interface
+├── tests/                     # Test suite (521 tests)
 ├── data/sample/               # Sample corpus
+├── examples/                  # Example workflows and outputs
 ├── docs/                      # Documentation
 └── output/                    # Analysis results
 ```
@@ -226,9 +496,10 @@ The `data/sample/` directory contains test corpora:
 ## Technology Stack
 
 - **Python 3.14**
-- **NLTK** (Natural Language Toolkit) - tokenization, POS tagging, lemmatization
+- **NLTK** - tokenization, POS tagging, lemmatization
+- **Stanza** - dependency parsing and sentence diagramming
 - **NetworkX** - graph construction and analysis
-- **pytest** - testing framework
+- **pytest** - testing framework (521 tests passing)
 - **Black** - code formatting
 - **Ruff** - linting
 
@@ -244,31 +515,11 @@ pytest tests/ -v
 pytest tests/test_corpus.py -v
 pytest tests/test_analysis.py -v
 pytest tests/test_search.py -v
-pytest tests/test_cooccurrence.py -v
-pytest tests/test_relations.py -v
-pytest tests/test_graph.py -v
-pytest tests/test_export.py -v
 pytest tests/test_cli.py -v
 
 # Run with coverage
 pytest tests/ --cov=src/concept_mapper
 ```
-
-## Roadmap
-
-- ✅ **Phases 0-11:** Complete
-  - ✅ Phase 0-1: Corpus loading and preprocessing
-  - ✅ Phase 2-3: Frequency analysis and rarity detection
-  - ✅ Phase 4: Term list management
-  - ✅ Phase 5: Search and concordance
-  - ✅ Phase 6: Co-occurrence analysis
-  - ✅ Phase 7: Relation extraction
-  - ✅ Phase 8: Graph construction
-  - ✅ Phase 9: Export and visualization
-  - ✅ Phase 10: CLI interface
-  - ✅ Phase 11: Documentation and examples
-
-**See [Development Roadmap](docs/concept-mapper-roadmap.md) for detailed phase breakdown.**
 
 ## Development
 
@@ -289,6 +540,13 @@ ruff check src/ tests/
 pytest tests/ -v
 ```
 
+## Documentation
+
+- **[Usage Guide](docs/usage-guide.md)** - Practical examples for each phase
+- **[API Reference](docs/api-reference.md)** - Complete Python API reference
+- **[Development Roadmap](docs/concept-mapper-roadmap.md)** - Complete project plan
+- **[Validation](VALIDATION.md)** - Output validation and error handling
+
 ## Use Cases
 
 1. **Digital Humanities Research**
@@ -306,43 +564,21 @@ pytest tests/ -v
    - Identify central concepts for indexing
    - Generate concept maps for papers
 
-## Examples by Phase
+## Roadmap
 
-### Find Key Terms (Phase 3)
-```python
-scorer = PhilosophicalTermScorer(docs, reference)
-terms = scorer.get_high_confidence_terms(min_signals=3)
-# Returns: [(term, score, components), ...]
-```
+- ✅ **Phases 0-11:** Complete
+  - ✅ Phase 0-1: Corpus loading and preprocessing
+  - ✅ Phase 2-3: Frequency analysis and rarity detection
+  - ✅ Phase 4: Term list management
+  - ✅ Phase 5: Search, concordance, and sentence diagramming
+  - ✅ Phase 6: Co-occurrence analysis
+  - ✅ Phase 7: Relation extraction
+  - ✅ Phase 8: Graph construction
+  - ✅ Phase 9: Export and visualization
+  - ✅ Phase 10: CLI interface
+  - ✅ Phase 11: Documentation and examples
 
-### Search in Context (Phase 5)
-```python
-from concept_mapper.search import get_context
-
-windows = get_context("abstraction", docs, n_sentences=2)
-for w in windows:
-    print(w)  # Shows 2 sentences before/after
-```
-
-### Find Associations (Phase 6)
-```python
-from concept_mapper.analysis import get_top_cooccurrences
-
-top = get_top_cooccurrences("consciousness", docs, n=10, method="pmi")
-# Returns: [(term, pmi_score), ...]
-```
-
-### Extract Relations (Phase 7)
-```python
-from concept_mapper.analysis import get_relations
-
-relations = get_relations("being", docs)
-for r in relations:
-    print(f"{r.source} --[{r.relation_type}]--> {r.target}")
-    print(f"  Evidence: {len(r.evidence)} sentences")
-```
-
-**See [Usage Guide](docs/usage-guide.md) for complete examples.**
+**See [Development Roadmap](docs/concept-mapper-roadmap.md) for detailed phase breakdown.**
 
 ## License
 
