@@ -9,6 +9,7 @@ from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 import json
+from concept_mapper.validation import validate_term_list
 
 
 @dataclass
@@ -222,11 +223,15 @@ class TermList:
         Args:
             path: Path to save to
         """
+        # Validate term list is not empty
+        data = self.to_dict()
+        validate_term_list(data)
+
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
+            json.dump(data, f, indent=2, ensure_ascii=False)
 
     @classmethod
     def load(cls, path: Path) -> "TermList":

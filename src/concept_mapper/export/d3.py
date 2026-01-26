@@ -14,6 +14,7 @@ from concept_mapper.graph.metrics import (
     detect_communities,
     assign_communities,
 )
+from concept_mapper.validation import validate_concept_graph
 
 
 def export_d3_json(
@@ -72,6 +73,9 @@ def export_d3_json(
           ]
         }
     """
+    # Validate graph is not empty
+    validate_concept_graph(graph, require_edges=False)
+
     # Compute communities if requested and not already assigned
     if compute_communities:
         has_community = any("community" in graph.get_node(n) for n in graph.nodes())

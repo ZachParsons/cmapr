@@ -10,6 +10,7 @@ from typing import List, Optional, Dict, Tuple
 import math
 from ..corpus.models import ProcessedDocument
 from ..terms.models import TermList
+from concept_mapper.validation import EmptyOutputError
 
 
 def cooccurs_in_sentence(
@@ -459,6 +460,12 @@ def save_cooccurrence_matrix(
 
     # Get sorted list of terms
     terms = sorted(matrix.keys())
+
+    # Validate matrix is not empty
+    if not terms:
+        raise EmptyOutputError(
+            "Cannot save empty co-occurrence matrix. No terms found."
+        )
 
     # Write CSV
     with open(output_path, "w", newline="", encoding="utf-8") as f:

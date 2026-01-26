@@ -10,6 +10,11 @@ from pathlib import Path
 from typing import Any, Dict
 
 from .backend import StorageBackend
+from concept_mapper.validation import (
+    validate_corpus,
+    validate_term_list,
+    validate_graph,
+)
 
 
 class JSONBackend(StorageBackend):
@@ -33,6 +38,9 @@ class JSONBackend(StorageBackend):
 
     def save_corpus(self, corpus_data: Any, path: Path) -> None:
         """Save corpus data as JSON."""
+        # Validate corpus is not empty
+        validate_corpus(corpus_data)
+
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -48,6 +56,9 @@ class JSONBackend(StorageBackend):
 
     def save_term_list(self, term_list: Any, path: Path) -> None:
         """Save term list as JSON."""
+        # Validate term list is not empty
+        validate_term_list(term_list)
+
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -61,6 +72,9 @@ class JSONBackend(StorageBackend):
 
     def save_graph(self, graph: Any, path: Path) -> None:
         """Save graph as JSON."""
+        # Validate graph is not empty
+        validate_graph(graph, require_edges=False)
+
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
 

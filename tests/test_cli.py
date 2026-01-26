@@ -16,11 +16,26 @@ def runner():
 
 @pytest.fixture
 def sample_text_file(tmp_path):
-    """Create a sample text file."""
+    """Create a sample text file with philosophical terminology."""
     text_file = tmp_path / "sample.txt"
+    # Use a more substantial text that will produce detectable rare terms
     text_file.write_text(
-        "Consciousness is intentional. Being is presence. "
-        "The concept of abstraction transforms social relations into things."
+        "Dasein is a fundamental concept in Heidegger's phenomenology. "
+        "Dasein refers to the distinctive way humans exist in the world. "
+        "Thrownness describes our factical situation in the world. "
+        "We find ourselves already thrown into existence without choice. "
+        "Being-in-the-world characterizes the fundamental structure of Dasein. "
+        "Being-in-the-world cannot be decomposed into separate components. "
+        "Temporality grounds the entire structure of care and understanding. "
+        "Temporality is not mere succession but ecstatic unity of past, present, and future. "
+        "The ontological difference distinguishes Being itself from particular beings. "
+        "Understanding the ontological difference is crucial for phenomenology. "
+        "Authenticity involves owning one's existence through resoluteness and anticipation. "
+        "Authenticity contrasts with everyday inauthentic modes of being. "
+        "Phenomenology investigates the structures of consciousness and intentional experience. "
+        "The phenomenological method involves bracketing natural assumptions about reality. "
+        "Hermeneutics plays a crucial role in the interpretation of Dasein's being. "
+        "The hermeneutic circle describes how understanding always presupposes some foreknowledge."
     )
     return text_file
 
@@ -31,11 +46,21 @@ def sample_corpus_json(tmp_path):
     from concept_mapper.corpus.loader import load_file
     from concept_mapper.preprocessing.pipeline import preprocess
 
-    # Create a simple text file
+    # Create a text file with philosophical terms that should be detected
     text_file = tmp_path / "source.txt"
     text_file.write_text(
-        "Consciousness is intentional. Being is presence in time. "
-        "Abstraction transforms processes into things."
+        "Dasein is a fundamental concept in Heidegger's phenomenology. "
+        "Dasein refers to the distinctive way humans exist in the world. "
+        "Thrownness describes our factical situation in the world. "
+        "We find ourselves already thrown into existence without choice. "
+        "Being-in-the-world characterizes the fundamental structure of Dasein. "
+        "Being-in-the-world cannot be decomposed into separate components. "
+        "Temporality grounds the entire structure of care and understanding. "
+        "Temporality is not mere succession but ecstatic unity. "
+        "The ontological difference distinguishes Being itself from particular beings. "
+        "Understanding the ontological difference is crucial for phenomenology. "
+        "Authenticity involves owning one's existence through resoluteness. "
+        "Authenticity contrasts with everyday inauthentic modes of being."
     )
 
     # Process it
@@ -67,13 +92,15 @@ def sample_terms_json(tmp_path):
     from concept_mapper.terms.models import TermList
     from concept_mapper.terms.manager import TermManager
 
-    terms = TermList(
-        [
-            {"term": "consciousness", "pos": "NN"},
-            {"term": "being", "pos": "NN"},
-            {"term": "abstraction", "pos": "NN"},
+    terms = TermList.from_dict({
+        "terms": [
+            {"term": "Dasein", "pos": "NN"},
+            {"term": "thrownness", "pos": "NN"},
+            {"term": "Being-in-the-world", "pos": "NN"},
+            {"term": "temporality", "pos": "NN"},
+            {"term": "authenticity", "pos": "NN"},
         ]
-    )
+    })
 
     terms_file = tmp_path / "terms.json"
     manager = TermManager(terms)
@@ -233,7 +260,7 @@ class TestSearchCommand:
     def test_search_basic(self, runner, sample_corpus_json):
         """Test basic search."""
         result = runner.invoke(
-            cli, ["search", str(sample_corpus_json), "consciousness"]
+            cli, ["search", str(sample_corpus_json), "Dasein"]
         )
 
         assert result.exit_code == 0
@@ -263,7 +290,7 @@ class TestSearchCommand:
             [
                 "search",
                 str(sample_corpus_json),
-                "consciousness",
+                "Dasein",
                 "--output",
                 str(output_file),
             ],
@@ -284,7 +311,7 @@ class TestConcordanceCommand:
     def test_concordance_basic(self, runner, sample_corpus_json):
         """Test basic concordance."""
         result = runner.invoke(
-            cli, ["concordance", str(sample_corpus_json), "consciousness"]
+            cli, ["concordance", str(sample_corpus_json), "Dasein"]
         )
 
         assert result.exit_code == 0

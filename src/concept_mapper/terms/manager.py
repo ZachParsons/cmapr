@@ -10,6 +10,7 @@ from typing import Optional, List
 from .models import TermList, TermEntry
 import csv
 import json
+from concept_mapper.validation import validate_term_list, validate_csv_data
 
 
 class TermManager:
@@ -96,6 +97,9 @@ class TermManager:
 
         terms = self.term_list.list_term_names()
 
+        # Validate terms list is not empty
+        validate_term_list(terms)
+
         with open(path, "w", encoding=encoding) as f:
             f.write(delimiter.join(terms))
             if delimiter == "\n":
@@ -129,6 +133,9 @@ class TermManager:
             fields = ["term", "lemma", "pos", "definition", "notes"]
 
         terms = self.term_list.list_terms()
+
+        # Validate terms list is not empty
+        validate_csv_data(terms, file_type="terms CSV")
 
         with open(path, "w", encoding=encoding, newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fields)
@@ -323,6 +330,9 @@ class TermManager:
             for entry in terms
         ]
 
+        # Validate terms list is not empty
+        validate_term_list(data)
+
         with open(path, "w", encoding=encoding) as f:
             json.dump(data, f, indent=indent, ensure_ascii=False)
 
@@ -349,9 +359,12 @@ class TermManager:
             data = json.load(f)
 
         # Convert to TermEntry objects
+        from .models import TermEntry
+
         count = 0
         for item in data:
-            self.add(item.get("term"), **{k: v for k, v in item.items() if k != "term"})
+            entry = TermEntry.from_dict(item)
+            self.term_list.add(entry)
             count += 1
 
         return count

@@ -497,15 +497,18 @@ class TestExportIntegration:
         assert len(data["links"]) == sample_graph.edge_count()
 
     def test_empty_graph_exports(self, temp_output_dir):
-        """Test exporting empty graph."""
+        """Test exporting empty graph raises validation error."""
+        from concept_mapper.validation import EmptyOutputError
+        import pytest
+
         graph = ConceptGraph()
 
-        # Should not raise errors
-        export_d3_json(graph, temp_output_dir / "empty.json")
-        export_graphml(graph, temp_output_dir / "empty.graphml")
-        export_csv(graph, temp_output_dir / "empty")
+        # Should raise EmptyOutputError
+        with pytest.raises(EmptyOutputError, match="Cannot save empty graph"):
+            export_d3_json(graph, temp_output_dir / "empty.json")
 
-        # D3 JSON should have empty arrays
-        data = load_d3_json(temp_output_dir / "empty.json")
-        assert len(data["nodes"]) == 0
-        assert len(data["links"]) == 0
+        with pytest.raises(EmptyOutputError, match="Cannot save empty graph"):
+            export_graphml(graph, temp_output_dir / "empty.graphml")
+
+        with pytest.raises(EmptyOutputError, match="Cannot save empty graph"):
+            export_csv(graph, temp_output_dir / "empty")

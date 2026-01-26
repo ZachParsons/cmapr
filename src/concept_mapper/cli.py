@@ -28,6 +28,12 @@ from concept_mapper.export import (
     export_gexf,
     generate_html,
 )
+from concept_mapper.validation import (
+    validate_corpus,
+    validate_term_list,
+    validate_graph,
+    validate_concept_graph,
+)
 
 
 @click.group()
@@ -127,6 +133,9 @@ def ingest(ctx, path, output, recursive, pattern):
             }
         )
 
+    # Validate before saving
+    validate_corpus(serialized)
+
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(serialized, f, indent=2, ensure_ascii=False)
 
@@ -196,6 +205,15 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
     scorer = PhilosophicalTermScorer(docs, reference, use_lemmas=True)
     candidates = scorer.score_all(min_score=threshold, top_n=top_n)
 
+    # Check if any terms were found
+    if not candidates:
+        click.echo("\nNo rare terms detected. Try:")
+        click.echo("  - Lowering the --threshold value")
+        click.echo("  - Using a different --method (hybrid, ratio, tfidf, neologism)")
+        click.echo("  - Checking that the input text is substantial (>500 words)")
+        click.echo("  - Verifying the text is in English")
+        sys.exit(1)
+
     # Display results
     click.echo(f"\nTop {len(candidates)} rare terms:")
     click.echo("-" * 60)
@@ -215,9 +233,15 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Create term list
-    term_list = TermList(
-        [{"term": term, "score": score} for term, score, _ in candidates]
-    )
+    term_data = [
+        {"term": term, "metadata": {"score": score}}
+        for term, score, _ in candidates
+    ]
+
+    # Validate before saving (should never fail here since we checked above)
+    validate_term_list(term_data)
+
+    term_list = TermList.from_dict({"terms": term_data})
     manager = TermManager(term_list)
     manager.export_to_json(output_path)
 
@@ -435,8 +459,8 @@ def graph(ctx, corpus, terms, method, threshold, output):
 
         all_relations = []
         with click.progressbar(term_list, label="Extracting") as bar:
-            for term_data in bar:
-                relations = get_relations(term_data["term"], docs)
+            for term_entry in bar:
+                relations = get_relations(term_entry.term, docs)
                 all_relations.extend(relations)
 
         if verbose:
@@ -448,6 +472,9 @@ def graph(ctx, corpus, terms, method, threshold, output):
     click.echo(
         f"\n✓ Graph: {concept_graph.node_count()} nodes, {concept_graph.edge_count()} edges"
     )
+
+    # Validate before saving
+    validate_concept_graph(concept_graph)
 
     # Save
     if output:

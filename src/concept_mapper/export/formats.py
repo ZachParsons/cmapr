@@ -11,6 +11,7 @@ import csv
 from pathlib import Path
 import networkx as nx
 from concept_mapper.graph.model import ConceptGraph
+from concept_mapper.validation import validate_concept_graph, validate_csv_data
 
 
 def export_graphml(
@@ -38,6 +39,9 @@ def export_graphml(
     Note:
         Evidence lists are converted to comma-separated strings for compatibility.
     """
+    # Validate graph is not empty
+    validate_concept_graph(graph, require_edges=False)
+
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -95,6 +99,9 @@ def export_dot(
     Note:
         Requires pydot package: pip install pydot
     """
+    # Validate graph is not empty
+    validate_concept_graph(graph, require_edges=False)
+
     try:
         import pydot  # noqa: F401
     except ImportError:
@@ -151,6 +158,9 @@ def export_csv(
         source,target,weight,relation_type,evidence
         consciousness,being,0.85,copular,"Consciousness is being."
     """
+    # Validate graph is not empty
+    validate_concept_graph(graph, require_edges=False)
+
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -229,6 +239,9 @@ def export_gexf(
     Example:
         >>> export_gexf(graph, Path("output/graph.gexf"))
     """
+    # Validate graph is not empty
+    validate_concept_graph(graph, require_edges=False)
+
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -268,6 +281,9 @@ def export_json_graph(
     Example:
         >>> export_json_graph(graph, Path("output/graph.json"))
     """
+    # Validate graph is not empty
+    validate_concept_graph(graph, require_edges=False)
+
     import json
 
     path = Path(path)

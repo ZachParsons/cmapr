@@ -41,7 +41,10 @@
       "Bash(python examples/workflow.py:*)",
       "Bash(wc:*)",
       "Bash(python -c:*)",
-      "Bash(venv/bin/concept-mapper:*)"
+      "Bash(venv/bin/concept-mapper:*)",
+      "Bash(bash:*)",
+      "Bash(python /Users/zach/se/projects/nlp/spike/examples/workflow.py:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }
