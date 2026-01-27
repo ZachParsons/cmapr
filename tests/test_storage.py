@@ -118,13 +118,10 @@ class TestFilesystemUtils:
 
         assert dirs["base"].exists()
         assert dirs["corpus"].exists()
-        assert dirs["analysis"].exists()
+        assert dirs["terms"].exists()
         assert dirs["graphs"].exists()
-        assert dirs["d3"].exists()
+        assert dirs["exports"].exists()
         assert dirs["cache"].exists()
-
-        # Verify structure
-        assert dirs["d3"] == base_dir / "graphs" / "d3"
 
     def test_validate_file_path_existing(self, tmp_path):
         """Test validating an existing file path."""

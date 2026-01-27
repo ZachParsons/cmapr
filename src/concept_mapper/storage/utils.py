@@ -14,9 +14,9 @@ def ensure_output_structure(base_dir: Path = Path("output")) -> dict[str, Path]:
 
     Creates the following directories:
     - output/corpus/
-    - output/analysis/
+    - output/terms/
     - output/graphs/
-    - output/graphs/d3/
+    - output/exports/
     - output/cache/
 
     Args:
@@ -30,9 +30,9 @@ def ensure_output_structure(base_dir: Path = Path("output")) -> dict[str, Path]:
     directories = {
         "base": base_dir,
         "corpus": base_dir / "corpus",
-        "analysis": base_dir / "analysis",
+        "terms": base_dir / "terms",
         "graphs": base_dir / "graphs",
-        "d3": base_dir / "graphs" / "d3",
+        "exports": base_dir / "exports",
         "cache": base_dir / "cache",
     }
 
@@ -70,7 +70,7 @@ def validate_file_path(path: Path, must_exist: bool = False) -> Path:
 
 def get_output_path(
     filename: str,
-    subdir: str = "analysis",
+    subdir: str = "terms",
     base_dir: Path = Path("output"),
     ensure_dir: bool = True,
 ) -> Path:
@@ -79,7 +79,7 @@ def get_output_path(
 
     Args:
         filename: Output filename
-        subdir: Subdirectory within output (e.g., 'analysis', 'graphs')
+        subdir: Subdirectory within output (e.g., 'corpus', 'terms', 'graphs', 'exports')
         base_dir: Base output directory
         ensure_dir: If True, create directory if it doesn't exist
 

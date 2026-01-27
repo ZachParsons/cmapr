@@ -9,17 +9,17 @@ echo "Concept Mapper: Complete Workflow"
 echo "=================================="
 echo ""
 
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get project root directory (parent of examples/)
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Configuration (paths relative to script directory)
-INPUT_TEXT="$SCRIPT_DIR/sample_text.txt"
-OUTPUT_DIR="$SCRIPT_DIR"
-CORPUS_FILE="$OUTPUT_DIR/corpus.json"
-TERMS_FILE="$OUTPUT_DIR/terms.json"
-GRAPH_COOCCUR="$OUTPUT_DIR/graph_cooccur.json"
-GRAPH_RELATIONS="$OUTPUT_DIR/graph_relations.json"
-VIZ_DIR="$OUTPUT_DIR/visualization"
+# Configuration
+INPUT_TEXT="$PROJECT_ROOT/samples/sample1_analytic_pragmatism.txt"
+OUTPUT_DIR="$PROJECT_ROOT/output"
+CORPUS_FILE="$OUTPUT_DIR/corpus/corpus.json"
+TERMS_FILE="$OUTPUT_DIR/terms/terms.json"
+GRAPH_COOCCUR="$OUTPUT_DIR/graphs/graph_cooccur.json"
+GRAPH_RELATIONS="$OUTPUT_DIR/graphs/graph_relations.json"
+VIZ_DIR="$OUTPUT_DIR/exports/visualization"
 
 # Step 1: Ingest
 echo "[1/5] Ingesting and preprocessing text..."
@@ -56,15 +56,15 @@ echo ""
 echo "[5/5] Generating HTML visualization..."
 concept-mapper export "$GRAPH_COOCCUR" \
   --format html \
-  --title "Hegel Concept Network" \
+  --title "Analytic Philosophy Concept Network" \
   --output "$VIZ_DIR"
 echo ""
 
 # Also export other formats
 echo "Exporting additional formats..."
-concept-mapper export "$GRAPH_COOCCUR" --format graphml -o "$OUTPUT_DIR/graph.graphml"
-concept-mapper export "$GRAPH_COOCCUR" --format csv -o "$OUTPUT_DIR/csv/"
-concept-mapper export "$GRAPH_COOCCUR" --format gexf -o "$OUTPUT_DIR/graph.gexf"
+concept-mapper export "$GRAPH_COOCCUR" --format graphml -o "$OUTPUT_DIR/exports/graph.graphml"
+concept-mapper export "$GRAPH_COOCCUR" --format csv -o "$OUTPUT_DIR/exports/csv/"
+concept-mapper export "$GRAPH_COOCCUR" --format gexf -o "$OUTPUT_DIR/exports/graph.gexf"
 echo ""
 
 # Summary
@@ -78,9 +78,9 @@ echo "  - Terms: $TERMS_FILE"
 echo "  - Co-occurrence graph: $GRAPH_COOCCUR"
 echo "  - Relations graph: $GRAPH_RELATIONS"
 echo "  - Visualization: $VIZ_DIR/index.html"
-echo "  - GraphML: $OUTPUT_DIR/graph.graphml"
-echo "  - CSV: $OUTPUT_DIR/csv/"
-echo "  - GEXF: $OUTPUT_DIR/graph.gexf"
+echo "  - GraphML: $OUTPUT_DIR/exports/graph.graphml"
+echo "  - CSV: $OUTPUT_DIR/exports/csv/"
+echo "  - GEXF: $OUTPUT_DIR/exports/graph.gexf"
 echo ""
 echo "To view the visualization:"
 echo "  open $VIZ_DIR/index.html"

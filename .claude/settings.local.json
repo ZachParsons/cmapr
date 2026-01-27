@@ -48,7 +48,9 @@
       "Bash(grep:*)",
       "Bash(uv pip install:*)",
       "Bash(vulture:*)",
-      "Bash(make check:*)"
+      "Bash(make check:*)",
+      "Bash(xargs ls:*)",
+      "Bash(git restore:*)"
     ]
   }
 }

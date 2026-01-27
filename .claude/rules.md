@@ -95,8 +95,20 @@ This is an NLP project for concept mapping and linguistic analysis using spaCy a
 ### Communication & Collaboration
 - **Ask questions during development** - Don't assume, ask the lead developer for clarification
 - **Get feedback early and often** - Check assumptions before implementing
-- **Ask before adding GenAI artifacts** - Never create markdown files (tasks, validation docs, etc.) without approval
 - **Explain your reasoning** - When suggesting changes or additions, explain the rationale
+
+### Documentation & Markdown Files - STRICT RULES
+- **NEVER create new markdown files without explicit approval** - This includes:
+  - No TASKS.md, TODO.md, BACKLOG.md, VALIDATION.md, MIGRATION.md, REORGANIZATION.md, etc.
+  - No explanatory docs, summaries, or planning files at project root
+  - No duplicate READMEs in subdirectories
+- **Where to put content instead:**
+  - Planning/tasks/todos → `docs/concept-mapper-roadmap.md`
+  - Project changes/major updates → Add section to README.md
+  - Feature documentation → Add to `docs/api-reference.md`
+  - Directory explanations → Add to README.md "Project Structure" section
+- **When in doubt, ASK FIRST** - If you think a new markdown file is needed, ask before creating it
+- **Consolidate, don't create** - Add content to existing docs rather than creating new files
 
 ### AI-Generated Artifacts Storage
 - **ALL AI-generated planning artifacts MUST go in the roadmap** - Never create separate task files
@@ -105,7 +117,6 @@ This is an NLP project for concept mapping and linguistic analysis using spaCy a
   - "Ongoing Maintenance Tasks" - Current maintenance todos
   - "Recent Completions" - Recently finished work
   - "Next Steps (Optional Future Work)" - Future enhancements
-- **Delete standalone task files** - No TASKS.md, TODO.md, BACKLOG.md, etc.
 - **Keep history** - Don't remove completed items, mark them with [x]
 
 ### When Writing Code

@@ -208,11 +208,12 @@ __marimo__/
 
 # Project specific
 venv.old/
-output/
-examples/output/
-examples/corpus.json
-examples/terms.json
-examples/graph*.json
+output/*
+!output/.gitkeep
+!output/corpus/.gitkeep
+!output/terms/.gitkeep
+!output/graphs/.gitkeep
+!output/exports/.gitkeep
 *.pickle
 *.ps
 .DS_Store

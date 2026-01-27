@@ -2,8 +2,6 @@ Power Relations and Distributive Justice
 
 The apparatus of bio-regulation manages populations through normalized behaviors. Bio-regulation operates through disciplinary institutions. Foucault analyzed how bio-regulation produces docile subjects. Modern states depend on extensive bio-regulation.
 
-Différance disrupts the metaphysics of presence. Derrida coined différance to show how meaning defers and differs. The concept of différance cannot be simply defined. Understanding différance requires attention to textual traces.
-
 The original position models fair agreement behind the veil of ignorance. In the original position, rational agents choose principles of justice. The original position yields the difference principle and equal liberty. Rawls developed the original position to ground political legitimacy.
 
 Entitlement-transfer governs just acquisition and exchange. Nozick's entitlement-transfer theory opposes patterned distributions. According to entitlement-transfer, taxation resembles forced labor. The entitlement-transfer framework prioritizes historical rather than end-state principles.
@@ -14,4 +12,4 @@ The capability-approach measures wellbeing by real freedoms. Sen's capability-ap
 
 Deterritorialization breaks down coded social formations. Capitalism constantly engages in deterritorialization. Yet deterritorialization is followed by reterritorialization. The tension between deterritorialization and reterritorialization drives historical change.
 
-In summary, bio-regulation, différance, the original position, entitlement-transfer, rhizomatic-becoming, the capability-approach, and deterritorialization represent diverse methodological approaches to power, justice, and social organization.
+In summary, bio-regulation, the original position, entitlement-transfer, rhizomatic-becoming, the capability-approach, and deterritorialization represent diverse methodological approaches to power, justice, and social organization.

@@ -32,49 +32,48 @@ Process the included sample philosophical text:
 bash examples/workflow.sh
 
 # Or run commands individually:
-concept-mapper ingest examples/sample_text.txt -o examples/corpus.json
-concept-mapper rarities examples/corpus.json --top-n 20 -o examples/terms.json
-concept-mapper graph examples/corpus.json -t examples/terms.json -o examples/graph.json
-concept-mapper export examples/graph.json --format html -o examples/visualization/
+concept-mapper ingest samples/sample1_analytic_pragmatism.txt
+concept-mapper rarities output/corpus/corpus.json --top-n 20
+concept-mapper graph output/corpus/corpus.json -t output/terms/terms.json
+concept-mapper export output/graphs/graph.json --format html
 
 # Open the visualization
-open examples/visualization/index.html
+open output/exports/index.html
 ```
 
-**Default output structure:**
+**Output structure:**
 ```
 output/
 ├── corpus/         # Preprocessed corpora
 ├── terms/          # Detected terms
 ├── graphs/         # Concept graphs
 ├── exports/        # Visualizations and export formats
-└── cache/          # Reference corpus cache
+└── cache/          # Session cache (reference corpus, etc.)
 ```
 
 ## Complete Tutorial
 
 ### Sample Corpus
 
-The `examples/sample_text.txt` file contains a passage on critical social theory and Thinkerist philosophy, featuring characteristic philosophical terminology:
+The `samples/sample1_analytic_pragmatism.txt` file contains a passage on analytic philosophy and pragmatism, featuring characteristic philosophical terminology:
 
-- **Abstraction** - Transformation of human relations into thing-like entities
-- **Praxis** - Unity of theory and practice through transformative action
-- **Dialectical negation** - Hegelian method of sublation and synthesis
-- **Separation** - Separation of workers from products and species-being
-- **Hegemony** - Cultural leadership and consent (Gramsci)
-- **Recognition** - Mutual acknowledgment between subjects (Hegel/Honneth)
+- **Meaning-variance** - Terms shift significance across theoretical frameworks
+- **Instrumental-warranting** - Knowledge justified through practical success
+- **Conceptual schemes** - Category-matrices that organize experience
+- **Truth-aptness** - Whether sentences can bear truth values
+- **Referential opacity** - Context where substitution of co-referring terms fails
 
 ### Step 1: Ingest and Preprocess
 
 Load the sample text and preprocess it (tokenization, POS tagging, lemmatization):
 
 ```bash
-concept-mapper ingest examples/sample_text.txt -o examples/corpus.json
+concept-mapper ingest samples/sample1_analytic_pragmatism.txt
 ```
 
 **Expected output:**
 ```
-✓ Saved 1 processed document(s) to examples/corpus.json
+✓ Saved 1 processed document(s) to output/corpus/corpus.json
 ```
 
 **What happens:** The raw text is tokenized into sentences and words, each word is tagged with its part of speech (NN, VB, etc.), and lemmatized (e.g., "entities" → "entity").
@@ -84,25 +83,24 @@ concept-mapper ingest examples/sample_text.txt -o examples/corpus.json
 Identify author-specific terminology using statistical rarity analysis:
 
 ```bash
-concept-mapper rarities examples/corpus.json \
+concept-mapper rarities output/corpus/corpus.json \
   --method hybrid \
   --threshold 1.5 \
-  --top-n 20 \
-  -o examples/terms.json
+  --top-n 20
 ```
 
 **Expected output:**
 ```
 Top 20 rare terms:
 ------------------------------------------------------------
-abstraction          4.87
-praxis               3.45
-dialectical          3.21
-separation           2.98
-hegemony             2.76
+meaning-variance        5.12
+instrumental-warranting 4.89
+truth-aptness          4.43
+referential opacity    3.98
+conceptual schemes     3.67
 ...
 
-✓ Saved 20 terms to examples/terms.json
+✓ Saved 20 terms to output/terms/terms.json
 ```
 
 **What happens:** Each term is scored based on:
@@ -115,13 +113,13 @@ hegemony             2.76
 **Try different methods:**
 ```bash
 # Corpus-comparative ratio only
-concept-mapper rarities examples/corpus.json --method ratio --top-n 10
+concept-mapper rarities output/corpus/corpus.json --method ratio --top-n 10
 
 # TF-IDF only
-concept-mapper rarities examples/corpus.json --method tfidf --top-n 10
+concept-mapper rarities output/corpus/corpus.json --method tfidf --top-n 10
 
 # Neologisms only
-concept-mapper rarities examples/corpus.json --method neologism --top-n 10
+concept-mapper rarities output/corpus/corpus.json --method neologism --top-n 10
 ```
 
 ### Step 3: Search and Concordance
@@ -130,13 +128,13 @@ Find where specific terms appear:
 
 ```bash
 # Basic search
-concept-mapper search examples/corpus.json "abstraction"
+concept-mapper search output/corpus/corpus.json "abstraction"
 
 # Search with context (2 sentences before/after)
-concept-mapper search examples/corpus.json "dialectical" --context 2
+concept-mapper search output/corpus/corpus.json "dialectical" --context 2
 
 # KWIC concordance
-concept-mapper concordance examples/corpus.json "praxis" --width 40
+concept-mapper concordance output/corpus/corpus.json "praxis" --width 40
 
 # Create sentence diagram
 concept-mapper diagram "Abstraction transforms social relations into things."
@@ -156,17 +154,16 @@ Create a network graph showing relationships between terms:
 **Method A: Co-occurrence (proximity-based)**
 
 ```bash
-concept-mapper graph examples/corpus.json \
-  --terms examples/terms.json \
+concept-mapper graph output/corpus/corpus.json \
+  --terms output/terms/terms.json \
   --method cooccurrence \
-  --threshold 0.3 \
-  -o examples/graph.json
+  --threshold 0.3
 ```
 
 **Expected output:**
 ```
 ✓ Graph: 18 nodes, 42 edges
-✓ Saved graph to examples/graph.json
+✓ Saved graph to output/graphs/graph.json
 ```
 
 Edges represent terms that frequently appear together (same sentence or nearby sentences), weighted by PMI (Pointwise Mutual Information).
@@ -174,10 +171,9 @@ Edges represent terms that frequently appear together (same sentence or nearby s
 **Method B: Relations (grammar-based)**
 
 ```bash
-concept-mapper graph examples/corpus.json \
-  --terms examples/terms.json \
-  --method relations \
-  -o examples/graph_relations.json
+concept-mapper graph output/corpus/corpus.json \
+  --terms output/terms/terms.json \
+  --method relations
 ```
 
 Edges represent grammatical relationships:
@@ -190,15 +186,14 @@ Edges represent grammatical relationships:
 Generate an interactive HTML visualization:
 
 ```bash
-concept-mapper export examples/graph.json \
+concept-mapper export output/graphs/graph.json \
   --format html \
-  --title "Critical Theory Concept Network" \
-  -o examples/visualization/
+  --title "Critical Theory Concept Network"
 ```
 
 **Open the visualization:**
 ```bash
-open examples/visualization/index.html
+open output/exports/index.html
 ```
 
 **Features of the visualization:**
@@ -212,13 +207,13 @@ open examples/visualization/index.html
 
 ```bash
 # GraphML for Gephi
-concept-mapper export examples/graph.json --format graphml -o examples/graph.graphml
+concept-mapper export output/graphs/graph.json --format graphml -o output/exports/graph.graphml
 
 # CSV for spreadsheets
-concept-mapper export examples/graph.json --format csv -o examples/csv/
+concept-mapper export output/graphs/graph.json --format csv -o output/exports/csv/
 
 # GEXF for Gephi
-concept-mapper export examples/graph.json --format gexf -o examples/graph.gexf
+concept-mapper export output/graphs/graph.json --format gexf -o output/exports/graph.gexf
 ```
 
 ## CLI Reference
@@ -377,7 +372,7 @@ from concept_mapper.terms.manager import TermManager
 from concept_mapper.export import export_d3_json, export_graphml, export_csv, export_gexf, generate_html
 
 # 1. Load and preprocess
-doc = load_file("data/sample/philosopher_1920_cc.txt")
+doc = load_file("samples/sample1_analytic_pragmatism.txt")
 processed = preprocess(doc)
 print(f"✓ Processed {len(processed.sentences)} sentences")
 
@@ -469,16 +464,14 @@ print(f"\n✓ Visualization ready: {html_path}")
 
 ## Sample Data
 
-The `data/sample/` directory contains test corpora:
+The `samples/` directory contains sample texts to use as inputs:
 
-- `philosopher_1920_cc.txt` - Philosopher' *History and Class Consciousness* (93KB)
-- `hegel_phenomenology_excerpt.txt` - Hegel's *Phenomenology of Spirit* excerpt
-- `test_philosophical_terms.txt` - Synthetic test data with known terms
+- `sample1_analytic_pragmatism.txt` - Analytic philosophy and pragmatism concepts
+- `sample2_poststructural_political.txt` - Poststructural and political philosophy concepts
+- `sample3_mind_consciousness.txt` - Philosophy of mind and consciousness concepts
 
-The `examples/` directory contains:
-- `sample_text.txt` - Critical theory passage for quick testing
+The `examples/` directory contains demo workflows:
 - `workflow.sh` - Complete bash workflow script
-- `workflow.py` - Complete Python workflow script
 
 ## Project Structure
 
@@ -496,11 +489,23 @@ The `examples/` directory contains:
 │   ├── storage/               # Persistence layer
 │   └── cli.py                 # Command-line interface
 ├── tests/                     # Test suite (521 tests)
-├── data/sample/               # Sample corpus
-├── examples/                  # Example workflows and outputs
+├── samples/                   # Sample texts (inputs)
+├── examples/                  # Demo workflows (scripts)
 ├── docs/                      # Documentation
-└── output/                    # Analysis results
+├── data/reference/            # Bundled reference datasets
+└── output/                    # Generated results (gitignored)
+    ├── corpus/                # Processed corpora
+    ├── terms/                 # Extracted terms
+    ├── graphs/                # Concept graphs
+    ├── exports/               # Visualizations and export formats
+    └── cache/                 # Session cache
 ```
+
+**Directory organization rationale:**
+- **`samples/`** - Three sample input texts (sample1, sample2, sample3) covering diverse philosophical traditions. For testing and learning.
+- **`examples/`** - Workflow scripts only (no data files). Shows how to use the tool.
+- **`data/reference/`** - Bundled reference datasets that ship with the tool (e.g., Brown corpus frequencies). Not user-generated.
+- **`output/`** - All generated results. Fully gitignored and can be safely deleted. Organized into subdirectories by output type.
 
 ## Technology Stack
 
@@ -547,7 +552,6 @@ make check     # Run all checks
 
 - **[API Reference](docs/api-reference.md)** - Complete guide with examples and API documentation
 - **[Development Roadmap](docs/concept-mapper-roadmap.md)** - Complete project plan
-- **[Validation](VALIDATION.md)** - Output validation and error handling
 
 ## Use Cases
 

@@ -343,7 +343,7 @@ class TestRealCorpusAnalysis:
         """Load sample philosophical corpus."""
         from src.concept_mapper.corpus.loader import load_directory
 
-        base = Path(__file__).parent.parent / "data" / "sample"
+        base = Path(__file__).parent.parent / "samples"
         corpus = load_directory(str(base), pattern="sample*_*.txt", recursive=False)
         return [preprocess(doc) for doc in corpus.documents]
 
@@ -667,7 +667,7 @@ class TestTFIDFOnRealCorpus:
         """Load sample philosophical corpus."""
         from src.concept_mapper.corpus.loader import load_directory
 
-        base = Path(__file__).parent.parent / "data" / "sample"
+        base = Path(__file__).parent.parent / "samples"
         corpus = load_directory(str(base), pattern="sample*_*.txt", recursive=False)
         return [preprocess(doc) for doc in corpus.documents]
 
@@ -989,7 +989,7 @@ class TestWordNetOnRealCorpus:
         """Load sample philosophical corpus."""
         from src.concept_mapper.corpus.loader import load_directory
 
-        base = Path(__file__).parent.parent / "data" / "sample"
+        base = Path(__file__).parent.parent / "samples"
         corpus = load_directory(str(base), pattern="sample*_*.txt", recursive=False)
         return [preprocess(doc) for doc in corpus.documents]
 
@@ -1363,7 +1363,7 @@ class TestDefinitionalContextsOnRealCorpus:
         """Load sample philosophical corpus."""
         from src.concept_mapper.corpus.loader import load_directory
 
-        base = Path(__file__).parent.parent / "data" / "sample"
+        base = Path(__file__).parent.parent / "samples"
         corpus = load_directory(str(base), pattern="sample*_*.txt", recursive=False)
         return [preprocess(doc) for doc in corpus.documents]
 
@@ -1629,7 +1629,7 @@ class TestPOSFilteringOnRealCorpus:
         """Load sample philosophical corpus."""
         from src.concept_mapper.corpus.loader import load_directory
 
-        base = Path(__file__).parent.parent / "data" / "sample"
+        base = Path(__file__).parent.parent / "samples"
         corpus = load_directory(str(base), pattern="sample*_*.txt", recursive=False)
         return [preprocess(doc) for doc in corpus.documents]
 
@@ -1999,7 +1999,7 @@ class TestHybridScorerOnRealCorpus:
         """Load sample philosophical corpus."""
         from src.concept_mapper.corpus.loader import load_directory
 
-        base = Path(__file__).parent.parent / "data" / "sample"
+        base = Path(__file__).parent.parent / "samples"
         corpus = load_directory(str(base), pattern="sample*_*.txt", recursive=False)
         return [preprocess(doc) for doc in corpus.documents]
 

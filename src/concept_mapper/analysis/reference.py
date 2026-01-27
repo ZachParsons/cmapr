@@ -21,7 +21,8 @@ def load_reference_corpus(
     """
     Load reference corpus word frequencies.
 
-    Supports caching to avoid recomputing frequencies on every run.
+    Checks for bundled reference data first (data/reference/), then user cache
+    (output/cache/). If not found, computes from NLTK corpus and caches.
 
     Args:
         name: Reference corpus name ("brown" supported currently)
@@ -41,7 +42,19 @@ def load_reference_corpus(
             f"Unsupported reference corpus: {name}. Only 'brown' is currently supported."
         )
 
-    # Check cache first
+    # Check bundled reference data first
+    bundled_path = (
+        Path(__file__).parent.parent.parent.parent
+        / "data"
+        / "reference"
+        / f"{name}_corpus_freqs.json"
+    )
+    if bundled_path.exists():
+        with bundled_path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+            return Counter(data)
+
+    # Check user cache
     if cache:
         cache_path = get_cache_path(
             f"{name}_corpus_freqs.json",

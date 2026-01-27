@@ -248,7 +248,7 @@ The following functionality already exists in the spike directory and can be ref
 - NLTK data: punkt, punkt_tab, averaged_perceptron_tagger, averaged_perceptron_tagger_eng
 
 ### Sample corpus
-- ✅ `philosopher_1920_cc.txt` (91KB text file for testing)
+- ✅ Sample texts for testing (sample1, sample2, sample3 covering diverse philosophical traditions)
 
 ### Additional features (not in roadmap, but available in spike)
 - Chunking with regex patterns (tryout_nltk.py:62-88)
@@ -274,7 +274,7 @@ The following functionality already exists in the spike directory and can be ref
 
 - [x] **0.3 Create sample test corpus**
   - [x] Create 2-3 short `.txt` files in `data/sample/` *(5 files total, 95KB)*
-  - [x] Include invented "rare terms" with known frequencies *(test_philosophical_terms.txt with daseinology, temporalization, ekstatic)*
+  - [x] Include invented "rare terms" with known frequencies *(diverse sample texts with hyphenated technical terms)*
   - [x] Document expected values for verification *(test_corpus_manifest.json)*
 
 ---
