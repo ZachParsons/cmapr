@@ -29,8 +29,7 @@ print(f"Found {len(files)} sample documents")
 
 **Expected output:**
 ```
-Found 5 sample documents
-  - hegel_phenomenology_excerpt.txt
+Found n sample documents
   - sample1_analytic_pragmatism.txt
   - sample2_poststructural_political.txt
   - ...

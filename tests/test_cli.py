@@ -581,3 +581,290 @@ class TestCLIIntegration:
         )
         assert result.exit_code == 0
         assert (viz_dir / "index.html").exists()
+
+
+class TestSourceDerivedFilenames:
+    """Test source-derived filename functionality."""
+
+    def test_ingest_source_derived_naming(self, runner, sample_text_file, tmp_path):
+        """Test that ingest uses source-derived output filename."""
+        output_dir = tmp_path / "output"
+
+        result = runner.invoke(
+            cli,
+            [
+                "--output-dir",
+                str(output_dir),
+                "ingest",
+                str(sample_text_file),
+            ],
+        )
+
+        assert result.exit_code == 0
+        # Should create sample.json (not corpus.json)
+        expected_corpus = output_dir / "corpus" / "sample.json"
+        assert expected_corpus.exists()
+        assert not (output_dir / "corpus" / "corpus.json").exists()
+
+    def test_rarities_source_derived_naming(self, runner, sample_corpus_json, tmp_path):
+        """Test that rarities uses source-derived output filename."""
+        output_dir = tmp_path / "output"
+        corpus_file = sample_corpus_json
+
+        result = runner.invoke(
+            cli,
+            [
+                "--output-dir",
+                str(output_dir),
+                "rarities",
+                str(corpus_file),
+                "--threshold",
+                "0.0",
+                "--top-n",
+                "5",
+            ],
+        )
+
+        assert result.exit_code == 0
+        # Should create corpus.json (not terms.json) because corpus was named corpus.json
+        expected_terms = output_dir / "terms" / "corpus.json"
+        assert expected_terms.exists()
+        assert not (output_dir / "terms" / "terms.json").exists()
+
+    def test_graph_source_derived_naming(self, runner, sample_corpus_json, tmp_path):
+        """Test that graph uses source-derived output filename."""
+        output_dir = tmp_path / "output"
+        corpus_file = sample_corpus_json
+
+        # First create terms file
+        terms_file = tmp_path / "source_terms.json"
+        runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(corpus_file),
+                "--threshold",
+                "0.0",
+                "--top-n",
+                "5",
+                "--output",
+                str(terms_file),
+            ],
+        )
+
+        result = runner.invoke(
+            cli,
+            [
+                "--output-dir",
+                str(output_dir),
+                "graph",
+                str(corpus_file),
+                "--terms",
+                str(terms_file),
+            ],
+        )
+
+        assert result.exit_code == 0
+        # Should create corpus.json (not graph.json)
+        expected_graph = output_dir / "graphs" / "corpus.json"
+        assert expected_graph.exists()
+        assert not (output_dir / "graphs" / "graph.json").exists()
+
+    def test_graph_method_suffix(self, runner, sample_corpus_json, tmp_path):
+        """Test that graph adds method suffix for non-default methods."""
+        output_dir = tmp_path / "output"
+        corpus_file = sample_corpus_json
+
+        # First create terms file
+        terms_file = tmp_path / "source_terms.json"
+        runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(corpus_file),
+                "--threshold",
+                "0.0",
+                "--top-n",
+                "5",
+                "--output",
+                str(terms_file),
+            ],
+        )
+
+        result = runner.invoke(
+            cli,
+            [
+                "--output-dir",
+                str(output_dir),
+                "graph",
+                str(corpus_file),
+                "--terms",
+                str(terms_file),
+                "--method",
+                "relations",
+            ],
+        )
+
+        assert result.exit_code == 0
+        # Should create corpus_relations.json
+        expected_graph = output_dir / "graphs" / "corpus_relations.json"
+        assert expected_graph.exists()
+
+    def test_export_source_derived_naming(self, runner, tmp_path):
+        """Test that export uses source-derived output paths."""
+        from concept_mapper.graph import ConceptGraph
+        from concept_mapper.export import export_d3_json
+
+        output_dir = tmp_path / "output"
+
+        # Create a simple graph file with source-derived name
+        graph_file = tmp_path / "sample1_analytic.json"
+        graph = ConceptGraph()
+        graph.add_node("term1")
+        graph.add_node("term2")
+        graph.add_edge("term1", "term2", weight=0.5)
+        export_d3_json(graph, graph_file)
+
+        result = runner.invoke(
+            cli,
+            [
+                "--output-dir",
+                str(output_dir),
+                "export",
+                str(graph_file),
+                "--format",
+                "html",
+            ],
+        )
+
+        assert result.exit_code == 0
+        # Should create sample1_analytic/ directory (not visualization/)
+        expected_viz = output_dir / "exports" / "sample1_analytic" / "index.html"
+        assert expected_viz.exists()
+        assert not (output_dir / "exports" / "visualization" / "index.html").exists()
+
+    def test_multiple_texts_no_overwrite(self, runner, tmp_path):
+        """Test that processing multiple texts doesn't cause overwrites."""
+        output_dir = tmp_path / "output"
+
+        # Create two different text files
+        text1 = tmp_path / "sample1.txt"
+        text1.write_text(
+            "Geist is a concept. Aufhebung is dialectical. "
+            "Geist and Aufhebung are fundamental to Hegel."
+        )
+
+        text2 = tmp_path / "sample2.txt"
+        text2.write_text(
+            "Praxis is action. Abstraction is a process. "
+            "Praxis and abstraction are central to Philosopher."
+        )
+
+        # Ingest first text
+        result1 = runner.invoke(
+            cli,
+            ["--output-dir", str(output_dir), "ingest", str(text1)],
+        )
+        assert result1.exit_code == 0
+
+        corpus1 = output_dir / "corpus" / "sample1.json"
+        assert corpus1.exists()
+        corpus1_content = corpus1.read_text()
+
+        # Ingest second text
+        result2 = runner.invoke(
+            cli,
+            ["--output-dir", str(output_dir), "ingest", str(text2)],
+        )
+        assert result2.exit_code == 0
+
+        corpus2 = output_dir / "corpus" / "sample2.json"
+        assert corpus2.exists()
+
+        # Verify first corpus wasn't overwritten
+        assert corpus1.exists()
+        assert corpus1.read_text() == corpus1_content
+        assert corpus1.read_text() != corpus2.read_text()
+
+    def test_explicit_output_override_still_works(
+        self, runner, sample_text_file, tmp_path
+    ):
+        """Test that explicit -o flag still works and overrides default naming."""
+        custom_output = tmp_path / "my_custom_corpus.json"
+
+        result = runner.invoke(
+            cli,
+            ["ingest", str(sample_text_file), "--output", str(custom_output)],
+        )
+
+        assert result.exit_code == 0
+        assert custom_output.exists()
+
+    def test_full_workflow_with_source_derived_names(
+        self, runner, sample_text_file, tmp_path
+    ):
+        """Test complete workflow using source-derived filenames."""
+        output_dir = tmp_path / "output"
+
+        # 1. Ingest
+        result = runner.invoke(
+            cli,
+            ["--output-dir", str(output_dir), "ingest", str(sample_text_file)],
+        )
+        assert result.exit_code == 0
+
+        corpus_file = output_dir / "corpus" / "sample.json"
+        assert corpus_file.exists()
+
+        # 2. Rarities
+        result = runner.invoke(
+            cli,
+            [
+                "--output-dir",
+                str(output_dir),
+                "rarities",
+                str(corpus_file),
+                "--threshold",
+                "0.0",
+                "--top-n",
+                "5",
+            ],
+        )
+        assert result.exit_code == 0
+
+        terms_file = output_dir / "terms" / "sample.json"
+        assert terms_file.exists()
+
+        # 3. Graph
+        result = runner.invoke(
+            cli,
+            [
+                "--output-dir",
+                str(output_dir),
+                "graph",
+                str(corpus_file),
+                "--terms",
+                str(terms_file),
+            ],
+        )
+        assert result.exit_code == 0
+
+        graph_file = output_dir / "graphs" / "sample.json"
+        assert graph_file.exists()
+
+        # 4. Export
+        result = runner.invoke(
+            cli,
+            [
+                "--output-dir",
+                str(output_dir),
+                "export",
+                str(graph_file),
+                "--format",
+                "html",
+            ],
+        )
+        assert result.exit_code == 0
+
+        viz_file = output_dir / "exports" / "sample" / "index.html"
+        assert viz_file.exists()

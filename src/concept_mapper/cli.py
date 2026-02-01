@@ -33,6 +33,7 @@ from concept_mapper.validation import (
     validate_term_list,
     validate_concept_graph,
 )
+from concept_mapper.storage.utils import derive_identifier, infer_output_path
 
 
 @click.group()
@@ -111,10 +112,13 @@ def ingest(ctx, path, output, recursive, pattern):
     if output:
         output_path = Path(output)
     else:
-        # Default: output/corpus/corpus.json
-        corpus_dir = output_dir / "corpus"
-        corpus_dir.mkdir(parents=True, exist_ok=True)
-        output_path = corpus_dir / "corpus.json"
+        # NEW: Derive output filename from input source
+        output_path = infer_output_path(path, output_dir, "corpus")
+
+    if verbose:
+        identifier = derive_identifier(path)
+        click.echo(f"Derived identifier: '{identifier}'")
+        click.echo(f"Output: {output_path}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -224,10 +228,13 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
     if output:
         output_path = Path(output)
     else:
-        # Default: output/terms/terms.json
-        terms_dir = output_dir / "terms"
-        terms_dir.mkdir(parents=True, exist_ok=True)
-        output_path = terms_dir / "terms.json"
+        # NEW: Derive output filename from corpus filename
+        output_path = infer_output_path(Path(corpus), output_dir, "terms")
+
+    if verbose:
+        identifier = derive_identifier(Path(corpus))
+        click.echo(f"Derived identifier: '{identifier}'")
+        click.echo(f"Output: {output_path}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -488,10 +495,16 @@ def graph(ctx, corpus, terms, method, threshold, output):
     if output:
         output_path = Path(output)
     else:
-        # Default: output/graphs/graph.json
-        graphs_dir = output_dir / "graphs"
-        graphs_dir.mkdir(parents=True, exist_ok=True)
-        output_path = graphs_dir / "graph.json"
+        # NEW: Derive output filename from corpus filename with optional method suffix
+        suffix = f"_{method}" if method != "cooccurrence" else ""
+        output_path = infer_output_path(
+            Path(corpus), output_dir, "graphs", suffix=suffix
+        )
+
+    if verbose:
+        identifier = derive_identifier(Path(corpus))
+        click.echo(f"Derived identifier: '{identifier}'")
+        click.echo(f"Output: {output_path}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -574,16 +587,22 @@ def export(ctx, graph_file, format, output, title):
     if output:
         output_path = Path(output)
     else:
-        # Default: output/exports/
+        # NEW: Derive output path from graph filename
+        identifier = derive_identifier(Path(graph_file))
         exports_dir = output_dir / "exports"
         exports_dir.mkdir(parents=True, exist_ok=True)
 
         if format == "html":
-            output_path = exports_dir / "visualization"
+            output_path = exports_dir / identifier
         elif format == "csv":
-            output_path = exports_dir / "csv"
+            output_path = exports_dir / identifier / "csv"
         else:
-            output_path = exports_dir / f"graph.{format}"
+            output_path = exports_dir / f"{identifier}.{format}"
+
+    if verbose:
+        identifier = derive_identifier(Path(graph_file))
+        click.echo(f"Derived identifier: '{identifier}'")
+        click.echo(f"Output: {output_path}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
