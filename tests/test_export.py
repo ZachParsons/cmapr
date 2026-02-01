@@ -377,7 +377,7 @@ class TestHTMLGeneration:
         # Check essential HTML elements
         assert "<!DOCTYPE html>" in content
         assert "<html" in content
-        assert "d3.js" in content.lower()
+        assert "d3js.org" in content.lower() or "d3.js" in content.lower()
         assert "<svg" in content
 
     def test_generate_html_with_title(self, sample_graph, temp_output_dir):

@@ -17,61 +17,28 @@ from concept_mapper.graph.metrics import (
 from concept_mapper.validation import validate_concept_graph
 
 
-def export_d3_json(
+def to_d3_dict(
     graph: ConceptGraph,
-    path: Path,
     include_evidence: bool = False,
     size_by: str = "frequency",
     compute_communities: bool = True,
     max_evidence: int = 3,
-) -> None:
+) -> Dict[str, Any]:
     """
-    Export graph to D3.js force-directed layout JSON format.
+    Convert graph to D3.js-compatible dictionary.
 
-    Creates a JSON file with nodes and links arrays suitable for D3.js
+    Returns a dictionary with nodes and links arrays suitable for D3.js
     force-directed graph visualizations.
 
     Args:
-        graph: ConceptGraph to export
-        path: Output file path
+        graph: ConceptGraph to convert
         include_evidence: Include evidence sentences in edge metadata (default: False)
         size_by: Node size metric ("frequency", "degree", "betweenness") (default: "frequency")
         compute_communities: Detect and assign community groups (default: True)
         max_evidence: Maximum evidence sentences per edge (default: 3)
 
-    Example:
-        >>> from concept_mapper.graph import ConceptGraph
-        >>> from pathlib import Path
-        >>> graph = ConceptGraph()
-        >>> graph.add_node("consciousness", frequency=42)
-        >>> graph.add_node("being", frequency=28)
-        >>> graph.add_edge("consciousness", "being", weight=0.85)
-        >>> export_d3_json(graph, Path("output/graph.json"))
-
-    D3 JSON Schema:
-        {
-          "nodes": [
-            {
-              "id": "term",
-              "label": "Term",
-              "group": 0,
-              "size": 10,
-              "frequency": 42,
-              "pos": "NN",
-              ...
-            }
-          ],
-          "links": [
-            {
-              "source": "term1",
-              "target": "term2",
-              "weight": 0.85,
-              "label": "copular",
-              "evidence": ["Example sentence."],
-              ...
-            }
-          ]
-        }
+    Returns:
+        Dictionary with "nodes" and "links" keys for D3.js
     """
     # Validate graph is not empty
     validate_concept_graph(graph, require_edges=False)
@@ -136,10 +103,76 @@ def export_d3_json(
         links.append(link_data)
 
     # Create D3 JSON structure
-    d3_data = {
+    return {
         "nodes": nodes,
         "links": links,
     }
+
+
+def export_d3_json(
+    graph: ConceptGraph,
+    path: Path,
+    include_evidence: bool = False,
+    size_by: str = "frequency",
+    compute_communities: bool = True,
+    max_evidence: int = 3,
+) -> None:
+    """
+    Export graph to D3.js force-directed layout JSON format.
+
+    Creates a JSON file with nodes and links arrays suitable for D3.js
+    force-directed graph visualizations.
+
+    Args:
+        graph: ConceptGraph to export
+        path: Output file path
+        include_evidence: Include evidence sentences in edge metadata (default: False)
+        size_by: Node size metric ("frequency", "degree", "betweenness") (default: "frequency")
+        compute_communities: Detect and assign community groups (default: True)
+        max_evidence: Maximum evidence sentences per edge (default: 3)
+
+    Example:
+        >>> from concept_mapper.graph import ConceptGraph
+        >>> from pathlib import Path
+        >>> graph = ConceptGraph()
+        >>> graph.add_node("consciousness", frequency=42)
+        >>> graph.add_node("being", frequency=28)
+        >>> graph.add_edge("consciousness", "being", weight=0.85)
+        >>> export_d3_json(graph, Path("output/graph.json"))
+
+    D3 JSON Schema:
+        {
+          "nodes": [
+            {
+              "id": "term",
+              "label": "Term",
+              "group": 0,
+              "size": 10,
+              "frequency": 42,
+              "pos": "NN",
+              ...
+            }
+          ],
+          "links": [
+            {
+              "source": "term1",
+              "target": "term2",
+              "weight": 0.85,
+              "label": "copular",
+              "evidence": ["Example sentence."],
+              ...
+            }
+          ]
+        }
+    """
+    # Get D3 data dict
+    d3_data = to_d3_dict(
+        graph,
+        include_evidence=include_evidence,
+        size_by=size_by,
+        compute_communities=compute_communities,
+        max_evidence=max_evidence,
+    )
 
     # Write to file
     path = Path(path)

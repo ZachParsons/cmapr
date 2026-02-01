@@ -16,6 +16,7 @@ Export Formats:
 from concept_mapper.export.d3 import (
     export_d3_json,
     load_d3_json,
+    to_d3_dict,
 )
 from concept_mapper.export.formats import (
     export_graphml,
@@ -32,6 +33,7 @@ __all__ = [
     # D3 JSON
     "export_d3_json",
     "load_d3_json",
+    "to_d3_dict",
     # Alternative formats
     "export_graphml",
     "export_dot",

@@ -5,9 +5,10 @@ This module generates standalone HTML files with D3.js force-directed
 graph visualizations.
 """
 
+import json
 from pathlib import Path
 from concept_mapper.graph.model import ConceptGraph
-from concept_mapper.export.d3 import export_d3_json
+from concept_mapper.export.d3 import export_d3_json, to_d3_dict
 
 
 def generate_html(
@@ -58,18 +59,22 @@ def generate_html(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Export graph data to JSON
+    # Export graph data to JSON file (for reference)
     data_path = output_dir / "graph_data.json"
     export_d3_json(graph, data_path, include_evidence=include_evidence)
 
-    # Generate HTML file
+    # Get graph data as dict for inlining
+    graph_data = to_d3_dict(graph, include_evidence=include_evidence)
+    graph_data_json = json.dumps(graph_data, ensure_ascii=False)
+
+    # Generate HTML file with inlined data
     html_path = output_dir / "index.html"
 
     html_content = _generate_html_template(
         title=title,
         width=width,
         height=height,
-        data_filename="graph_data.json",
+        graph_data_json=graph_data_json,
     )
 
     with open(html_path, "w", encoding="utf-8") as f:
@@ -82,9 +87,9 @@ def _generate_html_template(
     title: str,
     width: int,
     height: int,
-    data_filename: str,
+    graph_data_json: str,
 ) -> str:
-    """Generate HTML template with D3.js visualization."""
+    """Generate HTML template with D3.js visualization and inlined data."""
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -220,8 +225,11 @@ def _generate_html_template(
         // Tooltip
         const tooltip = d3.select("#tooltip");
 
-        // Load and visualize data
-        d3.json("{data_filename}").then(data => {{
+        // Inlined graph data (avoids CORS issues with file:// URLs)
+        const data = {graph_data_json};
+
+        // Initialize visualization
+        (function() {{
             // Update info
             d3.select("#info").html(
                 `Nodes: ${{data.nodes.length}} | Links: ${{data.links.length}}`
@@ -311,7 +319,7 @@ def _generate_html_template(
             // Store simulation for controls
             window.simulation = simulation;
             window.label = label;
-        }});
+        }})();
 
         // Drag behavior
         function drag(simulation) {{
