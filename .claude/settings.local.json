@@ -50,7 +50,8 @@
       "Bash(vulture:*)",
       "Bash(make check:*)",
       "Bash(xargs ls:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(uv run ruff format:*)"
     ]
   }
 }

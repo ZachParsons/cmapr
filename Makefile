@@ -3,7 +3,7 @@
 help:
 	@echo "Available commands:"
 	@echo "  make install   - Install dependencies with uv"
-	@echo "  make format    - Format code with Black"
+	@echo "  make format    - Format code with Ruff"
 	@echo "  make lint      - Lint code with Ruff (auto-fix)"
 	@echo "  make test      - Run tests with pytest"
 	@echo "  make check     - Run all checks (format + lint + test)"
@@ -14,8 +14,8 @@ install:
 	@uv pip install -e ".[dev]"
 
 format:
-	@echo "🔧 Formatting code with Black..."
-	@uv run black *.py src/ tests/ scripts/
+	@echo "🔧 Formatting code with Ruff..."
+	@uv run ruff format *.py src/ tests/ scripts/
 
 lint:
 	@echo "🔍 Linting code with Ruff..."

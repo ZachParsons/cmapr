@@ -17,8 +17,7 @@ dependencies = [
 dev = [
     # Essential dev tools
     "pytest>=8.3",        # Tests ⭐
-    "black>=24.8",        # Formatter ⭐
-    "ruff>=0.6",          # Linter + format alt ⭐
+    "ruff>=0.6",          # Linter + formatter ⭐
     "ipython>=8.27",      # REPL w/ autoreload ⭐
 ]
 
