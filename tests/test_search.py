@@ -835,7 +835,9 @@ class TestExtractSignificantTerms:
             assert isinstance(formatted, str)
             assert "Significant terms" in formatted
             # Should include score components (freq for corpus_frequency mode, ratio/tfidf for hybrid)
-            assert "freq=" in formatted or "ratio=" in formatted or "tfidf=" in formatted
+            assert (
+                "freq=" in formatted or "ratio=" in formatted or "tfidf=" in formatted
+            )
 
     def test_aggregate_across_sentences(self, sample_docs):
         """Test aggregating terms across all sentences."""

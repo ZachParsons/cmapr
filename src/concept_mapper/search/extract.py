@@ -19,87 +19,190 @@ from .find import find_sentences, SentenceMatch
 
 
 # Extended stopwords: common function words + mundane verbs + generic terms
-# These are lemmatized forms
+# These are lemmatized forms only (no inflections)
 STOPWORDS = {
     # Articles, determiners, pronouns
-    'the', 'a', 'an', 'this', 'that', 'these', 'those',
-    'i', 'you', 'he', 'she', 'it', 'we', 'they', 'them',
-    'my', 'your', 'his', 'her', 'its', 'our', 'their',
-    'myself', 'yourself', 'himself', 'herself', 'itself', 'ourselves', 'themselves',
-    'who', 'whom', 'which', 'what', 'whose',
-
-    # Common verbs (lemmatized)
-    'be', 'is', 'am', 'are', 'was', 'were', 'been', 'being',
-    'have', 'has', 'had', 'having',
-    'do', 'does', 'did', 'doing', 'done',
-    'will', 'would', 'shall', 'should', 'may', 'might', 'must', 'can', 'could',
-    'go', 'goes', 'went', 'gone', 'going',
-    'get', 'gets', 'got', 'gotten', 'getting',
-    'make', 'makes', 'made', 'making',
-    'take', 'takes', 'took', 'taken', 'taking',
-    'come', 'comes', 'came', 'coming',
-    'see', 'sees', 'saw', 'seen', 'seeing',
-    'know', 'knows', 'knew', 'known', 'knowing',
-    'think', 'thinks', 'thought', 'thinking',
-    'give', 'gives', 'gave', 'given', 'giving',
-    'find', 'finds', 'found', 'finding',
-    'tell', 'tells', 'told', 'telling',
-    'become', 'becomes', 'became', 'becoming',
-    'leave', 'leaves', 'left', 'leaving',
-    'feel', 'feels', 'felt', 'feeling',
-    'put', 'puts', 'putting',
-    'bring', 'brings', 'brought', 'bringing',
-    'begin', 'begins', 'began', 'begun', 'beginning',
-    'keep', 'keeps', 'kept', 'keeping',
-    'hold', 'holds', 'held', 'holding',
-    'write', 'writes', 'wrote', 'written', 'writing',
-    'stand', 'stands', 'stood', 'standing',
-    'seem', 'seems', 'seemed', 'seeming',
-    'turn', 'turns', 'turned', 'turning',
-    'show', 'shows', 'showed', 'shown', 'showing',
-    'try', 'tries', 'tried', 'trying',
-    'call', 'calls', 'called', 'calling',
-    'ask', 'asks', 'asked', 'asking',
-    'need', 'needs', 'needed', 'needing',
-    'become', 'becomes', 'became', 'becoming',
-    'let', 'lets', 'letting',
-    'mean', 'means', 'meant', 'meaning',
-    'say', 'says', 'said', 'saying',
-    'use', 'uses', 'used', 'using',
-    'want', 'wants', 'wanted', 'wanting',
-    'work', 'works', 'worked', 'working',
-    'look', 'looks', 'looked', 'looking',
-    'help', 'helps', 'helped', 'helping',
-    'seem', 'seems', 'seemed', 'seeming',
-
+    "the",
+    "a",
+    "an",
+    "this",
+    "that",
+    "these",
+    "those",
+    "i",
+    "you",
+    "he",
+    "she",
+    "it",
+    "we",
+    "they",
+    "them",
+    "my",
+    "your",
+    "his",
+    "her",
+    "its",
+    "our",
+    "their",
+    "myself",
+    "yourself",
+    "himself",
+    "herself",
+    "itself",
+    "ourselves",
+    "themselves",
+    "who",
+    "whom",
+    "which",
+    "what",
+    "whose",
+    # Common verbs (lemmatized forms only)
+    "be",
+    "have",
+    "do",
+    "will",
+    "would",
+    "shall",
+    "should",
+    "may",
+    "might",
+    "must",
+    "can",
+    "could",
+    "go",
+    "get",
+    "make",
+    "take",
+    "come",
+    "see",
+    "know",
+    "think",
+    "give",
+    "find",
+    "tell",
+    "become",
+    "leave",
+    "feel",
+    "put",
+    "bring",
+    "begin",
+    "keep",
+    "hold",
+    "write",
+    "stand",
+    "seem",
+    "turn",
+    "show",
+    "try",
+    "call",
+    "ask",
+    "need",
+    "let",
+    "mean",
+    "say",
+    "use",
+    "want",
+    "work",
+    "look",
+    "help",
+    "endow",
     # Prepositions and conjunctions
-    'of', 'in', 'to', 'for', 'with', 'on', 'at', 'from', 'by', 'about',
-    'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below',
-    'between', 'under', 'since', 'without', 'within', 'along', 'among',
-    'and', 'or', 'but', 'if', 'then', 'than', 'so', 'because', 'while',
-    'where', 'when', 'why', 'how',
-
+    "of",
+    "in",
+    "to",
+    "for",
+    "with",
+    "on",
+    "at",
+    "from",
+    "by",
+    "about",
+    "as",
+    "into",
+    "through",
+    "during",
+    "before",
+    "after",
+    "above",
+    "below",
+    "between",
+    "under",
+    "since",
+    "without",
+    "within",
+    "along",
+    "among",
+    "and",
+    "or",
+    "but",
+    "if",
+    "then",
+    "than",
+    "so",
+    "because",
+    "while",
+    "where",
+    "when",
+    "why",
+    "how",
     # Common adverbs
-    'not', 'no', 'yes', 'very', 'too', 'also', 'well', 'only', 'just',
-    'now', 'then', 'here', 'there', 'up', 'down', 'out', 'over', 'again',
-    'even', 'still', 'back', 'more', 'most', 'much', 'any', 'some', 'all',
-    'both', 'each', 'few', 'many', 'other', 'such', 'own',
-
-    # Generic/mundane terms
-    'thing', 'things', 'something', 'anything', 'everything', 'nothing',
-    'someone', 'anyone', 'everyone', 'no one',
-    'way', 'ways',
-    'time', 'times',
-    'one', 'two', 'first', 'second', 'last',
-    'part', 'parts',
-    'place', 'places',
-    'case', 'cases',
-    'fact', 'facts',
-    'point', 'points',
-    'number', 'numbers',
-
-    # Mundane verbs (as mentioned)
-    'endow', 'endows', 'endowed', 'endowing',
+    "not",
+    "no",
+    "yes",
+    "very",
+    "too",
+    "also",
+    "well",
+    "only",
+    "just",
+    "now",
+    "then",
+    "here",
+    "there",
+    "up",
+    "down",
+    "out",
+    "over",
+    "again",
+    "even",
+    "still",
+    "back",
+    "more",
+    "most",
+    "much",
+    "any",
+    "some",
+    "all",
+    "both",
+    "each",
+    "few",
+    "many",
+    "other",
+    "such",
+    "own",
+    # Generic/mundane terms (lemmatized)
+    "thing",
+    "something",
+    "anything",
+    "everything",
+    "nothing",
+    "someone",
+    "anyone",
+    "everyone",
+    "no one",
+    "way",
+    "time",
+    "one",
+    "two",
+    "first",
+    "second",
+    "last",
+    "part",
+    "place",
+    "case",
+    "fact",
+    "point",
+    "number",
 }
 
 
@@ -208,7 +311,9 @@ def extract_significant_terms(
         if tokens:
             tagged = tag_tokens(tokens)
             lemmas_list = lemmatize_tagged(tagged)
-            search_term_lemma = lemmas_list[0].lower() if lemmas_list else search_term.lower()
+            search_term_lemma = (
+                lemmas_list[0].lower() if lemmas_list else search_term.lower()
+            )
     else:
         search_term_lemma = search_term.lower()
 
@@ -217,14 +322,16 @@ def extract_significant_terms(
         # Load reference corpus if not provided
         if reference_corpus is None:
             from ..analysis.reference import load_reference_corpus
+
             reference_corpus = load_reference_corpus()
 
         scorer = PhilosophicalTermScorer(docs, reference_corpus, weights=scorer_weights)
-        score_func = lambda term: scorer.score_term(term)
+
+        def score_func(term):
+            return scorer.score_term(term)
 
     elif scoring_mode == "corpus_frequency":
         # Build frequency map for corpus-based scoring
-        from ..analysis.frequency import corpus_frequencies
         from collections import Counter
 
         # Get all terms from the corpus with POS filtering, excluding stopwords
@@ -241,7 +348,6 @@ def extract_significant_terms(
                             all_terms.append(lemma_lower)
 
         term_freqs = Counter(all_terms)
-        total_terms = len(all_terms)
         max_freq = max(term_freqs.values()) if term_freqs else 1
 
         # Scoring function: normalized frequency (0-10 scale for interpretability)
@@ -249,6 +355,7 @@ def extract_significant_terms(
             freq = term_freqs.get(term, 0)
             # Normalize to 0-10 scale, with log scaling for better distribution
             import math
+
             if freq == 0:
                 score = 0.0
             else:
@@ -261,7 +368,9 @@ def extract_significant_terms(
                 "normalized": score / 10.0,
             }
     else:
-        raise ValueError(f"Invalid scoring_mode: {scoring_mode}. Must be 'hybrid' or 'corpus_frequency'")
+        raise ValueError(
+            f"Invalid scoring_mode: {scoring_mode}. Must be 'hybrid' or 'corpus_frequency'"
+        )
 
     results = []
 
@@ -277,8 +386,9 @@ def extract_significant_terms(
         # Extract terms with desired POS tags, excluding search term, stopwords, and punctuation
         extracted_terms = set()
         import string
+
         # Include both ASCII and Unicode punctuation
-        punctuation = set(string.punctuation) | {''', ''', '"', '"', '–', '—', '…', '·'}
+        punctuation = set(string.punctuation) | {""", """, '"', '"', "–", "—", "…", "·"}
 
         for (token, pos), lemma in zip(tagged, lemmas):
             if pos in pos_tags_to_extract:
@@ -288,10 +398,12 @@ def extract_significant_terms(
                 # - Stopwords (common function words, mundane verbs, generic terms)
                 # - Punctuation
                 # - Single-character symbols
-                if (lemma_lower != search_term_lemma and
-                    lemma_lower not in STOPWORDS and
-                    lemma_lower not in punctuation and
-                    not (len(lemma_lower) == 1 and not lemma_lower.isalnum())):
+                if (
+                    lemma_lower != search_term_lemma
+                    and lemma_lower not in STOPWORDS
+                    and lemma_lower not in punctuation
+                    and not (len(lemma_lower) == 1 and not lemma_lower.isalnum())
+                ):
                     extracted_terms.add(lemma_lower)
 
         if not extracted_terms:
@@ -372,22 +484,29 @@ def format_results_detailed(results: List[SignificantTermsResult]) -> str:
 
     for i, result in enumerate(results, 1):
         match = result.sentence_match
-        lines.append(f"\n[{i}] {match.doc_id or 'document'} (sentence {match.sent_index}):")
+        lines.append(
+            f"\n[{i}] {match.doc_id or 'document'} (sentence {match.sent_index}):"
+        )
         lines.append(f"    {match.sentence}")
         lines.append(f"\n    Significant terms ({len(result.significant_terms)}):")
 
         for term, score, components in result.significant_terms:
             # Show main score and relevant components based on what's available
-            if 'ratio' in components and 'tfidf' in components:
+            if "ratio" in components and "tfidf" in components:
                 # Hybrid scoring mode
-                comp_str = f"ratio={components['ratio']:.2f}, tfidf={components['tfidf']:.2f}"
-            elif 'frequency' in components:
+                comp_str = (
+                    f"ratio={components['ratio']:.2f}, tfidf={components['tfidf']:.2f}"
+                )
+            elif "frequency" in components:
                 # Corpus frequency mode
                 comp_str = f"freq={components['frequency']}"
             else:
                 # Generic mode - show all available components
-                comp_str = ", ".join(f"{k}={v:.2f}" if isinstance(v, float) else f"{k}={v}"
-                                    for k, v in components.items() if k != 'total')
+                comp_str = ", ".join(
+                    f"{k}={v:.2f}" if isinstance(v, float) else f"{k}={v}"
+                    for k, v in components.items()
+                    if k != "total"
+                )
 
             lines.append(f"      • {term}: {score:.2f} ({comp_str})")
 

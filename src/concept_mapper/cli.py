@@ -326,7 +326,23 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
 )
 @click.option("--output", "-o", type=click.Path(), help="Output file")
 @click.pass_context
-def search(ctx, corpus, term, context, lemma, diagram, diagram_format, extract_significant, threshold, pos, top_n, aggregate, detailed, scoring_mode, output):
+def search(
+    ctx,
+    corpus,
+    term,
+    context,
+    lemma,
+    diagram,
+    diagram_format,
+    extract_significant,
+    threshold,
+    pos,
+    top_n,
+    aggregate,
+    detailed,
+    scoring_mode,
+    output,
+):
     """
     Search for term occurrences in corpus.
 
@@ -386,7 +402,9 @@ def search(ctx, corpus, term, context, lemma, diagram, diagram_format, extract_s
             click.echo(f"No significant terms found in sentences containing '{term}'")
             return
 
-        click.echo(f"\nFound significant terms in {len(results)} sentence(s) containing '{term}':")
+        click.echo(
+            f"\nFound significant terms in {len(results)} sentence(s) containing '{term}':"
+        )
         click.echo("=" * 70)
 
         # Display results based on flags
@@ -395,7 +413,9 @@ def search(ctx, corpus, term, context, lemma, diagram, diagram_format, extract_s
             aggregated = aggregate_across_sentences(results, top_n=top_n)
             click.echo("\nAggregated significant terms (avg score, count):")
             for term_name, avg_score, count in aggregated:
-                click.echo(f"  • {term_name}: {avg_score:.2f} (appears in {count} sentence(s))")
+                click.echo(
+                    f"  • {term_name}: {avg_score:.2f} (appears in {count} sentence(s))"
+                )
 
         if detailed:
             # Show detailed output with full context
@@ -415,7 +435,9 @@ def search(ctx, corpus, term, context, lemma, diagram, diagram_format, extract_s
                     f.write("=" * 70 + "\n\n")
                     aggregated = aggregate_across_sentences(results, top_n=top_n)
                     for term_name, avg_score, count in aggregated:
-                        f.write(f"{term_name}: {avg_score:.2f} (appears in {count} sentence(s))\n")
+                        f.write(
+                            f"{term_name}: {avg_score:.2f} (appears in {count} sentence(s))\n"
+                        )
                 elif detailed:
                     f.write(format_results_detailed(results))
                 else:
@@ -453,7 +475,7 @@ def search(ctx, corpus, term, context, lemma, diagram, diagram_format, extract_s
             try:
                 result = diagram_sentence(match.sentence, output_format=diagram_format)
                 # Indent diagram output
-                for line in result.split('\n'):
+                for line in result.split("\n"):
                     click.echo(f"    {line}")
             except Exception as e:
                 click.echo(f"    ⚠ Could not diagram sentence: {e}")
@@ -467,7 +489,9 @@ def search(ctx, corpus, term, context, lemma, diagram, diagram_format, extract_s
 
             if context > 0:
                 # Get context from document
-                doc = next(d for d in docs if d.metadata.get("source_path") == match.doc_id)
+                doc = next(
+                    d for d in docs if d.metadata.get("source_path") == match.doc_id
+                )
 
                 start = max(0, match.sent_index - context)
                 end = min(len(doc.sentences), match.sent_index + context + 1)
@@ -488,11 +512,15 @@ def search(ctx, corpus, term, context, lemma, diagram, diagram_format, extract_s
                 from concept_mapper.syntax.diagram import diagram_sentence
 
                 for i, match in enumerate(matches, 1):
-                    f.write(f"[{i}] {match.doc_id or 'document'} (sentence {match.sent_index}):\n")
+                    f.write(
+                        f"[{i}] {match.doc_id or 'document'} (sentence {match.sent_index}):\n"
+                    )
                     f.write(f"{match.sentence}\n\n")
                     f.write("Diagram:\n")
                     try:
-                        result = diagram_sentence(match.sentence, output_format=diagram_format)
+                        result = diagram_sentence(
+                            match.sentence, output_format=diagram_format
+                        )
                         f.write(result)
                         f.write("\n")
                     except Exception as e:
