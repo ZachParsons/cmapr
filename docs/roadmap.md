@@ -1142,6 +1142,26 @@ The project is feature-complete for its intended use case. Potential future enha
   - Support for various document types (books, dissertations, legal documents, technical manuals)
   - Integration with existing corpus loading and preprocessing pipeline
   - Metadata extraction (section titles, numbering, nesting levels)
+- **Usage-based definition generation** - Generate definitions for terms based solely on their usage patterns in the source text, creating empirical definitions grounded in actual textual evidence. This would involve:
+  - Extract sentences containing the target term from the corpus
+  - Identify significant co-occurring nouns and verbs (using frequency/PMI/rarity scores)
+  - Extract grammatical relations involving the term (SVO, copular, prepositional patterns)
+  - Apply inference heuristics to identify semantic dimensions:
+    - WHY: purpose, causation, motivation (look for "because", "in order to", causal verbs)
+    - WHEN: temporal context, conditions (look for temporal markers, conditional patterns)
+    - WHERE: spatial/conceptual location (look for locative prepositions, domain markers)
+    - WHAT: categorization, essence (look for copular definitions, appositive constructions)
+    - HOW: process, manner, method (look for modal verbs, manner adverbs, instrumental markers)
+  - Collect concrete examples from the corpus (actual sentences showing the term in use)
+  - Aggregate evidence into structured definition components
+  - Score and rank definition components by frequency and statistical significance
+  - Generate natural language definition from aggregated components
+  - Integration points:
+    - Leverage existing search and concordance functionality (Phase 5)
+    - Use co-occurrence analysis for significant collocates (Phase 6)
+    - Use relation extraction for grammatical patterns (Phase 7)
+    - Add new module: `src/concept_mapper/analysis/definition_generator.py`
+  - Output format: structured JSON with definition components, scores, and supporting examples
 
 ---
 
