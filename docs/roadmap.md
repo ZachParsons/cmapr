@@ -1150,6 +1150,14 @@ The project is feature-complete for its intended use case. Potential future enha
 ### Code Maintenance
 
 - [ ] **Review and remove unused code** - Vulture detected 40 potentially unused functions/methods (≥60% confidence). Run `python3 -m vulture src/concept_mapper/ --min-confidence 60` to see full list. Focus on large functions (>30 lines) first. Many may be public API functions; verify before removing.
+- [ ] **Deduplicate and consolidate tests** - 558 test cases is excessive for this feature set. Review test suite for:
+  - Redundant test cases testing the same functionality
+  - Over-testing of trivial getters/setters
+  - Tests that could be parameterized to reduce duplication
+  - Multiple tests for edge cases that could be combined
+  - Tests of internal implementation details vs. public API contracts
+  - Target: Reduce to ~300-400 tests while maintaining coverage of critical functionality
+  - Run `pytest tests/ -v --collect-only | grep "test_" | wc -l` to count current tests
 - [ ] **Rename CLI command to `cmapr`** - Shorten the command from `concept-mapper` to `cmapr` for easier typing. This requires:
   - Update entry point in `setup.py` or `pyproject.toml`
   - Update all documentation (README.md, api-reference.md, examples)
