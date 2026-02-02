@@ -301,6 +301,56 @@ class TestSearchCommand:
         assert result.exit_code == 0
         assert output_file.exists()
 
+    def test_search_with_diagram(self, runner, sample_corpus_json):
+        """Test search with sentence diagram generation."""
+        result = runner.invoke(
+            cli, ["search", str(sample_corpus_json), "dialectic", "--diagram"]
+        )
+
+        assert result.exit_code == 0
+        assert "occurrence(s)" in result.output
+        assert "Diagram:" in result.output
+        # Check for dependency parse output
+        assert "root" in result.output or "SENTENCE DIAGRAM" in result.output
+
+    def test_search_with_diagram_format(self, runner, sample_corpus_json):
+        """Test search with different diagram formats."""
+        result = runner.invoke(
+            cli,
+            [
+                "search",
+                str(sample_corpus_json),
+                "dialectic",
+                "--diagram",
+                "--diagram-format",
+                "tree",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert "Diagram:" in result.output
+
+    def test_search_with_diagram_output(self, runner, sample_corpus_json, tmp_path):
+        """Test search with diagram output to file."""
+        output_file = tmp_path / "diagrams.txt"
+        result = runner.invoke(
+            cli,
+            [
+                "search",
+                str(sample_corpus_json),
+                "dialectic",
+                "--diagram",
+                "-o",
+                str(output_file),
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert output_file.exists()
+        content = output_file.read_text()
+        assert "Diagram:" in content
+        assert "dialectic" in content.lower()
+
 
 # ============================================================================
 # Test Concordance Command

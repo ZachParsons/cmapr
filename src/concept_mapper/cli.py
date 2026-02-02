@@ -270,9 +270,21 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
     is_flag=True,
     help="Match lemmatized forms (e.g., 'run' matches 'running', 'ran')",
 )
+@click.option(
+    "--diagram",
+    "-d",
+    is_flag=True,
+    help="Generate sentence diagrams for all matches",
+)
+@click.option(
+    "--diagram-format",
+    type=click.Choice(["ascii", "table", "tree"]),
+    default="ascii",
+    help="Diagram output format (requires --diagram)",
+)
 @click.option("--output", "-o", type=click.Path(), help="Output file")
 @click.pass_context
-def search(ctx, corpus, term, context, lemma, output):
+def search(ctx, corpus, term, context, lemma, diagram, diagram_format, output):
     """
     Search for term occurrences in corpus.
 
@@ -280,6 +292,8 @@ def search(ctx, corpus, term, context, lemma, output):
         concept-mapper search corpus.json "consciousness"
         concept-mapper search corpus.json "being" --context 2
         concept-mapper search corpus.json "run" --lemma
+        concept-mapper search corpus.json "abstraction" --diagram
+        concept-mapper search corpus.json "dialectic" --diagram --diagram-format tree
     """
     verbose = ctx.obj["verbose"]
 
@@ -308,23 +322,47 @@ def search(ctx, corpus, term, context, lemma, output):
     click.echo(f"\nFound {len(matches)} occurrence(s) of '{term}':")
     click.echo("=" * 70)
 
-    for i, match in enumerate(matches, 1):
-        click.echo(
-            f"\n[{i}] {match.doc_id or 'document'} (sentence {match.sent_index}):"
-        )
+    # Generate diagrams if requested
+    if diagram:
+        from concept_mapper.syntax.diagram import diagram_sentence
 
-        if context > 0:
-            # Get context from document
-            doc = next(d for d in docs if d.metadata.get("source_path") == match.doc_id)
+        if verbose:
+            click.echo("Generating sentence diagrams...")
 
-            start = max(0, match.sent_index - context)
-            end = min(len(doc.sentences), match.sent_index + context + 1)
-
-            for j in range(start, end):
-                prefix = ">>> " if j == match.sent_index else "    "
-                click.echo(f"{prefix}{doc.sentences[j]}")
-        else:
+        for i, match in enumerate(matches, 1):
+            click.echo(
+                f"\n[{i}] {match.doc_id or 'document'} (sentence {match.sent_index}):"
+            )
             click.echo(f"    {match.sentence}")
+            click.echo("\n    Diagram:")
+
+            try:
+                result = diagram_sentence(match.sentence, output_format=diagram_format)
+                # Indent diagram output
+                for line in result.split('\n'):
+                    click.echo(f"    {line}")
+            except Exception as e:
+                click.echo(f"    ⚠ Could not diagram sentence: {e}")
+
+            click.echo()  # Blank line between entries
+    else:
+        for i, match in enumerate(matches, 1):
+            click.echo(
+                f"\n[{i}] {match.doc_id or 'document'} (sentence {match.sent_index}):"
+            )
+
+            if context > 0:
+                # Get context from document
+                doc = next(d for d in docs if d.metadata.get("source_path") == match.doc_id)
+
+                start = max(0, match.sent_index - context)
+                end = min(len(doc.sentences), match.sent_index + context + 1)
+
+                for j in range(start, end):
+                    prefix = ">>> " if j == match.sent_index else "    "
+                    click.echo(f"{prefix}{doc.sentences[j]}")
+            else:
+                click.echo(f"    {match.sentence}")
 
     # Save if requested
     if output:
@@ -332,8 +370,23 @@ def search(ctx, corpus, term, context, lemma, output):
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(output_path, "w", encoding="utf-8") as f:
-            for match in matches:
-                f.write(f"{match.sentence}\n")
+            if diagram:
+                from concept_mapper.syntax.diagram import diagram_sentence
+
+                for i, match in enumerate(matches, 1):
+                    f.write(f"[{i}] {match.doc_id or 'document'} (sentence {match.sent_index}):\n")
+                    f.write(f"{match.sentence}\n\n")
+                    f.write("Diagram:\n")
+                    try:
+                        result = diagram_sentence(match.sentence, output_format=diagram_format)
+                        f.write(result)
+                        f.write("\n")
+                    except Exception as e:
+                        f.write(f"⚠ Could not diagram sentence: {e}\n")
+                    f.write("\n" + "=" * 70 + "\n\n")
+            else:
+                for match in matches:
+                    f.write(f"{match.sentence}\n")
 
         click.echo(f"\n✓ Saved {len(matches)} matches to {output_path}")
 

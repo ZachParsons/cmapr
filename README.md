@@ -143,10 +143,16 @@ concept-mapper search output/corpus/sample1_analytic_pragmatism.json "abstractio
 # Search with context (2 sentences before/after)
 concept-mapper search output/corpus/sample1_analytic_pragmatism.json "dialectical" --context 2
 
+# Search with sentence diagrams for all matches
+concept-mapper search output/corpus/sample1_analytic_pragmatism.json "abstraction" --diagram
+
+# Search with diagrams in tree format
+concept-mapper search output/corpus/sample1_analytic_pragmatism.json "dialectic" --diagram --diagram-format tree
+
 # KWIC concordance
 concept-mapper concordance output/corpus/sample1_analytic_pragmatism.json "praxis" --width 40
 
-# Create sentence diagram
+# Create sentence diagram for a single sentence
 concept-mapper diagram "Abstraction transforms social relations into things."
 ```
 
@@ -155,6 +161,24 @@ concept-mapper diagram "Abstraction transforms social relations into things."
 KWIC Concordance for 'praxis' (3 occurrences):
 ================================================================================
                     ... of theory and practice through  | praxis |  differs from mere contemplation...
+```
+
+**Expected diagram output:**
+```
+Found 1 occurrence(s) of 'abstraction':
+======================================================================
+
+[1] document (sentence 5):
+    Abstraction transforms social relations into things.
+
+    Diagram:
+    transforms (root)
+      └─ Abstraction (nsubj)
+      └─ relations (obj)
+        └─ social (amod)
+        └─ things (obl)
+          └─ into (case)
+      └─ . (punct)
 ```
 
 ### Step 4: Build Concept Graph
