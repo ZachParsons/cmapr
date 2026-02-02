@@ -19,9 +19,9 @@ class TestTermEntry:
 
     def test_create_minimal_entry(self):
         """Test creating entry with just a term."""
-        entry = TermEntry(term="abstraction")
+        entry = TermEntry(term="intentionality")
 
-        assert entry.term == "abstraction"
+        assert entry.term == "intentionality"
         assert entry.lemma is None
         assert entry.pos is None
         assert entry.definition is None
@@ -32,20 +32,20 @@ class TestTermEntry:
     def test_create_full_entry(self):
         """Test creating entry with all fields."""
         entry = TermEntry(
-            term="abstraction",
-            lemma="reify",
+            term="intentionality",
+            lemma="intend",
             pos="NN",
-            definition="The objectification of social relations",
-            notes="Central to Philosopher' theory",
+            definition="The directedness of mental states",
+            notes="Central to Brentano' theory",
             examples=["Example sentence 1", "Example sentence 2"],
             metadata={"score": 2.5, "source": "analysis"},
         )
 
-        assert entry.term == "abstraction"
-        assert entry.lemma == "reify"
+        assert entry.term == "intentionality"
+        assert entry.lemma == "intend"
         assert entry.pos == "NN"
-        assert entry.definition == "The objectification of social relations"
-        assert entry.notes == "Central to Philosopher' theory"
+        assert entry.definition == "The directedness of mental states"
+        assert entry.notes == "Central to Brentano' theory"
         assert len(entry.examples) == 2
         assert entry.metadata["score"] == 2.5
 
@@ -69,7 +69,7 @@ class TestTermEntry:
             "lemma": "totality",
             "pos": "NN",
             "definition": "The whole system",
-            "notes": "Thinkerist concept",
+            "notes": "Husserlist concept",
             "examples": ["Example"],
             "metadata": {},
         }
@@ -78,12 +78,12 @@ class TestTermEntry:
 
         assert entry.term == "totality"
         assert entry.definition == "The whole system"
-        assert entry.notes == "Thinkerist concept"
+        assert entry.notes == "Husserlist concept"
 
     def test_str_representation(self):
         """Test string representation."""
-        entry = TermEntry(term="abstraction", definition="Objectification")
-        assert str(entry) == "abstraction: Objectification"
+        entry = TermEntry(term="intentionality", definition="Directedness")
+        assert str(entry) == "intentionality: Directedness"
 
         entry_no_def = TermEntry(term="dasein")
         assert str(entry_no_def) == "dasein"
@@ -102,25 +102,27 @@ class TestTermList:
 
     def test_create_named_list(self):
         """Test creating list with name and description."""
-        terms = TermList(name="Philosopher Terms", description="Key concepts from Philosopher")
+        terms = TermList(
+            name="Brentano Terms", description="Key concepts from Brentano"
+        )
 
-        assert terms.name == "Philosopher Terms"
-        assert terms.description == "Key concepts from Philosopher"
+        assert terms.name == "Brentano Terms"
+        assert terms.description == "Key concepts from Brentano"
 
     def test_add_term(self):
         """Test adding terms."""
         terms = TermList()
-        entry = TermEntry(term="abstraction")
+        entry = TermEntry(term="intentionality")
 
         terms.add(entry)
 
         assert len(terms) == 1
-        assert "abstraction" in terms
+        assert "intentionality" in terms
 
     def test_add_duplicate_raises(self):
         """Test that adding duplicate raises error."""
         terms = TermList()
-        entry = TermEntry(term="abstraction")
+        entry = TermEntry(term="intentionality")
 
         terms.add(entry)
 
@@ -130,13 +132,13 @@ class TestTermList:
     def test_remove_term(self):
         """Test removing terms."""
         terms = TermList()
-        entry = TermEntry(term="abstraction")
+        entry = TermEntry(term="intentionality")
         terms.add(entry)
 
-        terms.remove("abstraction")
+        terms.remove("intentionality")
 
         assert len(terms) == 0
-        assert "abstraction" not in terms
+        assert "intentionality" not in terms
 
     def test_remove_nonexistent_raises(self):
         """Test that removing nonexistent term raises error."""
@@ -148,12 +150,12 @@ class TestTermList:
     def test_update_term(self):
         """Test updating term fields."""
         terms = TermList()
-        entry = TermEntry(term="abstraction")
+        entry = TermEntry(term="intentionality")
         terms.add(entry)
 
-        terms.update("abstraction", definition="New definition", notes="New notes")
+        terms.update("intentionality", definition="New definition", notes="New notes")
 
-        updated = terms.get("abstraction")
+        updated = terms.get("intentionality")
         assert updated.definition == "New definition"
         assert updated.notes == "New notes"
 
@@ -167,22 +169,22 @@ class TestTermList:
     def test_update_invalid_field_raises(self):
         """Test updating invalid field raises error."""
         terms = TermList()
-        entry = TermEntry(term="abstraction")
+        entry = TermEntry(term="intentionality")
         terms.add(entry)
 
         with pytest.raises(ValueError, match="Invalid field"):
-            terms.update("abstraction", invalid_field="value")
+            terms.update("intentionality", invalid_field="value")
 
     def test_get_term(self):
         """Test getting a term."""
         terms = TermList()
-        entry = TermEntry(term="abstraction", definition="Test")
+        entry = TermEntry(term="intentionality", definition="Test")
         terms.add(entry)
 
-        retrieved = terms.get("abstraction")
+        retrieved = terms.get("intentionality")
 
         assert retrieved is not None
-        assert retrieved.term == "abstraction"
+        assert retrieved.term == "intentionality"
         assert retrieved.definition == "Test"
 
     def test_get_nonexistent_returns_none(self):
@@ -196,10 +198,10 @@ class TestTermList:
     def test_contains(self):
         """Test contains method."""
         terms = TermList()
-        entry = TermEntry(term="abstraction")
+        entry = TermEntry(term="intentionality")
         terms.add(entry)
 
-        assert terms.contains("abstraction")
+        assert terms.contains("intentionality")
         assert not terms.contains("nonexistent")
 
     def test_list_terms(self):
@@ -220,12 +222,12 @@ class TestTermList:
     def test_list_term_names(self):
         """Test listing term names only."""
         terms = TermList()
-        terms.add(TermEntry(term="abstraction"))
+        terms.add(TermEntry(term="intentionality"))
         terms.add(TermEntry(term="totality"))
 
         names = terms.list_term_names()
 
-        assert names == ["abstraction", "totality"]
+        assert names == ["intentionality", "totality"]
 
     def test_iteration(self):
         """Test iterating over terms."""
@@ -251,28 +253,28 @@ class TestTermList:
     def test_to_dict(self):
         """Test serialization to dictionary."""
         terms = TermList(name="Test", description="Testing")
-        terms.add(TermEntry(term="abstraction"))
+        terms.add(TermEntry(term="intentionality"))
 
         data = terms.to_dict()
 
         assert data["name"] == "Test"
         assert data["description"] == "Testing"
         assert len(data["terms"]) == 1
-        assert data["terms"][0]["term"] == "abstraction"
+        assert data["terms"][0]["term"] == "intentionality"
 
     def test_from_dict(self):
         """Test deserialization from dictionary."""
         data = {
             "name": "Test List",
             "description": "Test",
-            "terms": [{"term": "abstraction", "lemma": None, "pos": None}],
+            "terms": [{"term": "intentionality", "lemma": None, "pos": None}],
         }
 
         terms = TermList.from_dict(data)
 
         assert terms.name == "Test List"
         assert len(terms) == 1
-        assert "abstraction" in terms
+        assert "intentionality" in terms
 
 
 class TestTermListPersistence:
@@ -281,7 +283,7 @@ class TestTermListPersistence:
     def test_save_and_load(self):
         """Test round-trip save and load."""
         terms = TermList(name="Test Terms", description="Testing persistence")
-        terms.add(TermEntry(term="abstraction", definition="Test definition"))
+        terms.add(TermEntry(term="intentionality", definition="Test definition"))
         terms.add(TermEntry(term="totality", notes="Test notes"))
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -297,11 +299,11 @@ class TestTermListPersistence:
             assert loaded.name == "Test Terms"
             assert loaded.description == "Testing persistence"
             assert len(loaded) == 2
-            assert "abstraction" in loaded
+            assert "intentionality" in loaded
             assert "totality" in loaded
 
             # Check term details preserved
-            reif = loaded.get("abstraction")
+            reif = loaded.get("intentionality")
             assert reif.definition == "Test definition"
 
     def test_save_creates_parent_directories(self):
@@ -347,31 +349,31 @@ class TestTermListMerge:
     def test_merge_with_conflicts_no_overwrite(self):
         """Test merging with conflicts, don't overwrite."""
         list1 = TermList(name="List 1")
-        list1.add(TermEntry(term="abstraction", definition="Original"))
+        list1.add(TermEntry(term="intentionality", definition="Original"))
 
         list2 = TermList(name="List 2")
-        list2.add(TermEntry(term="abstraction", definition="New"))
+        list2.add(TermEntry(term="intentionality", definition="New"))
         list2.add(TermEntry(term="totality"))
 
         merged = list1.merge(list2, overwrite=False)
 
         # Should keep original definition
         assert len(merged) == 2
-        reif = merged.get("abstraction")
+        reif = merged.get("intentionality")
         assert reif.definition == "Original"
 
     def test_merge_with_conflicts_overwrite(self):
         """Test merging with conflicts, overwrite."""
         list1 = TermList(name="List 1")
-        list1.add(TermEntry(term="abstraction", definition="Original"))
+        list1.add(TermEntry(term="intentionality", definition="Original"))
 
         list2 = TermList(name="List 2")
-        list2.add(TermEntry(term="abstraction", definition="New"))
+        list2.add(TermEntry(term="intentionality", definition="New"))
 
         merged = list1.merge(list2, overwrite=True)
 
         # Should have new definition
-        reif = merged.get("abstraction")
+        reif = merged.get("intentionality")
         assert reif.definition == "New"
 
 
@@ -398,13 +400,13 @@ class TestTermManager:
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create test file
             txt_path = Path(tmpdir) / "terms.txt"
-            txt_path.write_text("abstraction\ntotality\ncommodification\n")
+            txt_path.write_text("intentionality\ntotality\ncommodification\n")
 
             manager = TermManager()
             count = manager.import_from_txt(txt_path)
 
             assert count == 3
-            assert "abstraction" in manager.term_list
+            assert "intentionality" in manager.term_list
             assert "totality" in manager.term_list
             assert "commodification" in manager.term_list
 
@@ -412,10 +414,10 @@ class TestTermManager:
         """Test that import skips existing terms."""
         with tempfile.TemporaryDirectory() as tmpdir:
             txt_path = Path(tmpdir) / "terms.txt"
-            txt_path.write_text("abstraction\ntotality\n")
+            txt_path.write_text("intentionality\ntotality\n")
 
             manager = TermManager()
-            manager.term_list.add(TermEntry(term="abstraction"))
+            manager.term_list.add(TermEntry(term="intentionality"))
 
             count = manager.import_from_txt(txt_path)
 
@@ -426,7 +428,7 @@ class TestTermManager:
     def test_export_to_txt(self):
         """Test exporting to text file."""
         manager = TermManager()
-        manager.term_list.add(TermEntry(term="abstraction"))
+        manager.term_list.add(TermEntry(term="intentionality"))
         manager.term_list.add(TermEntry(term="totality"))
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -438,7 +440,7 @@ class TestTermManager:
             assert txt_path.exists()
 
             content = txt_path.read_text()
-            assert "abstraction" in content
+            assert "intentionality" in content
             assert "totality" in content
 
     def test_import_export_txt_round_trip(self):
@@ -465,11 +467,11 @@ class TestTermManager:
         manager = TermManager()
         manager.term_list.add(
             TermEntry(
-                term="abstraction",
-                lemma="reify",
+                term="intentionality",
+                lemma="intend",
                 pos="NN",
-                definition="Objectification",
-                notes="Philosopher",
+                definition="Directedness",
+                notes="Brentano",
             )
         )
 
@@ -483,13 +485,13 @@ class TestTermManager:
 
             content = csv_path.read_text()
             assert "term,lemma,pos,definition,notes" in content
-            assert "abstraction,reify,NN,Objectification,Philosopher" in content
+            assert "intentionality,intend,NN,Directedness,Brentano" in content
 
     def test_import_from_csv(self):
         """Test importing from CSV."""
         csv_content = """term,lemma,pos,definition,notes
-abstraction,reify,NN,Objectification,Philosopher
-totality,totality,NN,The whole,Thinker
+intentionality,intend,NN,Directedness,Brentano
+totality,totality,NN,The whole,Husserl
 """
         with tempfile.TemporaryDirectory() as tmpdir:
             csv_path = Path(tmpdir) / "terms.csv"
@@ -499,14 +501,14 @@ totality,totality,NN,The whole,Thinker
             count = manager.import_from_csv(csv_path)
 
             assert count == 2
-            assert "abstraction" in manager.term_list
+            assert "intentionality" in manager.term_list
             assert "totality" in manager.term_list
 
             # Check fields preserved
-            reif = manager.term_list.get("abstraction")
-            assert reif.lemma == "reify"
+            reif = manager.term_list.get("intentionality")
+            assert reif.lemma == "intend"
             assert reif.pos == "NN"
-            assert reif.definition == "Objectification"
+            assert reif.definition == "Directedness"
 
     def test_clear(self):
         """Test clearing term list."""
@@ -521,16 +523,16 @@ totality,totality,NN,The whole,Thinker
     def test_filter_by_pos(self):
         """Test filtering by POS tags."""
         manager = TermManager()
-        manager.term_list.add(TermEntry(term="abstraction", pos="NN"))
+        manager.term_list.add(TermEntry(term="intentionality", pos="NN"))
         manager.term_list.add(TermEntry(term="totality", pos="NN"))
-        manager.term_list.add(TermEntry(term="reify", pos="VB"))
+        manager.term_list.add(TermEntry(term="intend", pos="VB"))
 
         filtered = manager.filter_by_pos(["NN"])
 
         assert len(filtered) == 2
-        assert "abstraction" in filtered
+        assert "intentionality" in filtered
         assert "totality" in filtered
-        assert "reify" not in filtered
+        assert "intend" not in filtered
 
     def test_get_statistics(self):
         """Test getting statistics."""

@@ -1358,10 +1358,10 @@ for node_id in graph.nodes():
     graph.graph.nodes[node_id].update(node_attrs)
 
 # 5. Export to multiple formats
-output_dir = Path("output/philosopher_network")
+output_dir = Path("output/philosophy_network")
 
 # Interactive HTML visualization
-html_path = generate_html(graph, output_dir, title="Philosopher: History and Class Consciousness", width=1400, height=900)
+html_path = generate_html(graph, output_dir, title="Philosophy of Mind Concepts", width=1400, height=900)
 
 # CSV for spreadsheet analysis
 export_csv(graph, output_dir / "csv")
@@ -1384,8 +1384,8 @@ Open the HTML file in a web browser to explore the network.
 ```
 Visualization complete!
 
-Interactive HTML: output/philosopher_network/index.html
-CSV data: output/philosopher_network/csv/
+Interactive HTML: output/philosophy_network/index.html
+CSV data: output/philosophy_network/csv/
 
 Open the HTML file in a web browser to explore the network.
 - Drag nodes to rearrange

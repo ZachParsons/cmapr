@@ -11,7 +11,7 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 
 **Goal:** Analyze philosophical texts to identify author-specific conceptual vocabulary - neologisms and terms with specialized technical meaning that are statistically distinctive compared to general English corpora. Map these concepts through co-occurrence and grammatical relations, exporting as D3 (Data-Driven Documents) visualizations for interactive web-based exploration.
 
-**Examples of target terms:** Aristotle's 'eudaimonia', Spinoza's 'affect', Hegel's 'sublation', Philosopher' 'abstraction', Deleuze & Guattari's 'body without organs'
+**Examples of target terms:** Aristotle's 'eudaimonia', Spinoza's 'affect', Hegel's 'sublation', Dennett's 'intentional stance', Deleuze & Guattari's 'body without organs'
 
 **Stack:** Python, NLTK (Natural Language Toolkit), spaCy (for dependency parsing), networkx, Click (CLI - Command Line Interface)
 
@@ -474,7 +474,7 @@ Statistical foundation for rarity detection.
 
 Identify author-specific conceptual vocabulary - terms with specialized meaning distinctive to this author's work, not merely terms rare within the primary text.
 
-**Goal:** Find terms like Aristotle's 'eudaimonia', Spinoza's 'affect', Hegel's 'sublation', Philosopher' 'abstraction', or Deleuze & Guattari's 'body without organs' - philosophical neologisms and technical terminology statistically improbable in general English corpora.
+**Goal:** Find terms like Aristotle's 'eudaimonia', Spinoza's 'affect', Hegel's 'sublation', Dennett's 'intentional stance', or Deleuze & Guattari's 'body without organs' - philosophical neologisms and technical terminology statistically improbable in general English corpora.
 
 - [x] **3.1 Corpus-comparative analysis** (`src/concept_mapper/analysis/rarity.py`)
   - [x] `compare_to_reference(docs, reference_corpus: Counter) -> dict[str, float]`

@@ -274,7 +274,7 @@ def extract_significant_terms(
 
     Example:
         >>> results = extract_significant_terms(
-        ...     "abstraction",
+        ...     "intentionality",
         ...     docs,
         ...     threshold=0.1,
         ...     pos_types=["nouns", "verbs"]

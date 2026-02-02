@@ -54,7 +54,7 @@ def concordance(
         List of KWICLine objects
 
     Example:
-        >>> lines = concordance("abstraction", docs, width=30)
+        >>> lines = concordance("intentionality", docs, width=30)
         >>> for line in lines:
         ...     print(line)
     """

@@ -55,7 +55,7 @@ def find_sentences(
 
     Example:
         >>> # Exact word search
-        >>> matches = find_sentences("abstraction", docs)
+        >>> matches = find_sentences("intentionality", docs)
         >>> for match in matches:
         ...     print(f"{match.doc_id}: {match.sentence}")
 

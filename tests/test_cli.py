@@ -806,8 +806,8 @@ class TestSourceDerivedFilenames:
 
         text2 = tmp_path / "sample2.txt"
         text2.write_text(
-            "Praxis is action. Abstraction is a process. "
-            "Praxis and abstraction are central to Philosopher."
+            "Intentionality is directedness. Consciousness is awareness. "
+            "Intentionality and consciousness are central to Brentano."
         )
 
         # Ingest first text

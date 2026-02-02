@@ -229,7 +229,7 @@ def extract_svo_for_term(
         List of SVOTriple objects involving the term
 
     Example:
-        >>> triples = extract_svo_for_term("abstraction", docs)
+        >>> triples = extract_svo_for_term("intentionality", docs)
         >>> for t in triples:
         ...     print(t)
     """

@@ -24,15 +24,15 @@ from concept_mapper.analysis.cooccurrence import (
 def sample_docs():
     """Create sample documents for testing."""
     doc1 = ProcessedDocument(
-        raw_text="Abstraction is a philosophical concept. The concept relates to separation and commodification.",
+        raw_text="Intentionality is a philosophical concept. The concept relates to consciousness and phenomenology.",
         sentences=[
-            "Abstraction is a philosophical concept.",
-            "The concept relates to separation and commodification.",
+            "Intentionality is a philosophical concept.",
+            "The concept relates to consciousness and phenomenology.",
         ],
-        tokens=["abstraction", "is", "a", "philosophical", "concept"],
-        lemmas=["abstraction", "be", "a", "philosophical", "concept"],
+        tokens=["intentionality", "is", "a", "philosophical", "concept"],
+        lemmas=["intentionality", "be", "a", "philosophical", "concept"],
         pos_tags=[
-            ("abstraction", "NOUN"),
+            ("intentionality", "NOUN"),
             ("is", "VERB"),
             ("a", "DET"),
             ("philosophical", "ADJ"),
@@ -42,18 +42,18 @@ def sample_docs():
     )
 
     doc2 = ProcessedDocument(
-        raw_text="Separation appears in Thinker. Abstraction and separation are related concepts in critical theory.",
+        raw_text="Consciousness appears in Husserl. Intentionality and consciousness are related concepts in phenomenological theory.",
         sentences=[
-            "Separation appears in Thinker.",
-            "Abstraction and separation are related concepts in critical theory.",
+            "Consciousness appears in Husserl.",
+            "Intentionality and consciousness are related concepts in phenomenological theory.",
         ],
-        tokens=["separation", "appears", "in", "thinker"],
-        lemmas=["separation", "appear", "in", "thinker"],
+        tokens=["consciousness", "appears", "in", "husserl"],
+        lemmas=["consciousness", "appear", "in", "husserl"],
         pos_tags=[
-            ("separation", "NOUN"),
+            ("consciousness", "NOUN"),
             ("appears", "VERB"),
             ("in", "ADP"),
-            ("thinker", "PROPN"),
+            ("husserl", "PROPN"),
         ],
         metadata={"source_path": "doc2.txt"},
     )
@@ -81,9 +81,9 @@ def sample_docs():
 def term_list():
     """Create sample term list for filtering tests."""
     terms = TermList()
-    terms.add(TermEntry(term="abstraction"))
-    terms.add(TermEntry(term="separation"))
-    terms.add(TermEntry(term="commodification"))
+    terms.add(TermEntry(term="intentionality"))
+    terms.add(TermEntry(term="consciousness"))
+    terms.add(TermEntry(term="phenomenology"))
     terms.add(TermEntry(term="philosophy"))
     terms.add(TermEntry(term="ontology"))
     terms.add(TermEntry(term="epistemology"))
@@ -100,35 +100,35 @@ class TestSentenceCooccurrence:
 
     def test_cooccurs_in_sentence_basic(self, sample_docs):
         """Test basic sentence co-occurrence."""
-        cooccurs = cooccurs_in_sentence("abstraction", sample_docs)
+        cooccurs = cooccurs_in_sentence("intentionality", sample_docs)
 
-        # Should find words that appear in same sentences as "abstraction"
+        # Should find words that appear in same sentences as "intentionality"
         assert "philosophical" in cooccurs
         assert "concept" in cooccurs
-        assert "separation" in cooccurs
+        assert "consciousness" in cooccurs
 
     def test_cooccurs_in_sentence_counts(self, sample_docs):
         """Test that co-occurrence counts are accurate."""
-        cooccurs = cooccurs_in_sentence("abstraction", sample_docs)
+        cooccurs = cooccurs_in_sentence("intentionality", sample_docs)
 
-        # "concept" appears in sentences with "abstraction"
+        # "concept" appears in sentences with "intentionality"
         assert cooccurs["concept"] >= 1
-        # "separation" appears in sentence with "abstraction" (doc2)
-        assert cooccurs["separation"] >= 1
-        # "philosophical" appears with "abstraction"
+        # "consciousness" appears in sentence with "intentionality" (doc2)
+        assert cooccurs["consciousness"] >= 1
+        # "philosophical" appears with "intentionality"
         assert cooccurs["philosophical"] >= 1
 
     def test_cooccurs_in_sentence_excludes_self(self, sample_docs):
         """Test that target term is excluded from results."""
-        cooccurs = cooccurs_in_sentence("abstraction", sample_docs)
+        cooccurs = cooccurs_in_sentence("intentionality", sample_docs)
 
-        # "abstraction" itself should not be in the results
-        assert "abstraction" not in cooccurs
+        # "intentionality" itself should not be in the results
+        assert "intentionality" not in cooccurs
 
     def test_cooccurs_in_sentence_case_insensitive(self, sample_docs):
         """Test case-insensitive co-occurrence (default)."""
-        cooccurs_lower = cooccurs_in_sentence("abstraction", sample_docs)
-        cooccurs_upper = cooccurs_in_sentence("ABSTRACTION", sample_docs)
+        cooccurs_lower = cooccurs_in_sentence("intentionality", sample_docs)
+        cooccurs_upper = cooccurs_in_sentence("INTENTIONALITY", sample_docs)
 
         # Should find same co-occurrences regardless of case
         assert len(cooccurs_lower) > 0
@@ -157,15 +157,15 @@ class TestFilteredCooccurrence:
 
     def test_cooccurs_filtered_basic(self, sample_docs, term_list):
         """Test filtered co-occurrence using term list."""
-        cooccurs = cooccurs_filtered("abstraction", sample_docs, term_list)
+        cooccurs = cooccurs_filtered("intentionality", sample_docs, term_list)
 
         # Should only include terms from the term list
-        assert "separation" in cooccurs
+        assert "consciousness" in cooccurs
         assert "philosophy" in cooccurs or "philosophical" not in cooccurs
 
     def test_cooccurs_filtered_excludes_non_list_terms(self, sample_docs, term_list):
         """Test that non-list terms are excluded."""
-        cooccurs = cooccurs_filtered("abstraction", sample_docs, term_list)
+        cooccurs = cooccurs_filtered("intentionality", sample_docs, term_list)
 
         # Common words not in term list should be excluded
         assert "is" not in cooccurs
@@ -175,15 +175,15 @@ class TestFilteredCooccurrence:
     def test_cooccurs_filtered_empty_list(self, sample_docs):
         """Test filtered co-occurrence with empty term list."""
         empty_list = TermList()
-        cooccurs = cooccurs_filtered("abstraction", sample_docs, empty_list)
+        cooccurs = cooccurs_filtered("intentionality", sample_docs, empty_list)
 
         # Should have no results with empty term list
         assert len(cooccurs) == 0
 
     def test_cooccurs_filtered_subset(self, sample_docs, term_list):
         """Test that filtered results are subset of unfiltered."""
-        all_cooccurs = cooccurs_in_sentence("abstraction", sample_docs)
-        filtered = cooccurs_filtered("abstraction", sample_docs, term_list)
+        all_cooccurs = cooccurs_in_sentence("intentionality", sample_docs)
+        filtered = cooccurs_filtered("intentionality", sample_docs, term_list)
 
         # Filtered should be subset
         assert len(filtered) <= len(all_cooccurs)
@@ -199,17 +199,17 @@ class TestParagraphCooccurrence:
 
     def test_cooccurs_in_paragraph_basic(self, sample_docs):
         """Test paragraph-level co-occurrence."""
-        cooccurs = cooccurs_in_paragraph("abstraction", sample_docs)
+        cooccurs = cooccurs_in_paragraph("intentionality", sample_docs)
 
         # Should find terms in same document (treated as paragraph)
         assert "philosophical" in cooccurs
         assert "concept" in cooccurs
-        assert "separation" in cooccurs
+        assert "consciousness" in cooccurs
 
     def test_cooccurs_in_paragraph_broader_than_sentence(self, sample_docs):
         """Test that paragraph co-occurrence is broader than sentence."""
-        sent_cooccurs = cooccurs_in_sentence("abstraction", sample_docs)
-        para_cooccurs = cooccurs_in_paragraph("abstraction", sample_docs)
+        sent_cooccurs = cooccurs_in_sentence("intentionality", sample_docs)
+        para_cooccurs = cooccurs_in_paragraph("intentionality", sample_docs)
 
         # Paragraph should generally find more co-occurrences
         # (at minimum, same terms but potentially higher counts)
@@ -226,15 +226,15 @@ class TestWindowCooccurrence:
 
     def test_cooccurs_within_n_basic(self, sample_docs):
         """Test N-sentence window co-occurrence."""
-        cooccurs = cooccurs_within_n("abstraction", sample_docs, n_sentences=1)
+        cooccurs = cooccurs_within_n("intentionality", sample_docs, n_sentences=1)
 
         # Should find terms within 1 sentence before/after
         assert len(cooccurs) > 0
 
     def test_cooccurs_within_n_window_size(self, sample_docs):
         """Test that larger windows capture more co-occurrences."""
-        cooccurs_1 = cooccurs_within_n("abstraction", sample_docs, n_sentences=1)
-        cooccurs_3 = cooccurs_within_n("abstraction", sample_docs, n_sentences=3)
+        cooccurs_1 = cooccurs_within_n("intentionality", sample_docs, n_sentences=1)
+        cooccurs_3 = cooccurs_within_n("intentionality", sample_docs, n_sentences=3)
 
         # Larger window should include everything from smaller window
         # (counts may be higher for terms that appear multiple times)
@@ -243,7 +243,7 @@ class TestWindowCooccurrence:
 
     def test_cooccurs_within_n_zero_window(self, sample_docs):
         """Test with zero-sentence window (just the sentence itself)."""
-        cooccurs = cooccurs_within_n("abstraction", sample_docs, n_sentences=0)
+        cooccurs = cooccurs_within_n("intentionality", sample_docs, n_sentences=0)
 
         # Should be similar to sentence-level co-occurrence
         assert len(cooccurs) > 0
@@ -259,7 +259,7 @@ class TestPMI:
 
     def test_pmi_positive_association(self, sample_docs):
         """Test PMI for terms that co-occur."""
-        pmi_score = pmi("abstraction", "separation", sample_docs)
+        pmi_score = pmi("intentionality", "consciousness", sample_docs)
 
         # Terms that co-occur should have positive PMI
         # (may be zero or slightly negative for rare co-occurrences)
@@ -267,15 +267,15 @@ class TestPMI:
 
     def test_pmi_symmetric(self, sample_docs):
         """Test that PMI is symmetric."""
-        pmi_12 = pmi("abstraction", "separation", sample_docs)
-        pmi_21 = pmi("separation", "abstraction", sample_docs)
+        pmi_12 = pmi("intentionality", "consciousness", sample_docs)
+        pmi_21 = pmi("consciousness", "intentionality", sample_docs)
 
         # Should be the same regardless of order
         assert abs(pmi_12 - pmi_21) < 0.001
 
     def test_pmi_independent_terms(self, sample_docs):
         """Test PMI for terms that don't co-occur."""
-        pmi_score = pmi("abstraction", "ontology", sample_docs)
+        pmi_score = pmi("intentionality", "ontology", sample_docs)
 
         # Terms in different documents should have low/zero PMI
         # (will be 0.0 if they never co-occur)
@@ -283,7 +283,7 @@ class TestPMI:
 
     def test_pmi_nonexistent_term(self, sample_docs):
         """Test PMI when one term doesn't exist."""
-        pmi_score = pmi("abstraction", "nonexistent", sample_docs)
+        pmi_score = pmi("intentionality", "nonexistent", sample_docs)
 
         # Should return 0.0 for nonexistent terms
         assert pmi_score == 0.0
@@ -311,36 +311,36 @@ class TestLogLikelihoodRatio:
 
     def test_llr_positive_value(self, sample_docs):
         """Test that LLR returns positive value for associated terms."""
-        llr = log_likelihood_ratio("abstraction", "separation", sample_docs)
+        llr = log_likelihood_ratio("intentionality", "consciousness", sample_docs)
 
         # Should be non-negative
         assert llr >= 0.0
 
     def test_llr_symmetric(self, sample_docs):
         """Test that LLR is symmetric."""
-        llr_12 = log_likelihood_ratio("abstraction", "separation", sample_docs)
-        llr_21 = log_likelihood_ratio("separation", "abstraction", sample_docs)
+        llr_12 = log_likelihood_ratio("intentionality", "consciousness", sample_docs)
+        llr_21 = log_likelihood_ratio("consciousness", "intentionality", sample_docs)
 
         # Should be the same regardless of order
         assert abs(llr_12 - llr_21) < 0.001
 
     def test_llr_high_for_frequent_cooccurrence(self, sample_docs):
         """Test that LLR is high for terms that frequently co-occur."""
-        llr = log_likelihood_ratio("abstraction", "separation", sample_docs)
+        llr = log_likelihood_ratio("intentionality", "consciousness", sample_docs)
 
         # Should have some positive value (exact threshold depends on corpus)
         assert llr >= 0.0
 
     def test_llr_low_for_independent_terms(self, sample_docs):
         """Test LLR for independent terms."""
-        llr = log_likelihood_ratio("abstraction", "ontology", sample_docs)
+        llr = log_likelihood_ratio("intentionality", "ontology", sample_docs)
 
         # Should be low/zero for terms that don't co-occur
         assert llr >= 0.0  # LLR is always non-negative
 
     def test_llr_nonexistent_term(self, sample_docs):
         """Test LLR when term doesn't exist."""
-        llr = log_likelihood_ratio("abstraction", "nonexistent", sample_docs)
+        llr = log_likelihood_ratio("intentionality", "nonexistent", sample_docs)
 
         assert llr == 0.0
 
@@ -527,7 +527,7 @@ class TestTopCooccurrences:
 
     def test_get_top_cooccurrences_basic(self, sample_docs):
         """Test getting top co-occurrences."""
-        top = get_top_cooccurrences("abstraction", sample_docs, n=5, method="count")
+        top = get_top_cooccurrences("intentionality", sample_docs, n=5, method="count")
 
         # Should return list of tuples
         assert isinstance(top, list)
@@ -536,8 +536,12 @@ class TestTopCooccurrences:
 
     def test_get_top_cooccurrences_limit(self, sample_docs):
         """Test that n parameter limits results."""
-        top_3 = get_top_cooccurrences("abstraction", sample_docs, n=3, method="count")
-        top_5 = get_top_cooccurrences("abstraction", sample_docs, n=5, method="count")
+        top_3 = get_top_cooccurrences(
+            "intentionality", sample_docs, n=3, method="count"
+        )
+        top_5 = get_top_cooccurrences(
+            "intentionality", sample_docs, n=5, method="count"
+        )
 
         # Should respect n parameter
         assert len(top_3) <= 3
@@ -545,7 +549,7 @@ class TestTopCooccurrences:
 
     def test_get_top_cooccurrences_sorted(self, sample_docs):
         """Test that results are sorted by score."""
-        top = get_top_cooccurrences("abstraction", sample_docs, n=10, method="count")
+        top = get_top_cooccurrences("intentionality", sample_docs, n=10, method="count")
 
         # Should be sorted descending
         scores = [score for _, score in top]
@@ -553,14 +557,14 @@ class TestTopCooccurrences:
 
     def test_get_top_cooccurrences_pmi(self, sample_docs):
         """Test top co-occurrences with PMI."""
-        top = get_top_cooccurrences("abstraction", sample_docs, n=5, method="pmi")
+        top = get_top_cooccurrences("intentionality", sample_docs, n=5, method="pmi")
 
         # Should return results
         assert isinstance(top, list)
 
     def test_get_top_cooccurrences_llr(self, sample_docs):
         """Test top co-occurrences with LLR."""
-        top = get_top_cooccurrences("abstraction", sample_docs, n=5, method="llr")
+        top = get_top_cooccurrences("intentionality", sample_docs, n=5, method="llr")
 
         # Should return results
         assert isinstance(top, list)
@@ -568,7 +572,7 @@ class TestTopCooccurrences:
     def test_get_top_cooccurrences_filtered(self, sample_docs, term_list):
         """Test top co-occurrences with term list filter."""
         top = get_top_cooccurrences(
-            "abstraction", sample_docs, n=5, method="count", term_list=term_list
+            "intentionality", sample_docs, n=5, method="count", term_list=term_list
         )
 
         # All results should be in term list
@@ -579,7 +583,7 @@ class TestTopCooccurrences:
     def test_get_top_cooccurrences_invalid_method(self, sample_docs):
         """Test with invalid method."""
         with pytest.raises(ValueError):
-            get_top_cooccurrences("abstraction", sample_docs, n=5, method="invalid")
+            get_top_cooccurrences("intentionality", sample_docs, n=5, method="invalid")
 
     def test_get_top_cooccurrences_nonexistent_term(self, sample_docs):
         """Test top co-occurrences for nonexistent term."""

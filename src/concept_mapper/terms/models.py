@@ -18,8 +18,8 @@ class TermEntry:
     A single curated philosophical term with metadata.
 
     Attributes:
-        term: The term as it appears in text (e.g., "abstraction")
-        lemma: Lemmatized form (e.g., "reify")
+        term: The term as it appears in text (e.g., "intentionality")
+        lemma: Lemmatized form (e.g., "intend")
         pos: Part of speech (e.g., "NN", "VB")
         definition: Human-provided definition or explanation
         notes: Additional scholarly notes or context
@@ -64,8 +64,8 @@ class TermList:
 
     Example:
         >>> terms = TermList()
-        >>> terms.add(TermEntry(term="abstraction", definition="..."))
-        >>> entry = terms.get("abstraction")
+        >>> terms.add(TermEntry(term="intentionality", definition="..."))
+        >>> entry = terms.get("intentionality")
         >>> terms.save("output/terms.json")
     """
 

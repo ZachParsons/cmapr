@@ -54,7 +54,7 @@ class TermManager:
         Example:
             File contents:
             ```
-            abstraction
+            intentionality
             totality
             commodification
             ```

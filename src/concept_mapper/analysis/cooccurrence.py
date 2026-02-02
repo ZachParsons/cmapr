@@ -30,7 +30,7 @@ def cooccurs_in_sentence(
         Counter of terms appearing in same sentences as target term
 
     Example:
-        >>> cooccurs = cooccurs_in_sentence("abstraction", docs)
+        >>> cooccurs = cooccurs_in_sentence("intentionality", docs)
         >>> print(cooccurs.most_common(10))
         [('philosophy', 5), ('concept', 4), ('process', 3), ...]
     """
@@ -78,7 +78,7 @@ def cooccurs_filtered(
         Counter of curated terms appearing with target term
 
     Example:
-        >>> cooccurs = cooccurs_filtered("abstraction", docs, philosophical_terms)
+        >>> cooccurs = cooccurs_filtered("intentionality", docs, philosophical_terms)
         >>> # Only counts terms in philosophical_terms list
     """
     # Get all co-occurrences
@@ -117,7 +117,7 @@ def cooccurs_in_paragraph(
         Counter of terms appearing in same paragraphs as target term
 
     Example:
-        >>> cooccurs = cooccurs_in_paragraph("abstraction", docs)
+        >>> cooccurs = cooccurs_in_paragraph("intentionality", docs)
     """
     # TODO: Implement proper paragraph segmentation (Phase 1.7)
     # For now, treat each document as a single paragraph
@@ -163,8 +163,8 @@ def cooccurs_within_n(
         Counter of terms appearing within N sentences of target
 
     Example:
-        >>> cooccurs = cooccurs_within_n("abstraction", docs, n_sentences=2)
-        >>> # Counts terms within 2 sentences before/after "abstraction"
+        >>> cooccurs = cooccurs_within_n("intentionality", docs, n_sentences=2)
+        >>> # Counts terms within 2 sentences before/after "intentionality"
     """
     cooccurrences = Counter()
 
@@ -218,7 +218,7 @@ def pmi(
         PMI score (can be negative)
 
     Example:
-        >>> pmi_score = pmi("abstraction", "separation", docs)
+        >>> pmi_score = pmi("intentionality", "consciousness", docs)
         >>> if pmi_score > 2.0:
         ...     print("Strong association")
     """
@@ -291,7 +291,7 @@ def log_likelihood_ratio(
         Log-likelihood ratio (G²)
 
     Example:
-        >>> llr = log_likelihood_ratio("abstraction", "separation", docs)
+        >>> llr = log_likelihood_ratio("intentionality", "consciousness", docs)
         >>> if llr > 10.83:
         ...     print("Highly significant association (p < 0.001)")
     """
@@ -390,7 +390,7 @@ def build_cooccurrence_matrix(
         ...     philosophical_terms, docs, method="pmi", window="sentence"
         ... )
         >>> # Access association between two terms
-        >>> score = matrix["abstraction"]["separation"]
+        >>> score = matrix["intentionality"]["consciousness"]
     """
     terms = [entry.term for entry in term_list.list_terms()]
 
@@ -508,7 +508,7 @@ def get_top_cooccurrences(
         List of (term, score) tuples, sorted by score descending
 
     Example:
-        >>> top = get_top_cooccurrences("abstraction", docs, n=5, method="pmi")
+        >>> top = get_top_cooccurrences("intentionality", docs, n=5, method="pmi")
         >>> for cooccur_term, score in top:
         ...     print(f"{cooccur_term}: {score:.2f}")
     """

@@ -350,9 +350,9 @@ def search(
         cmapr search corpus.json "consciousness"
         cmapr search corpus.json "being" --context 2
         cmapr search corpus.json "run" --lemma
-        cmapr search corpus.json "abstraction" --diagram
+        cmapr search corpus.json "intentionality" --diagram
         cmapr search corpus.json "dialectic" --diagram --diagram-format tree
-        cmapr search corpus.json "abstraction" --extract-significant --threshold 1.5
+        cmapr search corpus.json "intentionality" --extract-significant --threshold 1.5
         cmapr search corpus.json "capitalism" -e -p nouns -p verbs --top-n 5
         cmapr search corpus.json "consciousness" -e --aggregate --detailed
     """
@@ -851,7 +851,7 @@ def diagram(ctx, sentence, format, output):
 
     Examples:
         cmapr diagram "The cat sat on the mat."
-        cmapr diagram "Abstraction obscures social processes." --format tree
+        cmapr diagram "Intentionality obscures social processes." --format tree
         cmapr diagram "The question is complex." -o diagram.txt
     """
     from concept_mapper.syntax.diagram import diagram_sentence, save_diagram

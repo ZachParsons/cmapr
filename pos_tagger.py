@@ -11,7 +11,7 @@ Usage:
     # Interactive shell
     python3
     import pos_tagger
-    result = pos_tagger.run('data/sample/philosopher_1920_cc.txt')
+    result = pos_tagger.run('samples/sample3_mind_consciousness.txt')
 
     # Or with custom text
     result = pos_tagger.run_pipeline("Your text here", top_n=10)
@@ -285,9 +285,9 @@ def search_term_in_file(file_path: str, term: str) -> List[str]:
 # ===== Convenience function for backward compatibility =====
 
 
-def run(file_path: str = "data/sample/philosopher_1920_cc.txt") -> Dict:
+def run(file_path: str = "samples/sample3_mind_consciousness.txt") -> Dict:
     """
-    Run analysis on a file (default: data/sample/philosopher_1920_cc.txt).
+    Run analysis on a file (default: samples/sample3_mind_consciousness.txt).
 
     Args:
         file_path: Path to text file

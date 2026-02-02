@@ -67,7 +67,7 @@ def get_context(
         List of ContextWindow objects
 
     Example:
-        >>> windows = get_context("abstraction", docs, n_sentences=2)
+        >>> windows = get_context("intentionality", docs, n_sentences=2)
         >>> for window in windows:
         ...     print(window)
         ...     print("---")

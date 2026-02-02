@@ -14,7 +14,7 @@ Compares how much more (or less) the author uses a term vs. general English:
     ratio = (freq_in_author / total_author) / (freq_in_reference / total_reference)
 
 High ratio (e.g., 50x) means the author overuses the term compared to Brown corpus.
-Example: If "abstraction" appears 10 times in a 1000-word author corpus but only
+Example: If "intentionality" appears 10 times in a 1000-word author corpus but only
 1 time per million words in Brown, the ratio would be ~10,000x.
 
 ### 2. TF-IDF (Term Frequency - Inverse Document Frequency)
@@ -865,7 +865,7 @@ def get_definitional_contexts(
 
     Philosophers often introduce technical terminology with explicit definitions:
     - "Dasein is being-in-the-world"
-    - "By abstraction I mean the objectification of social relations"
+    - "By intentionality I mean the directedness of consciousness toward objects"
     - "What I call différance is neither a word nor a concept"
     - "The concept of Being refers to..."
 
@@ -1402,7 +1402,7 @@ class PhilosophicalTermScorer:
     2. TF-IDF score (term frequency × inverse document frequency)
     3. Neologism detection (boolean boost for terms not in reference/WordNet)
     4. Definitional contexts (explicit author definitions)
-    5. Capitalization (mid-sentence capitals indicating abstraction)
+    5. Capitalization (mid-sentence capitals indicating technical terms)
 
     Scores are weighted combinations normalized to 0-1 range for each component.
     The total score is the sum of weighted components.

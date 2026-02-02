@@ -30,7 +30,7 @@ def dispersion(
         Dictionary mapping doc_id -> list of positions (sentence indices or char offsets)
 
     Example:
-        >>> disp = dispersion("abstraction", docs)
+        >>> disp = dispersion("intentionality", docs)
         >>> for doc_id, positions in disp.items():
         ...     print(f"{doc_id}: appears in sentences {positions}")
     """
@@ -90,7 +90,7 @@ def get_dispersion_summary(
         - avg_occurrences_per_doc: Average occurrences in docs that have the term
 
     Example:
-        >>> summary = get_dispersion_summary("abstraction", docs)
+        >>> summary = get_dispersion_summary("intentionality", docs)
         >>> print(f"Appears in {summary['docs_with_term']}/{summary['total_docs']} documents")
         >>> print(f"Coverage: {summary['coverage']:.1f}%")
     """
@@ -134,7 +134,7 @@ def compare_dispersion(
         Dictionary mapping term -> dispersion summary
 
     Example:
-        >>> comparison = compare_dispersion(["abstraction", "ontology", "epistemology"], docs)
+        >>> comparison = compare_dispersion(["intentionality", "ontology", "epistemology"], docs)
         >>> for term, summary in comparison.items():
         ...     print(f"{term}: {summary['coverage']:.1f}% coverage")
     """
@@ -168,7 +168,7 @@ def dispersion_plot_data(
         List of tuples: (doc_id, num_sentences, list_of_positions)
 
     Example:
-        >>> plot_data = dispersion_plot_data("abstraction", docs)
+        >>> plot_data = dispersion_plot_data("intentionality", docs)
         >>> for doc_id, length, positions in plot_data:
         ...     # Plot positions as vertical lines at their sentence indices
         ...     print(f"{doc_id} ({length} sentences): {positions}")
@@ -215,7 +215,7 @@ def get_concentrated_regions(
         - density: Occurrences per sentence in window
 
     Example:
-        >>> regions = get_concentrated_regions("abstraction", docs, window_size=10, min_occurrences=3)
+        >>> regions = get_concentrated_regions("intentionality", docs, window_size=10, min_occurrences=3)
         >>> for region in regions:
         ...     print(f"{region['doc_id']} sentences {region['start_sent']}-{region['end_sent']}: "
         ...           f"{region['occurrences']} occurrences")
