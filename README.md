@@ -293,83 +293,48 @@ concept-mapper export graph.json --format html -o viz/
 - `--threshold`: Minimum edge weight (higher = sparser graph, only strong connections)
 - `--method`: Construction method (cooccurrence vs. relations)
 
-## Features (Complete: Phases 0-11)
+## Features
 
-### ✅ Phase 1: Corpus Preprocessing
-- Load documents from text files
-- Sentence and word tokenization
-- POS (Part of Speech) tagging
-- Lemmatization
-- **[See examples →](docs/api-reference.md#phase-1-corpus-preprocessing)**
+### Text Processing & Analysis
+- **Document Loading** - Load single files or entire directories of texts
+- **Preprocessing** - Tokenization, POS tagging, and lemmatization with NLTK
+- **Frequency Analysis** - Word frequencies, TF-IDF scoring, corpus comparison
+- **Search & Concordance** - Find terms in context with KWIC displays and context windows
 
-### ✅ Phase 2: Frequency Analysis
-- Word frequency distributions
-- TF-IDF (Term Frequency-Inverse Document Frequency) scoring
-- Comparison to Brown corpus reference
-- **[See examples →](docs/api-reference.md#phase-2-frequency-analysis--tf-idf)**
+### Term Detection
+- **Multi-Method Detection** - 5 statistical signals for identifying philosophical terms:
+  - Corpus-comparative frequency analysis (primary method)
+  - TF-IDF scoring against reference corpus
+  - Neologism detection via WordNet lookup
+  - Definitional context identification
+  - Capitalization analysis for reified abstractions
+- **Hybrid Scoring** - Configurable weights combine all signals
+- **Term Management** - CRUD operations with import/export (JSON, CSV, TXT)
+- **Auto-Population** - Generate term lists automatically from analysis
 
-### ✅ Phase 3: Philosophical Term Detection
-- Multi-method rarity detection (5 signals)
-- Corpus-comparative analysis
-- Neologism detection (WordNet lookup)
-- Definitional context identification
-- Hybrid scorer with weighted signals
-- **[See examples →](docs/api-reference.md#phase-3-philosophical-term-detection)**
+### Relationship Extraction
+- **Co-occurrence Analysis** - Sentence-level and windowed co-occurrence with PMI/LLR
+- **Relation Extraction** - SVO triples, copular definitions, prepositional relations
+- **Pattern-Based** - NLTK-powered grammatical extraction with evidence aggregation
 
-### ✅ Phase 4: Term List Management
-- CRUD operations for curated terms
-- Import/export (JSON, CSV, TXT)
-- Auto-population from statistical analysis
-- Metadata: definitions, notes, examples, POS tags
-- **[See examples →](docs/api-reference.md#phase-4-term-list-management)**
+### Graph Construction & Analysis
+- **NetworkX Integration** - Build directed/undirected concept graphs
+- **Multiple Methods** - Construct from co-occurrence or extracted relations
+- **Graph Operations** - Merge, prune, filter, extract subgraphs
+- **Graph Metrics** - Centrality, community detection, density, paths
 
-### ✅ Phase 5: Search & Concordance
-- Find sentences containing terms
-- KWIC (Key Word In Context) concordance display
-- Context windows (N sentences before/after)
-- Dispersion analysis (where terms appear)
-- Sentence diagramming with dependency parsing
-- **[See examples →](docs/api-reference.md#phase-5-search--concordance)**
+### Visualization & Export
+- **Interactive HTML** - D3.js force-directed visualizations (drag, zoom, tooltips)
+- **Multiple Formats** - GraphML (Gephi/yEd), GEXF, DOT (Graphviz), CSV
+- **Standalone** - Self-contained HTML files with inlined data (no CORS issues)
+- **Customizable** - Node sizing, community coloring, evidence display
 
-### ✅ Phase 6: Co-occurrence Analysis
-- Sentence-level co-occurrence
-- N-sentence window co-occurrence
-- PMI (Pointwise Mutual Information)
-- LLR (Log-Likelihood Ratio) significance testing
-- Co-occurrence matrices (count/PMI/LLR)
-- **[See examples →](docs/api-reference.md#phase-6-co-occurrence-analysis)**
+### User Interfaces
+- **CLI** - Complete command-line interface with 6 commands
+- **Python API** - Full programmatic access with comprehensive docstrings
+- **Batch Processing** - Progress bars and multi-file support
 
-### ✅ Phase 7: Relation Extraction
-- SVO (Subject-Verb-Object) triples
-- Copular definitions (X is Y)
-- Prepositional relations (X of Y)
-- Evidence aggregation
-- Pattern-based extraction using NLTK
-- **[See examples →](docs/api-reference.md#phase-7-relation-extraction)**
-
-### ✅ Phase 8: Graph Construction
-- ConceptGraph data structure (directed/undirected)
-- Build graphs from co-occurrence matrices
-- Build graphs from relation extraction
-- Graph operations (merge, prune, filter, subgraph)
-- Graph metrics (centrality, communities, paths, density)
-- **[See examples →](docs/api-reference.md#phase-8-graph-construction)**
-
-### ✅ Phase 9: Export & Visualization
-- D3.js JSON export for interactive web visualizations
-- GraphML export for Gephi, yEd, Cytoscape
-- DOT export for Graphviz
-- CSV export for spreadsheets and databases
-- Standalone HTML visualizations with force-directed layouts
-- **[See examples →](docs/api-reference.md#phase-9-export--visualization)**
-
-### ✅ Phase 10: CLI Interface
-- Unified command-line interface (`concept-mapper`)
-- Commands: ingest, rarities, search, concordance, diagram, graph, export
-- Global options: `--verbose`, `--output-dir`
-- Progress bars for batch operations
-- End-to-end workflow support
-- **[See examples →](docs/api-reference.md#phase-10-cli-interface)**
+**See [API Reference](docs/api-reference.md) for detailed examples and [Development Roadmap](docs/roadmap.md) for implementation phases.**
 
 ## Python API Usage
 
@@ -483,12 +448,32 @@ print(f"\n✓ Visualization ready: {html_path}")
 
 The `samples/` directory contains sample texts to use as inputs:
 
-- `sample1_analytic_pragmatism.txt` - Analytic philosophy and pragmatism concepts
-- `sample2_poststructural_political.txt` - Poststructural and political philosophy concepts
-- `sample3_mind_consciousness.txt` - Philosophy of mind and consciousness concepts
+- `sample1_analytic_pragmatism.txt` - Analytic philosophy and pragmatism concepts (212 words)
+- `sample2_poststructural_political.txt` - Poststructural and political philosophy concepts (203 words)
+- `sample3_mind_consciousness.txt` - Philosophy of mind and consciousness concepts (290 words)
 
-The `examples/` directory contains demo workflows:
-- `workflow.sh` - Complete bash workflow script
+## Example Workflows
+
+The `examples/` directory contains complete example workflows demonstrating the full pipeline.
+
+**Quick Start:**
+```bash
+cd examples && bash workflow.sh
+```
+
+This runs the complete workflow:
+1. Ingest and preprocess the sample text
+2. Detect philosophical terms
+3. Build concept graphs (co-occurrence and relations)
+4. Generate HTML visualization
+5. Export to multiple formats (GraphML, CSV, GEXF)
+
+**Customization:**
+To adapt these workflows for your own texts:
+1. Place your text files in `samples/`
+2. Edit `workflow.sh` to reference your files
+3. Run the workflow
+4. Find results in `output/`
 
 ## Project Structure
 
@@ -505,7 +490,7 @@ The `examples/` directory contains demo workflows:
 │   ├── export/                # Export to various formats
 │   ├── storage/               # Persistence layer
 │   └── cli.py                 # Command-line interface
-├── tests/                     # Test suite (521 tests)
+├── tests/                     # Test suite (542 tests)
 ├── samples/                   # Sample texts (inputs)
 ├── examples/                  # Demo workflows (scripts)
 ├── docs/                      # Documentation
@@ -530,13 +515,12 @@ The `examples/` directory contains demo workflows:
 - **NLTK** - tokenization, POS tagging, lemmatization
 - **Stanza** - dependency parsing and sentence diagramming
 - **NetworkX** - graph construction and analysis
-- **pytest** - testing framework (521 tests passing)
-- **Black** - code formatting
-- **Ruff** - linting
+- **pytest** - testing framework (540 passing, 2 skipped)
+- **Ruff** - formatting & linting
 
 ## Testing
 
-All 521 tests passing (2 skipped):
+All tests passing (540 passed, 2 skipped):
 
 ```bash
 # Run all tests
@@ -559,7 +543,7 @@ pytest tests/ --cov=src/concept_mapper
 uv pip install -e ".[dev]"
 
 # Or use the Makefile shortcuts
-make format    # Format code with Black
+make format    # Format code with Ruff
 make lint      # Lint with Ruff
 make test      # Run tests with pytest
 make check     # Run all checks
@@ -568,7 +552,7 @@ make check     # Run all checks
 ## Documentation
 
 - **[API Reference](docs/api-reference.md)** - Complete guide with examples and API documentation
-- **[Development Roadmap](docs/concept-mapper-roadmap.md)** - Complete project plan
+- **[Development Roadmap](docs/roadmap.md)** - Complete project plan
 
 ## Use Cases
 
@@ -587,21 +571,11 @@ make check     # Run all checks
    - Identify central concepts for indexing
    - Generate concept maps for papers
 
-## Roadmap
+## Project Status
 
-- ✅ **Phases 0-11:** Complete
-  - ✅ Phase 0-1: Corpus loading and preprocessing
-  - ✅ Phase 2-3: Frequency analysis and rarity detection
-  - ✅ Phase 4: Term list management
-  - ✅ Phase 5: Search, concordance, and sentence diagramming
-  - ✅ Phase 6: Co-occurrence analysis
-  - ✅ Phase 7: Relation extraction
-  - ✅ Phase 8: Graph construction
-  - ✅ Phase 9: Export and visualization
-  - ✅ Phase 10: CLI interface
-  - ✅ Phase 11: Documentation and examples
+✅ **All features complete** - Phases 0-11 fully implemented and tested
 
-**See [Development Roadmap](docs/concept-mapper-roadmap.md) for detailed phase breakdown.**
+**See [Development Roadmap](docs/roadmap.md) for detailed development history and phase breakdown.**
 
 ## License
 
@@ -628,7 +602,7 @@ Contributions welcome! Please:
 2. Create a feature branch
 3. Add tests for new functionality
 4. Ensure all tests pass (`pytest tests/`)
-5. Format code with Black
+5. Format code with Ruff
 6. Submit a pull request
 
 ## Contact

@@ -373,9 +373,9 @@ class TestRealCorpusAnalysis:
         # At least some neologisms should be detected
         # (exact matches depend on tokenization of hyphenated terms)
         detected_count = sum(1 for term in potential_terms if term in neologisms)
-        assert (
-            detected_count > 0
-        ), f"Expected to detect some neologisms, found: {neologisms}"
+        assert detected_count > 0, (
+            f"Expected to detect some neologisms, found: {neologisms}"
+        )
 
     def test_sample_corpus_specific_terms(self, sample_corpus, brown_corpus):
         """Test that corpus-specific terms are identified."""

@@ -231,9 +231,9 @@ class TestSampleCorpusAnalysis:
             term in " ".join(top_nouns).lower()
             for term in ["différance", "bio", "regulation", "position", "capability"]
         )
-        assert (
-            has_poststructural_terms
-        ), f"Expected post-structural terms in top nouns: {top_nouns}"
+        assert has_poststructural_terms, (
+            f"Expected post-structural terms in top nouns: {top_nouns}"
+        )
 
     def test_sample3_has_philosophical_nouns(self, sample3_analysis):
         """Test that sample3 nouns include philosophy of mind terms."""
@@ -249,9 +249,9 @@ class TestSampleCorpusAnalysis:
                 "intentional",
             ]
         )
-        assert (
-            has_mind_terms
-        ), f"Expected philosophy of mind terms in top nouns: {top_nouns}"
+        assert has_mind_terms, (
+            f"Expected philosophy of mind terms in top nouns: {top_nouns}"
+        )
 
 
 if __name__ == "__main__":

@@ -1363,6 +1363,7 @@ def get_filtered_candidates(
 
 # Phase 3.6: Hybrid Philosophical Term Scorer
 
+
 def _is_valid_term(term: str) -> bool:
     """
     Check if a term is valid (not punctuation, minimum length, etc.).
@@ -1382,7 +1383,7 @@ def _is_valid_term(term: str) -> bool:
         return False
 
     # Common abbreviations that shouldn't be terms
-    if term.lower() in {'i.e', 'e.g', 'etc', 'vs', 'cf'}:
+    if term.lower() in {"i.e", "e.g", "etc", "vs", "cf"}:
         return False
 
     # Must contain at least one letter

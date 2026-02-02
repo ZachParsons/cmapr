@@ -37,7 +37,7 @@ def validate_corpus(corpus_data: list | dict, min_docs: int = 1) -> None:
 
     if len(docs) < min_docs:
         raise EmptyOutputError(
-            f"Corpus has only {len(docs)} document(s), " f"minimum {min_docs} required."
+            f"Corpus has only {len(docs)} document(s), minimum {min_docs} required."
         )
 
     # Check if documents have actual content (only for list format)

@@ -103,8 +103,8 @@ This is an NLP project for concept mapping and linguistic analysis using spaCy a
   - No explanatory docs, summaries, or planning files at project root
   - No duplicate READMEs in subdirectories
 - **Where to put content instead:**
-  - Planning/tasks/todos → `docs/concept-mapper-roadmap.md`
-  - Project changes/major updates → Add section to README.md
+  - Planning/tasks/todos → `docs/roadmap.md`
+  - Project changes/major updates → `docs/roadmap.md`
   - Feature documentation → Add to `docs/api-reference.md`
   - Directory explanations → Add to README.md "Project Structure" section
 - **When in doubt, ASK FIRST** - If you think a new markdown file is needed, ask before creating it
@@ -112,7 +112,7 @@ This is an NLP project for concept mapping and linguistic analysis using spaCy a
 
 ### AI-Generated Artifacts Storage
 - **ALL AI-generated planning artifacts MUST go in the roadmap** - Never create separate task files
-- **Consolidate in docs/concept-mapper-roadmap.md** - All todos, completed work summaries, maintenance tasks, future plans
+- **Consolidate in docs/roadmap.md** - All todos, completed work summaries, maintenance tasks, future plans
 - **Use roadmap sections:**
   - "Ongoing Maintenance Tasks" - Current maintenance todos
   - "Recent Completions" - Recently finished work

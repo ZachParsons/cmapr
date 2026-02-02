@@ -1768,4 +1768,4 @@ concept-mapper rarities examples/corpus.json --threshold 10.0
 
 - **Phase 12:** Advanced features (temporal analysis, cross-corpus comparison)
 
-See the [roadmap](concept-mapper-roadmap.md) for details on upcoming phases.
+See the [roadmap](roadmap.md) for details on upcoming phases.

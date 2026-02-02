@@ -1,3 +1,8 @@
+# Roadmap contains
+Past: stages/phases of developent, checklist of checked tasks, changelog of significant additions/edits/pivots.
+Present: planned work, ready for dev or WIP,checklist of unchecked tasks.
+Future: 'roadmap' of future planned tasks, unplanned features.
+
 # Concept Mapper: Development Roadmap
 
 A tool for extracting and visualizing an author's idiosyncratic conceptual vocabulary from primary texts.
@@ -23,7 +28,7 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 - ✅ Phase 9 Complete: Export & visualization (D3 JSON, GraphML, DOT, CSV, HTML)
 - ✅ Phase 10 Complete: CLI interface (Click framework, unified command-line access)
 - ✅ Phase 11 Complete: Documentation & polish (examples, API reference, comprehensive docs)
-- 📊 521 tests passing (2 skipped), all green
+- 📊 540 tests passing, 2 skipped, all green
 - 🎉 **PROJECT COMPLETE** (January 25, 2026)
   - 8,788 lines of source code
   - 107KB documentation (5 major guides)
@@ -40,11 +45,11 @@ All 11 planned phases have been successfully implemented and tested.
 
 **Completion Metrics:**
 - **Phases:** 11/11 complete (100%)
-- **Tests:** 521 passing, 2 skipped (100% success rate)
+- **Tests:** 540 passing, 2 skipped (100% success rate)
 - **Code:** ~8,500 lines of Python
 - **Documentation:** ~15,000 words across 4 documents
 - **Test coverage:** Comprehensive across all modules
-- **Code quality:** Formatted with Black, linted with Ruff
+- **Code quality:** Formatted with Ruff
 
 ### Core Capabilities
 
@@ -265,7 +270,7 @@ The following functionality already exists in the spike directory and can be ref
   - [x] Create directory layout: `src/concept_mapper/`, `tests/`, `data/sample/`, `output/`
   - [x] Initialize git repository
   - [x] Create `pyproject.toml` or `requirements.txt` *(spike: requirements.txt exists with nltk>=3.8)*
-  - [x] Initial dependencies: `nltk`, `pytest`, `click`, `black`, `ruff`, `ipython`
+  - [x] Initial dependencies: `nltk`, `pytest`, `click`, `ruff`, `ipython`
 
 - [x] **0.2 Download NLTK data** *(spike: pos_tagger.py:29-32 downloads all needed data)*
   - [x] Create setup script `scripts/download_nltk_data.py` *(inline in pos_tagger.py, should extract)*
@@ -994,7 +999,7 @@ Phase 5          Phase 6          Phase 7
 - Phase 11: ✅ 100% COMPLETE (documentation, examples, API reference)
 
 **Test coverage:**
-- 521 tests passing across all modules (2 skipped)
+- 540 tests passing across all modules (2 skipped)
 - Phase 0: 12 tests (storage)
 - Phase 1: 46 tests (corpus + preprocessing)
 - Phase 2: 21 tests (frequency analysis)
@@ -1007,6 +1012,7 @@ Phase 5          Phase 6          Phase 7
 - Phase 9: 30 tests (export & visualization)
 - Phase 10: 23 tests (CLI interface)
 - Phase 11: All documentation complete
+- Additional: 64 tests (storage utilities, CLI integration, etc.)
 
 ---
 
@@ -1020,9 +1026,9 @@ Phase 5          Phase 6          Phase 7
    - 35 Python modules across 7 packages
    - Complete type hints throughout
    - Comprehensive docstrings
-   - Formatted with Black, linted with Ruff
+   - Formatted and linted with Ruff
 
-2. **Test Suite** (521 tests, 100% passing)
+2. **Test Suite** (540 passing, 2 skipped)
    - Unit tests for every module
    - Integration tests for multi-module workflows
    - End-to-end pipeline tests
@@ -1031,7 +1037,7 @@ Phase 5          Phase 6          Phase 7
 3. **Documentation** (~90KB across 4 files)
    - README.md: Project overview, quick start, complete workflow example
    - api-reference.md (43KB): Complete API reference with phase-by-phase examples
-   - concept-mapper-roadmap.md (38KB): Development plan and maintenance tasks
+   - roadmap.md (38KB): Development plan and maintenance tasks
    - CHANGELOG.md (6KB): Version history
 
 4. **Examples** (working code + data)
@@ -1077,16 +1083,16 @@ Phase 5          Phase 6          Phase 7
 
 **Quality Metrics:**
 
-- **Test Success Rate:** 100% (521/521 passing, 2 optional skipped)
+- **Test Success Rate:** 100% (540 passing, 2 skipped)
 - **Code Coverage:** Comprehensive across all modules
 - **Documentation:** All public APIs documented
 - **Type Safety:** Full type hints throughout
-- **Code Quality:** Black formatted, Ruff linted
+- **Code Quality:** Ruff formatted and linted
 
 **Project Achievements:**
 
 1. ✅ Delivered all planned features across 11 phases
-2. ✅ Exceeded test coverage goals (521 tests vs. initial target ~300)
+2. ✅ Exceeded test coverage goals (540 tests vs. initial target ~300)
 3. ✅ Created comprehensive documentation (107KB)
 4. ✅ Built working example workflow with sample data
 5. ✅ Achieved production-ready code quality
@@ -1131,6 +1137,201 @@ The project is feature-complete for its intended use case. Potential future enha
 - [x] Fix API inconsistencies in docs (load_document → load_file, TermList constructor)
 - [x] Convert multi-line examples to one-liners for copy-paste friendliness
 - [x] Remove deprecated requirements.txt (use pyproject.toml)
+
+---
+
+## Version History
+
+### [1.0.0] - 2026-01-25
+
+**Phase 11: Documentation & Polish ✅**
+
+**Added:**
+- Complete example workflow in `examples/` directory
+  - Sample philosophical text (Hegelian style)
+  - Step-by-step walkthrough documentation
+  - Bash workflow script (`workflow.sh`)
+  - Python API workflow script (`workflow.py`)
+- Comprehensive API reference documentation (`docs/api-reference.md`)
+  - Complete coverage of all public APIs
+  - Type signatures and parameter descriptions
+  - Usage examples for each module
+- Enhanced README with:
+  - Links to all documentation
+  - Complete roadmap status
+  - Quick start guide
+
+**Project Status:**
+- ✅ All 11 phases complete
+- ✅ 540 tests passing (2 skipped)
+- ✅ Full pipeline: text → preprocessing → term detection → graph → visualization
+- ✅ CLI and Python API fully documented
+- ✅ Ready for production use
+
+### [0.10.0] - 2026-01-24
+
+**Phase 10: CLI Interface ✅**
+
+**Added:**
+- Unified command-line interface using Click framework
+- Commands: `ingest`, `rarities`, `search`, `concordance`, `graph`, `export`
+- Global options: `--verbose`, `--output-dir`
+- Progress bars for batch operations
+- Package installation with entry point
+- 23 comprehensive CLI tests
+- setup.py for package distribution
+
+### [0.9.0] - 2026-01-23
+
+**Phase 9: Export & Visualization ✅**
+
+**Added:**
+- D3.js JSON export for interactive visualizations
+- GraphML export for Gephi, yEd, Cytoscape
+- DOT export for Graphviz
+- CSV export for spreadsheets
+- GEXF export for Gephi
+- Standalone HTML visualization generator
+- Force-directed graph layout
+- Interactive features: drag, zoom, pan, tooltips
+- Community detection coloring
+- Node sizing by centrality
+- 30 comprehensive tests
+
+### [0.8.0] - 2026-01-22
+
+**Phase 8: Graph Construction ✅**
+
+**Added:**
+- `ConceptGraph` class wrapping NetworkX
+- Graph builders from co-occurrence matrices
+- Graph builders from relation extraction
+- Graph operations: merge, prune, filter, subgraph
+- Graph metrics: centrality, communities, paths, density
+- Support for directed and undirected graphs
+- Node and edge attribute management
+- 62 comprehensive tests
+
+### [0.7.0] - 2026-01-21
+
+**Phase 7: Relation Extraction ✅**
+
+**Added:**
+- SVO (Subject-Verb-Object) triple extraction
+- Copular definition extraction (X is Y)
+- Prepositional relation extraction (X of Y)
+- Pattern-based extraction using NLTK POS tagging
+- Evidence aggregation for relations
+- Relation filtering and type selection
+- 35 comprehensive tests
+
+**Note:** SpaCy dependency parsing deferred due to Python 3.14 compatibility. Pattern-based approach is effective for philosophical texts.
+
+### [0.6.0] - 2026-01-20
+
+**Phase 6: Co-occurrence Analysis ✅**
+
+**Added:**
+- Sentence-level co-occurrence counting
+- N-sentence window co-occurrence
+- PMI (Pointwise Mutual Information) calculation
+- LLR (Log-Likelihood Ratio) significance testing
+- Co-occurrence matrix building (count, PMI, LLR methods)
+- Filtered co-occurrence (curated term lists only)
+- Matrix export to CSV
+- 45 comprehensive tests
+
+### [0.5.0] - 2026-01-19
+
+**Phase 5: Search & Concordance ✅**
+
+**Added:**
+- Basic sentence search
+- Multi-term search (any/all)
+- KWIC (Key Word In Context) concordance displays
+- Context window extraction (N sentences before/after)
+- Dispersion analysis across corpus
+- Position tracking and coverage statistics
+- 52 comprehensive tests
+
+### [0.4.0] - 2026-01-18
+
+**Phase 4: Term List Management ✅**
+
+**Added:**
+- `TermEntry` and `TermList` data structures
+- CRUD operations for term lists
+- JSON, CSV, TXT import/export
+- Bulk operations and filtering
+- Auto-population from rarity analysis
+- Term suggestion system
+- Statistics and metadata management
+- 47 comprehensive tests
+
+### [0.3.0] - 2026-01-17
+
+**Phase 3: Philosophical Term Detection ✅**
+
+**Added:**
+- `PhilosophicalTermScorer` with multi-method detection
+- Corpus-comparative rarity analysis
+- TF-IDF scoring against reference corpus
+- Neologism detection (WordNet lookup)
+- Definitional context extraction (8 patterns)
+- POS-filtered candidate extraction
+- Hybrid scoring with weighted components
+- High-confidence term filtering (multi-signal agreement)
+- 103 comprehensive tests
+
+**Methods:**
+- Relative frequency ratio
+- TF-IDF vs. reference
+- Neologism detection
+- Definitional context counting
+- Capitalization (reified abstractions)
+
+### [0.2.0] - 2026-01-16
+
+**Phase 2: Frequency Analysis & TF-IDF ✅**
+
+**Added:**
+- Word frequency distributions
+- Corpus-level frequency aggregation
+- Document frequency counting
+- Brown corpus reference loading
+- TF-IDF calculation
+- POS-filtered frequencies
+- Frequency caching
+- 21 comprehensive tests
+
+### [0.1.0] - 2026-01-15
+
+**Phase 1: Corpus Preprocessing ✅**
+
+**Added:**
+- Document and corpus loading
+- Sentence tokenization
+- Word tokenization
+- POS (Part of Speech) tagging
+- Lemmatization with WordNet
+- Unified preprocessing pipeline
+- `Document` and `ProcessedDocument` data models
+- 46 comprehensive tests
+
+### [0.0.1] - 2026-01-14
+
+**Phase 0: Project Scaffolding ✅**
+
+**Added:**
+- Project directory structure
+- Git repository initialization
+- NLTK data download scripts
+- Sample test corpus (5 files, 95KB)
+- Test corpus manifest with expected values
+- Storage abstraction layer
+- JSON backend implementation
+- 12 storage tests
+- requirements.txt with dependencies
 
 ---
 

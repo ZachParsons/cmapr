@@ -350,8 +350,7 @@ All public functions have type hints for IDE support.
 ### Development Tools
 
 **pytest** - Standard testing framework
-**Black** - Opinionated formatter (zero config)
-**Ruff** - Fast linter (replaces flake8, isort, etc.)
+**Ruff** - Fast Python linter and formatter (replaces Black, Flake8, isort, etc.)
 **uv** - Fast package manager (replaces pip)
 
 ## Development Workflows
