@@ -951,6 +951,41 @@ Build network graphs from co-occurrence and relation data.
 - **Graph Operations**: Merge, prune, filter, and extract subgraphs
 - **Graph Metrics**: Compute centrality, detect communities, find paths
 
+### How Graph Links Are Determined
+
+When building a graph from rarities output or term analysis, links (edges) between term nodes are created based on the graph construction method:
+
+#### Co-occurrence Graphs
+
+Links represent **terms that appear together** in the corpus:
+
+- **Link creation**: Two terms are connected if they co-occur above the specified `threshold`
+- **Co-occurrence context**: Determined by the `window` parameter:
+  - `"sentence"`: Terms appearing in the same sentence
+  - `"n_sentences"`: Terms appearing within N sentences of each other
+- **Edge weight**: The co-occurrence score, calculated using the specified `method`:
+  - `"count"`: Raw count of how many times terms co-occur
+  - `"pmi"`: Pointwise Mutual Information (statistical association strength)
+  - `"llr"`: Log-likelihood ratio (statistical significance)
+- **Graph type**: Undirected (co-occurrence is symmetric)
+
+**Example**: If "abstraction" and "consciousness" appear together in 12 sentences with a PMI score of 2.46, they'll be linked with `weight=2.46` (if threshold ≤ 2.46).
+
+#### Relation Graphs
+
+Links represent **grammatical relationships** between terms:
+
+- **Link creation**: Two terms are connected if a grammatical relation is extracted between them
+- **Relation types**:
+  - `"copular"`: Definitional relationships (X is Y)
+  - `"svo"`: Subject-verb-object triples
+  - `"prep"`: Prepositional phrases
+- **Edge weight**: Number of evidence sentences supporting the relation
+- **Edge attributes**: Include `relation_type` and optional `evidence` sentences
+- **Graph type**: Directed (grammatical relations have direction)
+
+**Example**: If "consciousness is intentional" appears 3 times, there's a directed edge from "consciousness" to "intentional" with `relation_type="copular"` and `weight=3`.
+
 ### Example: Build Graph from Co-occurrence
 
 ```python
