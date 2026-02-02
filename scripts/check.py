@@ -6,11 +6,11 @@ import sys
 
 
 def main():
-    """Run Black, Ruff, and pytest in sequence."""
-    print("🔧 Running Black formatter...")
-    result = subprocess.run(["black", "*.py", "src/", "tests/", "scripts/"])
+    """Run Ruff formatter, Ruff linter, and pytest in sequence."""
+    print("🔧 Running Ruff formatter...")
+    result = subprocess.run(["ruff", "format", "*.py", "src/", "tests/", "scripts/"])
     if result.returncode != 0:
-        print("❌ Black formatting failed")
+        print("❌ Ruff formatting failed")
         sys.exit(result.returncode)
 
     print("\n🔍 Running Ruff linter...")

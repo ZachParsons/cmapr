@@ -400,6 +400,60 @@ print(f"  POS distribution: {stats['pos_distribution']}")
 
 **What it enables:** Find and view terms in context with various display formats.
 
+### Search vs. KWIC Concordance: Key Differences
+
+The search and concordance tools serve different purposes in text analysis:
+
+#### Search Functionality
+
+**Purpose:** Find and read full passages containing a term
+
+**Output format:**
+- Returns complete sentences containing the term
+- Shows N full sentences before/after for context (e.g., `--context 2`)
+- Displays in vertical, paragraph-like format
+
+**Example output:**
+```
+[doc_id:12]
+  Sentence before context...
+> This is the matching sentence with abstraction in it.
+  Sentence after context...
+```
+
+**Key features:**
+- Full sentence visibility
+- Sentence-level context windows
+- Good for reading and understanding usage in natural flow
+
+#### KWIC Concordance
+
+**Purpose:** Pattern recognition and linguistic analysis
+
+**Output format:**
+- Shows keyword centered with fixed character-width snippets on each side
+- All instances aligned in columns for scanning
+- Uses character-level context (e.g., `--width 40`)
+
+**Example output:**
+```
+KWIC Concordance for 'praxis' (3 occurrences):
+================================================================================
+                    ... of theory and practice through  | praxis |  differs from mere contemplation...
+             ...understanding requires transformative  | praxis |  rather than passive observation...
+```
+
+**Key features:**
+- Horizontal alignment makes patterns visible
+- Fixed-width windows for consistent scanning
+- Classic linguistic research format
+- Can be sorted by left/right context to group similar usages
+
+#### When to Use Each
+
+- **Use search**: When you want to *read* how a term is used in context
+- **Use concordance**: When you want to *analyze* patterns of usage at a glance
+
 ### Example: Basic Search
 
 ```python
