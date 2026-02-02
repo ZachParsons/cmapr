@@ -1123,17 +1123,49 @@ The project is feature-complete for its intended use case. Potential future enha
 - Additional corpus formats (PDF, EPUB, DOCX)
 - Citation network analysis
 - Temporal analysis across an author's career
-- **Synonym replacement with inflection preservation** - Take a source text and a term's lemma, replace all instances of that term with a given synonym while maintaining contextually correct inflection. Works across all parts of speech and supports multi-word phrases. Examples:
-  - Single word replacement: replace 'quick' with 'swift' in "the quick brown fox jumps. it jumps quickly." → "the swift brown fox jumps. it jumps swiftly."
-  - Multi-word to single word: replace 'body without organs' with 'medium' in "the body without organs resists. bodies without organs are multiplying." → "the medium resists. mediums are multiplying."
-  - Multi-word to multi-word: replace 'body without organs' with 'blank resistant field' in "a body without organs" → "a blank resistant field"
-  - This would require:
-    - Lemma matching to find all inflected forms (works for both single and multi-word terms)
-    - POS-aware inflection generation for replacement terms
-    - Multi-word phrase detection and matching (n-gram based)
-    - Inflection handling for phrase heads (e.g., "bodies without organs" → "mediums" or "blank resistant fields")
-    - Integration with existing lemmatization infrastructure
-    - Support for all parts of speech (verbs, nouns, adjectives, adverbs, compound terms)
+- **Synonym replacement with inflection preservation** 🚧 IN PROGRESS
+  - Replace terms with synonyms while preserving grammatical inflections (tense, number, degree)
+  - Examples: "running"→"sprinting", "bodies without organs"→"mediums", "quick"→"swift"/"quickly"→"swiftly"
+  - **Implementation checklist:**
+    - [x] Add `lemminflect` dependency to pyproject.toml
+    - [x] Create `src/concept_mapper/transformations/` package
+    - [x] Implement `inflection.py` - InflectionGenerator class
+      - [x] `inflect(lemma, pos_tag)` - generate inflected forms
+      - [x] Custom inflection rules (works with Python 3.14)
+      - [x] Handle irregular forms (go→went, good→better)
+      - [x] Unit tests for all POS categories (22 tests passing)
+    - [x] Implement `text_reconstruction.py` - TextReconstructor class
+      - [x] Smart token joining with spacing
+      - [x] Punctuation attachment
+      - [x] Contraction handling
+      - [ ] Unit tests
+    - [x] Implement `replacement.py` - SynonymReplacer class
+      - [x] Single-word replacement with inflection
+      - [x] Capitalization preservation
+      - [x] Integration with ProcessedDocument
+      - [ ] Unit tests
+    - [x] Implement `phrase_matcher.py` - PhraseMatcher class
+      - [x] N-gram sliding window matching
+      - [x] Head word identification (rightmost noun/verb)
+      - [x] PhraseMatch dataclass
+      - [ ] Unit tests
+    - [ ] Extend SynonymReplacer for multi-word phrases
+      - [ ] Multi→single replacements
+      - [ ] Multi→multi replacements
+      - [ ] Integration tests
+    - [ ] Add `cmapr replace` CLI command
+      - [ ] Command parsing (detect multi-word)
+      - [ ] `--preview` mode (show diff)
+      - [ ] `--output` option
+      - [ ] CLI tests
+    - [ ] End-to-end testing
+      - [ ] Test with Eco corpus
+      - [ ] Verify all inflections preserved
+      - [ ] Edge case testing
+    - [ ] Documentation
+      - [ ] Update README with examples
+      - [ ] Add docs/replacement.md guide
+      - [ ] Update this roadmap
 - **Automatic document structure discovery** - Analyze large source texts (e.g., 125,000+ words) to automatically discover hierarchical structure (parts, chapters, sections, subsections) with minimal assumptions. Assess optimal storage strategies for efficient processing of large texts. This would involve:
   - Pattern recognition for structural markers (headings, numbering schemes, whitespace patterns)
   - Heuristic-based segmentation (capitalization, formatting, length patterns)

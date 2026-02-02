@@ -8,6 +8,8 @@ requires-python = ">=3.12"
 dependencies = [
     # Core NLP dependencies
     "nltk>=3.8",          # Tokenization, POS tagging, lemmatization
+    "inflect>=7.0",       # Inflection generation for synonym replacement
+    "pattern3>=3.0",      # English conjugation and inflection
     "stanza>=1.8",        # Dependency parsing for sentence diagrams
     "networkx>=3.2",      # Graph construction and algorithms
     "click>=8.1",         # Command-line interface

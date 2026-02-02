@@ -54,7 +54,8 @@
       "Bash(uv run ruff format:*)",
       "Bash(awk:*)",
       "Bash(git remote add:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(pip uninstall:*)"
     ]
   }
 }
