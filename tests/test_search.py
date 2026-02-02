@@ -33,6 +33,13 @@ from concept_mapper.search.context import (
     format_context_windows,
     get_context_with_highlights,
 )
+from concept_mapper.search.extract import (
+    SignificantTermsResult,
+    extract_significant_terms,
+    format_results_by_sentence,
+    format_results_detailed,
+    aggregate_across_sentences,
+)
 
 
 @pytest.fixture
@@ -664,3 +671,216 @@ class TestDispersion:
 
         # Threshold too high for sparse occurrence
         assert regions == []
+
+
+# ============================================================================
+# Test Extract Significant Terms
+# ============================================================================
+
+
+class TestExtractSignificantTerms:
+    """Tests for extracting significant terms from matching sentences."""
+
+    def test_extract_significant_terms_basic(self, sample_docs):
+        """Test basic extraction of significant terms."""
+        # Use a very low threshold to ensure we get results
+        results = extract_significant_terms(
+            "abstraction",
+            sample_docs,
+            threshold=0.0,  # Accept all terms
+            pos_types=["nouns", "verbs"],
+        )
+
+        # Should find matches in sentences containing "abstraction"
+        assert len(results) > 0
+        assert all(isinstance(r, SignificantTermsResult) for r in results)
+
+    def test_extract_significant_terms_structure(self, sample_docs):
+        """Test structure of SignificantTermsResult."""
+        results = extract_significant_terms(
+            "abstraction",
+            sample_docs,
+            threshold=0.0,
+            pos_types=["nouns"],
+        )
+
+        if results:
+            result = results[0]
+            assert hasattr(result, "sentence_match")
+            assert hasattr(result, "significant_terms")
+            assert hasattr(result, "all_extracted")
+            assert isinstance(result.significant_terms, list)
+            assert isinstance(result.all_extracted, set)
+
+    def test_extract_significant_terms_threshold(self, sample_docs):
+        """Test that threshold filters results."""
+        results_low = extract_significant_terms(
+            "abstraction",
+            sample_docs,
+            threshold=0.0,
+            pos_types=["nouns", "verbs"],
+        )
+
+        results_high = extract_significant_terms(
+            "abstraction",
+            sample_docs,
+            threshold=10.0,  # Very high threshold
+            pos_types=["nouns", "verbs"],
+        )
+
+        # High threshold should return fewer or equal terms
+        low_term_count = sum(len(r.significant_terms) for r in results_low)
+        high_term_count = sum(len(r.significant_terms) for r in results_high)
+        assert high_term_count <= low_term_count
+
+    def test_extract_significant_terms_pos_filtering(self, sample_docs):
+        """Test POS type filtering."""
+        # Extract only nouns
+        results_nouns = extract_significant_terms(
+            "abstraction",
+            sample_docs,
+            threshold=0.0,
+            pos_types=["nouns"],
+        )
+
+        # Extract only verbs
+        results_verbs = extract_significant_terms(
+            "abstraction",
+            sample_docs,
+            threshold=0.0,
+            pos_types=["verbs"],
+        )
+
+        # Both should have results (different terms)
+        assert len(results_nouns) > 0
+        assert len(results_verbs) > 0
+
+    def test_extract_significant_terms_top_n(self, sample_docs):
+        """Test limiting to top N terms per sentence."""
+        results = extract_significant_terms(
+            "abstraction",
+            sample_docs,
+            threshold=0.0,
+            top_n=3,  # Max 3 terms per sentence
+            pos_types=["nouns", "verbs"],
+        )
+
+        # Each result should have at most 3 terms
+        for result in results:
+            assert len(result.significant_terms) <= 3
+
+    def test_extract_significant_terms_lemma_search(self, sample_docs):
+        """Test extraction with lemma-based search."""
+        results = extract_significant_terms(
+            "be",  # Search for lemma "be"
+            sample_docs,
+            threshold=0.0,
+            match_lemma=True,
+            pos_types=["nouns"],
+        )
+
+        # Should find sentences with "is", "being", etc.
+        assert len(results) > 0
+
+    def test_extract_significant_terms_no_matches(self, sample_docs):
+        """Test extraction when search term not found."""
+        results = extract_significant_terms(
+            "nonexistent",
+            sample_docs,
+            threshold=0.0,
+            pos_types=["nouns"],
+        )
+
+        assert len(results) == 0
+
+    def test_extract_significant_terms_invalid_pos(self, sample_docs):
+        """Test invalid POS type raises error."""
+        with pytest.raises(ValueError):
+            extract_significant_terms(
+                "abstraction",
+                sample_docs,
+                threshold=0.0,
+                pos_types=["invalid_pos_type"],
+            )
+
+    def test_format_results_by_sentence(self, sample_docs):
+        """Test formatting results grouped by sentence."""
+        results = extract_significant_terms(
+            "abstraction",
+            sample_docs,
+            threshold=0.0,
+            pos_types=["nouns"],
+        )
+
+        if results:
+            formatted = format_results_by_sentence(results, show_scores=False)
+            assert isinstance(formatted, str)
+            assert "Sentence" in formatted
+
+            # With scores
+            formatted_scores = format_results_by_sentence(results, show_scores=True)
+            assert "(" in formatted_scores  # Score indicators
+
+    def test_format_results_detailed(self, sample_docs):
+        """Test detailed formatting with full context."""
+        results = extract_significant_terms(
+            "abstraction",
+            sample_docs,
+            threshold=0.0,
+            pos_types=["nouns"],
+        )
+
+        if results:
+            formatted = format_results_detailed(results)
+            assert isinstance(formatted, str)
+            assert "Significant terms" in formatted
+            # Should include score components (freq for corpus_frequency mode, ratio/tfidf for hybrid)
+            assert "freq=" in formatted or "ratio=" in formatted or "tfidf=" in formatted
+
+    def test_aggregate_across_sentences(self, sample_docs):
+        """Test aggregating terms across all sentences."""
+        results = extract_significant_terms(
+            "abstraction",
+            sample_docs,
+            threshold=0.0,
+            pos_types=["nouns"],
+        )
+
+        if results:
+            aggregated = aggregate_across_sentences(results)
+            assert isinstance(aggregated, list)
+            # Each item should be (term, avg_score, count)
+            if aggregated:
+                assert len(aggregated[0]) == 3
+                term, avg_score, count = aggregated[0]
+                assert isinstance(term, str)
+                assert isinstance(avg_score, float)
+                assert isinstance(count, int)
+
+    def test_aggregate_top_n(self, sample_docs):
+        """Test limiting aggregated results to top N."""
+        results = extract_significant_terms(
+            "abstraction",
+            sample_docs,
+            threshold=0.0,
+            pos_types=["nouns", "verbs"],
+        )
+
+        if results:
+            aggregated = aggregate_across_sentences(results, top_n=5)
+            assert len(aggregated) <= 5
+
+    def test_aggregate_sorted_by_score(self, sample_docs):
+        """Test that aggregated results are sorted by score."""
+        results = extract_significant_terms(
+            "abstraction",
+            sample_docs,
+            threshold=0.0,
+            pos_types=["nouns"],
+        )
+
+        if results:
+            aggregated = aggregate_across_sentences(results)
+            # Scores should be in descending order
+            scores = [score for _, score, _ in aggregated]
+            assert scores == sorted(scores, reverse=True)

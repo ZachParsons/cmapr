@@ -282,9 +282,51 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
     default="ascii",
     help="Diagram output format (requires --diagram)",
 )
+@click.option(
+    "--extract-significant",
+    "-e",
+    is_flag=True,
+    help="Extract significant terms from matching sentences",
+)
+@click.option(
+    "--threshold",
+    "-t",
+    type=float,
+    default=0.1,
+    help="Minimum significance score (requires --extract-significant, default: 0.1)",
+)
+@click.option(
+    "--pos",
+    "-p",
+    type=click.Choice(["nouns", "verbs", "adjectives", "adverbs"]),
+    multiple=True,
+    help="POS types to extract (can specify multiple). Defaults to nouns and verbs.",
+)
+@click.option(
+    "--top-n",
+    type=int,
+    help="Maximum terms per sentence (requires --extract-significant)",
+)
+@click.option(
+    "--aggregate",
+    "-a",
+    is_flag=True,
+    help="Show aggregated results across all sentences (requires --extract-significant)",
+)
+@click.option(
+    "--detailed",
+    is_flag=True,
+    help="Show detailed output with scores (requires --extract-significant)",
+)
+@click.option(
+    "--scoring-mode",
+    type=click.Choice(["corpus_frequency", "hybrid"]),
+    default="corpus_frequency",
+    help="Scoring method: corpus_frequency (default, main content words) or hybrid (rare/distinctive terms)",
+)
 @click.option("--output", "-o", type=click.Path(), help="Output file")
 @click.pass_context
-def search(ctx, corpus, term, context, lemma, diagram, diagram_format, output):
+def search(ctx, corpus, term, context, lemma, diagram, diagram_format, extract_significant, threshold, pos, top_n, aggregate, detailed, scoring_mode, output):
     """
     Search for term occurrences in corpus.
 
@@ -294,6 +336,9 @@ def search(ctx, corpus, term, context, lemma, diagram, diagram_format, output):
         concept-mapper search corpus.json "run" --lemma
         concept-mapper search corpus.json "abstraction" --diagram
         concept-mapper search corpus.json "dialectic" --diagram --diagram-format tree
+        concept-mapper search corpus.json "abstraction" --extract-significant --threshold 1.5
+        concept-mapper search corpus.json "capitalism" -e -p nouns -p verbs --top-n 5
+        concept-mapper search corpus.json "consciousness" -e --aggregate --detailed
     """
     verbose = ctx.obj["verbose"]
 
@@ -310,6 +355,75 @@ def search(ctx, corpus, term, context, lemma, diagram, diagram_format, output):
         click.echo(
             f"Searching ({search_type}) for '{term}' in {len(docs)} document(s)..."
         )
+
+    # Handle extract-significant mode
+    if extract_significant:
+        from concept_mapper.search.extract import (
+            extract_significant_terms,
+            format_results_by_sentence,
+            format_results_detailed,
+            aggregate_across_sentences,
+        )
+
+        if verbose:
+            click.echo(f"Extracting significant terms (threshold: {threshold})...")
+
+        # Convert pos tuple to list (None if empty)
+        pos_types = list(pos) if pos else None
+
+        # Extract significant terms
+        results = extract_significant_terms(
+            term,
+            docs,
+            threshold=threshold,
+            pos_types=pos_types,
+            top_n=top_n,
+            match_lemma=lemma,
+            scoring_mode=scoring_mode,
+        )
+
+        if not results:
+            click.echo(f"No significant terms found in sentences containing '{term}'")
+            return
+
+        click.echo(f"\nFound significant terms in {len(results)} sentence(s) containing '{term}':")
+        click.echo("=" * 70)
+
+        # Display results based on flags
+        if aggregate:
+            # Show aggregated results across all sentences
+            aggregated = aggregate_across_sentences(results, top_n=top_n)
+            click.echo("\nAggregated significant terms (avg score, count):")
+            for term_name, avg_score, count in aggregated:
+                click.echo(f"  • {term_name}: {avg_score:.2f} (appears in {count} sentence(s))")
+
+        if detailed:
+            # Show detailed output with full context
+            click.echo(format_results_detailed(results))
+        elif not aggregate:
+            # Show simple output grouped by sentence
+            click.echo("\n" + format_results_by_sentence(results, show_scores=detailed))
+
+        # Save if requested
+        if output:
+            output_path = Path(output)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(output_path, "w", encoding="utf-8") as f:
+                if aggregate:
+                    f.write(f"Aggregated significant terms for '{term}':\n")
+                    f.write("=" * 70 + "\n\n")
+                    aggregated = aggregate_across_sentences(results, top_n=top_n)
+                    for term_name, avg_score, count in aggregated:
+                        f.write(f"{term_name}: {avg_score:.2f} (appears in {count} sentence(s))\n")
+                elif detailed:
+                    f.write(format_results_detailed(results))
+                else:
+                    f.write(format_results_by_sentence(results, show_scores=True))
+
+            click.echo(f"\n✓ Saved results to {output_path}")
+
+        return
 
     # Search
     matches = find_sentences(term, docs, match_lemma=lemma)

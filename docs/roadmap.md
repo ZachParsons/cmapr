@@ -1123,6 +1123,25 @@ The project is feature-complete for its intended use case. Potential future enha
 - Additional corpus formats (PDF, EPUB, DOCX)
 - Citation network analysis
 - Temporal analysis across an author's career
+- **Synonym replacement with inflection preservation** - Take a source text and a term's lemma, replace all instances of that term with a given synonym while maintaining contextually correct inflection. Works across all parts of speech and supports multi-word phrases. Examples:
+  - Single word replacement: replace 'quick' with 'swift' in "the quick brown fox jumps. it jumps quickly." → "the swift brown fox jumps. it jumps swiftly."
+  - Multi-word to single word: replace 'body without organs' with 'medium' in "the body without organs resists. bodies without organs are multiplying." → "the medium resists. mediums are multiplying."
+  - Multi-word to multi-word: replace 'body without organs' with 'blank resistant field' in "a body without organs" → "a blank resistant field"
+  - This would require:
+    - Lemma matching to find all inflected forms (works for both single and multi-word terms)
+    - POS-aware inflection generation for replacement terms
+    - Multi-word phrase detection and matching (n-gram based)
+    - Inflection handling for phrase heads (e.g., "bodies without organs" → "mediums" or "blank resistant fields")
+    - Integration with existing lemmatization infrastructure
+    - Support for all parts of speech (verbs, nouns, adjectives, adverbs, compound terms)
+- **Automatic document structure discovery** - Analyze large source texts (e.g., 125,000+ words) to automatically discover hierarchical structure (parts, chapters, sections, subsections) with minimal assumptions. Assess optimal storage strategies for efficient processing of large texts. This would involve:
+  - Pattern recognition for structural markers (headings, numbering schemes, whitespace patterns)
+  - Heuristic-based segmentation (capitalization, formatting, length patterns)
+  - Hierarchical structure inference (parent-child relationships between sections)
+  - Storage optimization analysis (chunking strategies, indexing approaches, memory-efficient representations)
+  - Support for various document types (books, dissertations, legal documents, technical manuals)
+  - Integration with existing corpus loading and preprocessing pipeline
+  - Metadata extraction (section titles, numbering, nesting levels)
 
 ---
 
@@ -1131,9 +1150,27 @@ The project is feature-complete for its intended use case. Potential future enha
 ### Code Maintenance
 
 - [ ] **Review and remove unused code** - Vulture detected 40 potentially unused functions/methods (≥60% confidence). Run `python3 -m vulture src/concept_mapper/ --min-confidence 60` to see full list. Focus on large functions (>30 lines) first. Many may be public API functions; verify before removing.
+- [ ] **Rename CLI command to `cmapr`** - Shorten the command from `concept-mapper` to `cmapr` for easier typing. This requires:
+  - Update entry point in `setup.py` or `pyproject.toml`
+  - Update all documentation (README.md, api-reference.md, examples)
+  - Update CLI tests in `tests/test_cli.py`
+  - Update example scripts (`examples/workflow.sh`)
+  - Consider keeping `concept-mapper` as an alias for backward compatibility
+
+### Documentation Maintenance
+
+- [ ] **Refactor `.claude/rules.md` for clarity and brevity** - Current rules are verbose and contain ambiguity. Rewrite to be:
+  - **More succinct** - Remove redundancy, consolidate related rules, use bullet points effectively
+  - **Black-and-white/boolean** - Replace subjective language ("prefer", "consider") with clear directives ("MUST", "NEVER", "ALWAYS")
+  - **Declarative** - State rules as facts, not suggestions (e.g., "Tests are required" not "You should write tests")
+  - **Easy to scan** - Both AI agents and humans should be able to quickly find and apply rules
+  - **Unambiguous** - Remove conditional language that allows multiple interpretations
+  - Example transformation: "Prefer functional syntax over OOP" → "Use functions. Only use classes for: [specific cases]"
+  - Focus on actionable rules that can be verified (pass/fail), not philosophical guidelines
 
 ### Recent Completions
 
+- [x] **Extract significant terms feature** (2026-02-01) - Added `--extract-significant` flag to search command. Extracts and scores significant nouns/verbs from sentences containing a search term. Features: corpus-frequency scoring (default) or hybrid rarity scoring, POS filtering, stopword removal (~200 common words), automatic exclusion of search term, aggregation across sentences. Stopwords stored in `data/reference/stopwords.json`. Tests: 13 passing.
 - [x] Fix API inconsistencies in docs (load_document → load_file, TermList constructor)
 - [x] Convert multi-line examples to one-liners for copy-paste friendliness
 - [x] Remove deprecated requirements.txt (use pyproject.toml)
