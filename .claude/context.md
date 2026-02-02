@@ -213,12 +213,12 @@ The core algorithm (`analysis/rarity.py`) uses **five complementary signals**:
 ### Main Entry Points
 
 1. **CLI** - `src/concept_mapper/cli.py`
-   - `concept-mapper ingest` - Load and preprocess texts
-   - `concept-mapper rarities` - Detect philosophical terms
-   - `concept-mapper search/concordance` - Find terms in context
-   - `concept-mapper diagram` - Parse sentence structure
-   - `concept-mapper graph` - Build concept networks
-   - `concept-mapper export` - Generate visualizations
+   - `cmapr ingest` - Load and preprocess texts
+   - `cmapr rarities` - Detect philosophical terms
+   - `cmapr search/concordance` - Find terms in context
+   - `cmapr diagram` - Parse sentence structure
+   - `cmapr graph` - Build concept networks
+   - `cmapr export` - Generate visualizations
 
 2. **Python API** - `src/concept_mapper/__init__.py`
    - Import and use modules programmatically
@@ -377,16 +377,16 @@ pytest -k "keyword"    # Filter by name
 
 ```bash
 # 1. Ingest text
-concept-mapper ingest examples/sample_text.txt -o corpus.json
+cmapr ingest examples/sample_text.txt -o corpus.json
 
 # 2. Detect terms
-concept-mapper rarities corpus.json --top-n 20 -o terms.json
+cmapr rarities corpus.json --top-n 20 -o terms.json
 
 # 3. Build graph
-concept-mapper graph corpus.json -t terms.json -o graph.json
+cmapr graph corpus.json -t terms.json -o graph.json
 
 # 4. Visualize
-concept-mapper export graph.json --format html -o viz/
+cmapr export graph.json --format html -o viz/
 open viz/index.html
 ```
 

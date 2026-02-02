@@ -1,4 +1,4 @@
-# Claude Code Rules for concept-mapper
+# Claude Code Rules for cmapr
 
 ## Project Context
 This is an NLP project for concept mapping and linguistic analysis using spaCy and Stanza.
@@ -152,5 +152,5 @@ This is an NLP project for concept mapping and linguistic analysis using spaCy a
 - Keep the project root clean
 
 ### CLI Tool
-- Main CLI is `concept-mapper` (defined in `src/concept_mapper/cli.py`)
+- Main CLI is `cmapr` (defined in `src/concept_mapper/cli.py`)
 - Test CLI changes with the examples in `examples/`

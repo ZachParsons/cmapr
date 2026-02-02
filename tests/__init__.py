@@ -1,3 +1,3 @@
 """
-Tests for the concept-mapper project.
+Tests for the cmapr project.
 """

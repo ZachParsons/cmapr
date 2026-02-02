@@ -76,8 +76,8 @@ def ingest(ctx, path, output, recursive, pattern):
     tokenization, POS tagging, and lemmatization.
 
     Examples:
-        concept-mapper ingest document.txt -o corpus.json
-        concept-mapper ingest corpus/ -r -p "*.txt" -o corpus.json
+        cmapr ingest document.txt -o corpus.json
+        cmapr ingest corpus/ -r -p "*.txt" -o corpus.json
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -175,8 +175,8 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
     statistical rarity analysis.
 
     Examples:
-        concept-mapper rarities corpus.json --method hybrid --top-n 30
-        concept-mapper rarities corpus.json -o terms.json
+        cmapr rarities corpus.json --method hybrid --top-n 30
+        cmapr rarities corpus.json -o terms.json
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -347,14 +347,14 @@ def search(
     Search for term occurrences in corpus.
 
     Examples:
-        concept-mapper search corpus.json "consciousness"
-        concept-mapper search corpus.json "being" --context 2
-        concept-mapper search corpus.json "run" --lemma
-        concept-mapper search corpus.json "abstraction" --diagram
-        concept-mapper search corpus.json "dialectic" --diagram --diagram-format tree
-        concept-mapper search corpus.json "abstraction" --extract-significant --threshold 1.5
-        concept-mapper search corpus.json "capitalism" -e -p nouns -p verbs --top-n 5
-        concept-mapper search corpus.json "consciousness" -e --aggregate --detailed
+        cmapr search corpus.json "consciousness"
+        cmapr search corpus.json "being" --context 2
+        cmapr search corpus.json "run" --lemma
+        cmapr search corpus.json "abstraction" --diagram
+        cmapr search corpus.json "dialectic" --diagram --diagram-format tree
+        cmapr search corpus.json "abstraction" --extract-significant --threshold 1.5
+        cmapr search corpus.json "capitalism" -e -p nouns -p verbs --top-n 5
+        cmapr search corpus.json "consciousness" -e --aggregate --detailed
     """
     verbose = ctx.obj["verbose"]
 
@@ -549,8 +549,8 @@ def concordance_cmd(ctx, corpus, term, width, output):
     Display KWIC (Key Word In Context) concordance.
 
     Examples:
-        concept-mapper concordance corpus.json "consciousness"
-        concept-mapper concordance corpus.json "being" --width 80
+        cmapr concordance corpus.json "consciousness"
+        cmapr concordance corpus.json "being" --width 80
     """
     verbose = ctx.obj["verbose"]
 
@@ -624,8 +624,8 @@ def graph(ctx, corpus, terms, method, threshold, output):
     Build concept graph from corpus.
 
     Examples:
-        concept-mapper graph corpus.json -t terms.json -m cooccurrence
-        concept-mapper graph corpus.json -t terms.json -m relations -o graph.json
+        cmapr graph corpus.json -t terms.json -m cooccurrence
+        cmapr graph corpus.json -t terms.json -m relations -o graph.json
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -736,9 +736,9 @@ def export(ctx, graph_file, format, output, title):
     Export graph to various formats.
 
     Examples:
-        concept-mapper export graph.json --format html -o viz/
-        concept-mapper export graph.json --format graphml -o graph.graphml
-        concept-mapper export graph.json --format csv -o output/
+        cmapr export graph.json --format html -o viz/
+        cmapr export graph.json --format graphml -o graph.graphml
+        cmapr export graph.json --format csv -o output/
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -850,9 +850,9 @@ def diagram(ctx, sentence, format, output):
     the grammatical structure.
 
     Examples:
-        concept-mapper diagram "The cat sat on the mat."
-        concept-mapper diagram "Abstraction obscures social processes." --format tree
-        concept-mapper diagram "The question is complex." -o diagram.txt
+        cmapr diagram "The cat sat on the mat."
+        cmapr diagram "Abstraction obscures social processes." --format tree
+        cmapr diagram "The question is complex." -o diagram.txt
     """
     from concept_mapper.syntax.diagram import diagram_sentence, save_diagram
 

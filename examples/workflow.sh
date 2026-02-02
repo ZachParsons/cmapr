@@ -25,12 +25,12 @@ VIZ_DIR="$OUTPUT_DIR/exports/sample1_analytic_pragmatism"
 
 # Step 1: Ingest
 echo "[1/5] Ingesting and preprocessing text..."
-concept-mapper --output-dir "$OUTPUT_DIR" ingest "$INPUT_TEXT"
+cmapr --output-dir "$OUTPUT_DIR" ingest "$INPUT_TEXT"
 echo ""
 
 # Step 2: Detect philosophical terms
 echo "[2/5] Detecting philosophical terms..."
-concept-mapper --output-dir "$OUTPUT_DIR" rarities "$CORPUS_FILE" \
+cmapr --output-dir "$OUTPUT_DIR" rarities "$CORPUS_FILE" \
   --method hybrid \
   --threshold 1.5 \
   --top-n 20
@@ -38,7 +38,7 @@ echo ""
 
 # Step 3: Build co-occurrence graph
 echo "[3/5] Building co-occurrence graph..."
-concept-mapper --output-dir "$OUTPUT_DIR" graph "$CORPUS_FILE" \
+cmapr --output-dir "$OUTPUT_DIR" graph "$CORPUS_FILE" \
   --terms "$TERMS_FILE" \
   --method cooccurrence \
   --threshold 0.3
@@ -46,23 +46,23 @@ echo ""
 
 # Step 4: Build relations graph
 echo "[4/5] Building relations graph..."
-concept-mapper --output-dir "$OUTPUT_DIR" graph "$CORPUS_FILE" \
+cmapr --output-dir "$OUTPUT_DIR" graph "$CORPUS_FILE" \
   --terms "$TERMS_FILE" \
   --method relations
 echo ""
 
 # Step 5: Generate visualization
 echo "[5/5] Generating HTML visualization..."
-concept-mapper --output-dir "$OUTPUT_DIR" export "$GRAPH_COOCCUR" \
+cmapr --output-dir "$OUTPUT_DIR" export "$GRAPH_COOCCUR" \
   --format html \
   --title "Analytic Philosophy Concept Network"
 echo ""
 
 # Also export other formats (using explicit filenames for compatibility)
 echo "Exporting additional formats..."
-concept-mapper export "$GRAPH_COOCCUR" --format graphml -o "$OUTPUT_DIR/exports/sample1_analytic_pragmatism.graphml"
-concept-mapper export "$GRAPH_COOCCUR" --format csv -o "$OUTPUT_DIR/exports/sample1_analytic_pragmatism/csv/"
-concept-mapper export "$GRAPH_COOCCUR" --format gexf -o "$OUTPUT_DIR/exports/sample1_analytic_pragmatism.gexf"
+cmapr export "$GRAPH_COOCCUR" --format graphml -o "$OUTPUT_DIR/exports/sample1_analytic_pragmatism.graphml"
+cmapr export "$GRAPH_COOCCUR" --format csv -o "$OUTPUT_DIR/exports/sample1_analytic_pragmatism/csv/"
+cmapr export "$GRAPH_COOCCUR" --format gexf -o "$OUTPUT_DIR/exports/sample1_analytic_pragmatism.gexf"
 echo ""
 
 # Summary

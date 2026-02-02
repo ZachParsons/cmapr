@@ -22,7 +22,7 @@ dev = [
 ]
 
 [project.scripts]
-concept-mapper = "concept_mapper.cli:cli"
+cmapr = "concept_mapper.cli:cli"
 
 [build-system]
 requires = ["setuptools>=61.0"]

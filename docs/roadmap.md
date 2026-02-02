@@ -837,42 +837,42 @@ Unified command-line access.
 
 - [x] **10.1 CLI framework** (`src/concept_mapper/cli.py`)
   - [x] Use Click for subcommand structure
-  - [x] Main entry point: `concept-mapper`
+  - [x] Main entry point: `cmapr`
   - [x] Global options: `--verbose`, `--output-dir`
   - [x] Tests: 23 comprehensive CLI tests
 
 - [x] **10.2 Ingest command**
-  - [x] `concept-mapper ingest <path> --output corpus.json`
-  - [x] `concept-mapper ingest <path> --recursive --pattern "*.txt"`
+  - [x] `cmapr ingest <path> --output corpus.json`
+  - [x] `cmapr ingest <path> --recursive --pattern "*.txt"`
   - [x] Runs preprocessing, saves ProcessedDocuments
   - [x] Progress bar for batch processing
   - [x] Tests: 3 tests for ingest command
 
 - [x] **10.3 Analyze commands**
-  - [x] `concept-mapper rarities <corpus> --method tfidf --threshold 0.5 --output terms.json`
+  - [x] `cmapr rarities <corpus> --method tfidf --threshold 0.5 --output terms.json`
   - [x] Support for ratio, tfidf, neologism, hybrid methods
   - [x] Displays results to stdout, saves to JSON
   - [x] Tests: 3 tests for rarities command
 
 - [x] **10.4 Search commands**
-  - [x] `concept-mapper search <corpus> --term "Begriff" --context 2`
-  - [x] `concept-mapper concordance <corpus> --term "Begriff" --width 50`
+  - [x] `cmapr search <corpus> --term "Begriff" --context 2`
+  - [x] `cmapr concordance <corpus> --term "Begriff" --width 50`
   - [x] Output to stdout or file
   - [x] KWIC (Key Word In Context) display formatting
   - [x] Tests: 7 tests for search and concordance commands
 
 - [x] **10.5 Graph commands**
-  - [x] `concept-mapper graph <corpus> --terms terms.json --method cooccurrence --output graph.json`
-  - [x] `concept-mapper graph <corpus> --terms terms.json --method relations`
+  - [x] `cmapr graph <corpus> --terms terms.json --method cooccurrence --output graph.json`
+  - [x] `cmapr graph <corpus> --terms terms.json --method relations`
   - [x] Progress bars for relation extraction
   - [x] Tests: 3 tests for graph command
 
 - [x] **10.6 Export commands**
-  - [x] `concept-mapper export <graph> --format d3 --output viz/data.json`
-  - [x] `concept-mapper export <graph> --format html --output viz/`
-  - [x] `concept-mapper export <graph> --format graphml --output graph.graphml`
-  - [x] `concept-mapper export <graph> --format csv --output output/`
-  - [x] `concept-mapper export <graph> --format gexf --output graph.gexf`
+  - [x] `cmapr export <graph> --format d3 --output viz/data.json`
+  - [x] `cmapr export <graph> --format html --output viz/`
+  - [x] `cmapr export <graph> --format graphml --output graph.graphml`
+  - [x] `cmapr export <graph> --format csv --output output/`
+  - [x] `cmapr export <graph> --format gexf --output graph.gexf`
   - [x] Custom title for HTML visualizations
   - [x] Tests: 4 tests for export command
 
@@ -1158,12 +1158,6 @@ The project is feature-complete for its intended use case. Potential future enha
   - Tests of internal implementation details vs. public API contracts
   - Target: Reduce to ~300-400 tests while maintaining coverage of critical functionality
   - Run `pytest tests/ -v --collect-only | grep "test_" | wc -l` to count current tests
-- [ ] **Rename CLI command to `cmapr`** - Shorten the command from `concept-mapper` to `cmapr` for easier typing. This requires:
-  - Update entry point in `setup.py` or `pyproject.toml`
-  - Update all documentation (README.md, api-reference.md, examples)
-  - Update CLI tests in `tests/test_cli.py`
-  - Update example scripts (`examples/workflow.sh`)
-  - Consider keeping `concept-mapper` as an alias for backward compatibility
 
 ### Documentation Maintenance
 
@@ -1178,6 +1172,7 @@ The project is feature-complete for its intended use case. Potential future enha
 
 ### Recent Completions
 
+- [x] **Rename CLI command to `cmapr`** (2026-02-01) - Renamed command from `cmapr` to `cmapr` for easier typing. Updated entry point in pyproject.toml and all references in documentation (README.md, api-reference.md), example scripts, and test files. Breaking change - `cmapr` command no longer available.
 - [x] **Extract significant terms feature** (2026-02-01) - Added `--extract-significant` flag to search command. Extracts and scores significant nouns/verbs from sentences containing a search term. Features: corpus-frequency scoring (default) or hybrid rarity scoring, POS filtering, stopword removal (~200 common words), automatic exclusion of search term, aggregation across sentences. Stopwords stored in `data/reference/stopwords.json`. Tests: 13 passing.
 - [x] Fix API inconsistencies in docs (load_document → load_file, TermList constructor)
 - [x] Convert multi-line examples to one-liners for copy-paste friendliness

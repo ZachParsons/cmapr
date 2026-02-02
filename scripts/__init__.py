@@ -1,3 +1,3 @@
 """
-Utility scripts for the concept-mapper project.
+Utility scripts for the cmapr project.
 """

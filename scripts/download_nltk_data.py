@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Download required NLTK data for the concept-mapper project.
+Download required NLTK data for the cmapr project.
 
 This script downloads all necessary NLTK datasets and models needed for:
 - Tokenization (punkt)
@@ -78,7 +78,7 @@ def download_all(verbose: bool = True) -> bool:
     """
     if verbose:
         print("=" * 60)
-        print("Downloading NLTK data for concept-mapper")
+        print("Downloading NLTK data for cmapr")
         print("=" * 60)
         print()
 

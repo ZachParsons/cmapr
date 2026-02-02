@@ -1451,48 +1451,48 @@ Unified command-line interface for all functionality.
 
 ### Installation
 
-After installing the package, the `concept-mapper` command is available:
+After installing the package, the `cmapr` command is available:
 
 ```bash
 # Install package
 uv pip install -e .
 
 # Verify installation
-concept-mapper --help
+cmapr --help
 ```
 
 ### Example: Complete Workflow
 
 ```bash
 # 1. Ingest and preprocess documents
-concept-mapper ingest samples/sample1_analytic_pragmatism.txt -o output/corpus.json
+cmapr ingest samples/sample1_analytic_pragmatism.txt -o output/corpus.json
 
 # 2. Detect philosophical terms
-concept-mapper rarities output/corpus.json \
+cmapr rarities output/corpus.json \
   --method hybrid \
   --threshold 2.0 \
   --top-n 30 \
   -o output/terms.json
 
 # 3. Search for a specific term
-concept-mapper search output/corpus.json "abstraction" \
+cmapr search output/corpus.json "abstraction" \
   --context 2 \
   -o output/abstraction.txt
 
 # 4. Generate concordance
-concept-mapper concordance output/corpus.json "consciousness" \
+cmapr concordance output/corpus.json "consciousness" \
   --width 60 \
   -o output/concordance.txt
 
 # 5. Build concept graph
-concept-mapper graph output/corpus.json \
+cmapr graph output/corpus.json \
   -t output/terms.json \
   --method cooccurrence \
   --threshold 0.3 \
   -o output/graph.json
 
 # 6. Export to HTML visualization
-concept-mapper export output/graph.json \
+cmapr export output/graph.json \
   --format html \
   --title "Philosopher Conceptual Network" \
   -o output/visualization/
@@ -1509,16 +1509,16 @@ Load and preprocess documents:
 
 ```bash
 # Single file
-concept-mapper ingest document.txt -o corpus.json
+cmapr ingest document.txt -o corpus.json
 
 # Directory (recursive)
-concept-mapper ingest corpus/ \
+cmapr ingest corpus/ \
   --recursive \
   --pattern "*.txt" \
   -o corpus.json
 
 # With verbose output
-concept-mapper --verbose ingest document.txt -o corpus.json
+cmapr --verbose ingest document.txt -o corpus.json
 ```
 
 #### Rarities Command
@@ -1527,17 +1527,17 @@ Detect philosophical/rare terms:
 
 ```bash
 # Basic usage
-concept-mapper rarities corpus.json -o terms.json
+cmapr rarities corpus.json -o terms.json
 
 # Specify method and threshold
-concept-mapper rarities corpus.json \
+cmapr rarities corpus.json \
   --method hybrid \
   --threshold 2.5 \
   --top-n 50 \
   -o terms.json
 
 # Different methods: ratio, tfidf, neologism, hybrid
-concept-mapper rarities corpus.json --method tfidf -o terms.json
+cmapr rarities corpus.json --method tfidf -o terms.json
 ```
 
 #### Search Command
@@ -1546,13 +1546,13 @@ Search for term occurrences:
 
 ```bash
 # Basic search
-concept-mapper search corpus.json "consciousness"
+cmapr search corpus.json "consciousness"
 
 # With context sentences
-concept-mapper search corpus.json "being" --context 2
+cmapr search corpus.json "being" --context 2
 
 # Save to file
-concept-mapper search corpus.json "abstraction" -o results.txt
+cmapr search corpus.json "abstraction" -o results.txt
 ```
 
 #### Concordance Command
@@ -1561,13 +1561,13 @@ Display KWIC concordance:
 
 ```bash
 # Basic concordance
-concept-mapper concordance corpus.json "consciousness"
+cmapr concordance corpus.json "consciousness"
 
 # Custom context width
-concept-mapper concordance corpus.json "being" --width 80
+cmapr concordance corpus.json "being" --width 80
 
 # Save to file
-concept-mapper concordance corpus.json "fetishism" -o concordance.txt
+cmapr concordance corpus.json "fetishism" -o concordance.txt
 ```
 
 #### Graph Command
@@ -1576,14 +1576,14 @@ Build concept graphs:
 
 ```bash
 # From co-occurrence
-concept-mapper graph corpus.json \
+cmapr graph corpus.json \
   -t terms.json \
   --method cooccurrence \
   --threshold 0.3 \
   -o graph.json
 
 # From relations
-concept-mapper graph corpus.json \
+cmapr graph corpus.json \
   -t terms.json \
   --method relations \
   -o graph.json
@@ -1595,28 +1595,28 @@ Export graphs to various formats:
 
 ```bash
 # HTML visualization
-concept-mapper export graph.json \
+cmapr export graph.json \
   --format html \
   --title "My Network" \
   -o viz/
 
 # GraphML for Gephi
-concept-mapper export graph.json \
+cmapr export graph.json \
   --format graphml \
   -o graph.graphml
 
 # CSV for spreadsheets
-concept-mapper export graph.json \
+cmapr export graph.json \
   --format csv \
   -o output/
 
 # D3 JSON
-concept-mapper export graph.json \
+cmapr export graph.json \
   --format d3 \
   -o network.json
 
 # GEXF for Gephi
-concept-mapper export graph.json \
+cmapr export graph.json \
   --format gexf \
   -o graph.gexf
 ```
@@ -1627,13 +1627,13 @@ Available for all commands:
 
 ```bash
 # Verbose output
-concept-mapper --verbose ingest document.txt
+cmapr --verbose ingest document.txt
 
 # Custom output directory
-concept-mapper --output-dir /path/to/output ingest document.txt
+cmapr --output-dir /path/to/output ingest document.txt
 
 # Combined
-concept-mapper -v -o output/ rarities corpus.json
+cmapr -v -o output/ rarities corpus.json
 ```
 
 ### Batch Processing Example
@@ -1650,23 +1650,23 @@ for corpus_dir in data/corpora/*; do
     echo "Processing $author..."
 
     # Ingest
-    concept-mapper ingest "$corpus_dir" \
+    cmapr ingest "$corpus_dir" \
         --recursive \
         -o "output/$author/corpus.json"
 
     # Detect terms
-    concept-mapper rarities "output/$author/corpus.json" \
+    cmapr rarities "output/$author/corpus.json" \
         --top-n 30 \
         -o "output/$author/terms.json"
 
     # Build graph
-    concept-mapper graph "output/$author/corpus.json" \
+    cmapr graph "output/$author/corpus.json" \
         -t "output/$author/terms.json" \
         -m cooccurrence \
         -o "output/$author/graph.json"
 
     # Export visualization
-    concept-mapper export "output/$author/graph.json" \
+    cmapr export "output/$author/graph.json" \
         --format html \
         --title "$author Conceptual Network" \
         -o "output/$author/viz/"
@@ -1833,7 +1833,7 @@ No matches found for query: "abstraction"
 
 ```bash
 # Try to detect terms with too high a threshold
-concept-mapper rarities examples/corpus.json --threshold 10.0
+cmapr rarities examples/corpus.json --threshold 10.0
 
 # Expected output:
 # Error: No terms detected. Try:

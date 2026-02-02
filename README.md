@@ -17,7 +17,7 @@ Concept Mapper analyzes primary texts to identify author-specific philosophical 
 uv pip install -e .
 
 # Verify CLI installation
-concept-mapper --help
+cmapr --help
 
 # Run tests
 pytest tests/ -v
@@ -32,10 +32,10 @@ Process the included sample philosophical text:
 bash examples/workflow.sh
 
 # Or run commands individually:
-concept-mapper ingest samples/sample1_analytic_pragmatism.txt
-concept-mapper rarities output/corpus/sample1_analytic_pragmatism.json --top-n 20
-concept-mapper graph output/corpus/sample1_analytic_pragmatism.json -t output/terms/sample1_analytic_pragmatism.json
-concept-mapper export output/graphs/sample1_analytic_pragmatism.json --format html
+cmapr ingest samples/sample1_analytic_pragmatism.txt
+cmapr rarities output/corpus/sample1_analytic_pragmatism.json --top-n 20
+cmapr graph output/corpus/sample1_analytic_pragmatism.json -t output/terms/sample1_analytic_pragmatism.json
+cmapr export output/graphs/sample1_analytic_pragmatism.json --format html
 
 # Open the visualization
 open output/exports/sample1_analytic_pragmatism/index.html
@@ -78,7 +78,7 @@ The `samples/sample1_analytic_pragmatism.txt` file contains a passage on analyti
 Load the sample text and preprocess it (tokenization, POS tagging, lemmatization):
 
 ```bash
-concept-mapper ingest samples/sample1_analytic_pragmatism.txt
+cmapr ingest samples/sample1_analytic_pragmatism.txt
 ```
 
 **Expected output:**
@@ -93,7 +93,7 @@ concept-mapper ingest samples/sample1_analytic_pragmatism.txt
 Identify author-specific terminology using statistical rarity analysis:
 
 ```bash
-concept-mapper rarities output/corpus/sample1_analytic_pragmatism.json \
+cmapr rarities output/corpus/sample1_analytic_pragmatism.json \
   --method hybrid \
   --threshold 1.5 \
   --top-n 20
@@ -123,13 +123,13 @@ conceptual schemes     3.67
 **Try different methods:**
 ```bash
 # Corpus-comparative ratio only
-concept-mapper rarities output/corpus/sample1_analytic_pragmatism.json --method ratio --top-n 10
+cmapr rarities output/corpus/sample1_analytic_pragmatism.json --method ratio --top-n 10
 
 # TF-IDF only
-concept-mapper rarities output/corpus/sample1_analytic_pragmatism.json --method tfidf --top-n 10
+cmapr rarities output/corpus/sample1_analytic_pragmatism.json --method tfidf --top-n 10
 
 # Neologisms only
-concept-mapper rarities output/corpus/sample1_analytic_pragmatism.json --method neologism --top-n 10
+cmapr rarities output/corpus/sample1_analytic_pragmatism.json --method neologism --top-n 10
 ```
 
 ### Step 3: Search and Concordance
@@ -138,22 +138,22 @@ Find where specific terms appear:
 
 ```bash
 # Basic search
-concept-mapper search output/corpus/sample1_analytic_pragmatism.json "abstraction"
+cmapr search output/corpus/sample1_analytic_pragmatism.json "abstraction"
 
 # Search with context (2 sentences before/after)
-concept-mapper search output/corpus/sample1_analytic_pragmatism.json "dialectical" --context 2
+cmapr search output/corpus/sample1_analytic_pragmatism.json "dialectical" --context 2
 
 # Search with sentence diagrams for all matches
-concept-mapper search output/corpus/sample1_analytic_pragmatism.json "abstraction" --diagram
+cmapr search output/corpus/sample1_analytic_pragmatism.json "abstraction" --diagram
 
 # Search with diagrams in tree format
-concept-mapper search output/corpus/sample1_analytic_pragmatism.json "dialectic" --diagram --diagram-format tree
+cmapr search output/corpus/sample1_analytic_pragmatism.json "dialectic" --diagram --diagram-format tree
 
 # KWIC concordance
-concept-mapper concordance output/corpus/sample1_analytic_pragmatism.json "praxis" --width 40
+cmapr concordance output/corpus/sample1_analytic_pragmatism.json "praxis" --width 40
 
 # Create sentence diagram for a single sentence
-concept-mapper diagram "Abstraction transforms social relations into things."
+cmapr diagram "Abstraction transforms social relations into things."
 ```
 
 **Expected KWIC output:**
@@ -188,7 +188,7 @@ Create a network graph showing relationships between terms:
 **Method A: Co-occurrence (proximity-based)**
 
 ```bash
-concept-mapper graph output/corpus/sample1_analytic_pragmatism.json \
+cmapr graph output/corpus/sample1_analytic_pragmatism.json \
   --terms output/terms/sample1_analytic_pragmatism.json \
   --method cooccurrence \
   --threshold 0.3
@@ -205,7 +205,7 @@ Edges represent terms that frequently appear together (same sentence or nearby s
 **Method B: Relations (grammar-based)**
 
 ```bash
-concept-mapper graph output/corpus/sample1_analytic_pragmatism.json \
+cmapr graph output/corpus/sample1_analytic_pragmatism.json \
   --terms output/terms/sample1_analytic_pragmatism.json \
   --method relations
 ```
@@ -220,7 +220,7 @@ Edges represent grammatical relationships:
 Generate an interactive HTML visualization:
 
 ```bash
-concept-mapper export output/graphs/sample1_analytic_pragmatism.json \
+cmapr export output/graphs/sample1_analytic_pragmatism.json \
   --format html \
   --title "Critical Theory Concept Network"
 ```
@@ -241,13 +241,13 @@ open output/exports/index.html
 
 ```bash
 # GraphML for Gephi
-concept-mapper export output/graphs/sample1_analytic_pragmatism.json --format graphml -o output/exports/graph.graphml
+cmapr export output/graphs/sample1_analytic_pragmatism.json --format graphml -o output/exports/graph.graphml
 
 # CSV for spreadsheets
-concept-mapper export output/graphs/sample1_analytic_pragmatism.json --format csv -o output/exports/csv/
+cmapr export output/graphs/sample1_analytic_pragmatism.json --format csv -o output/exports/csv/
 
 # GEXF for Gephi
-concept-mapper export output/graphs/sample1_analytic_pragmatism.json --format gexf -o output/exports/graph.gexf
+cmapr export output/graphs/sample1_analytic_pragmatism.json --format gexf -o output/exports/graph.gexf
 ```
 
 ## CLI Reference
@@ -256,54 +256,54 @@ concept-mapper export output/graphs/sample1_analytic_pragmatism.json --format ge
 
 ```bash
 # Ingest and preprocess text
-concept-mapper ingest <path> [-o OUTPUT] [-r]
+cmapr ingest <path> [-o OUTPUT] [-r]
 
 # Detect rare/philosophical terms
-concept-mapper rarities <corpus> [--method METHOD] [--threshold N] [--top-n N] [-o OUTPUT]
+cmapr rarities <corpus> [--method METHOD] [--threshold N] [--top-n N] [-o OUTPUT]
 
 # Search for terms in context
-concept-mapper search <corpus> <query> [--context N] [-o OUTPUT]
+cmapr search <corpus> <query> [--context N] [-o OUTPUT]
 
 # KWIC concordance
-concept-mapper concordance <corpus> <term> [--width N] [-o OUTPUT]
+cmapr concordance <corpus> <term> [--width N] [-o OUTPUT]
 
 # Create sentence diagram
-concept-mapper diagram <sentence> [--format FORMAT] [-o OUTPUT]
+cmapr diagram <sentence> [--format FORMAT] [-o OUTPUT]
 
 # Build concept graph
-concept-mapper graph <corpus> --terms <terms> [--method METHOD] [--threshold N] [-o OUTPUT]
+cmapr graph <corpus> --terms <terms> [--method METHOD] [--threshold N] [-o OUTPUT]
 
 # Export/visualize graph
-concept-mapper export <graph> --format <FORMAT> [-o OUTPUT] [--title TITLE]
+cmapr export <graph> --format <FORMAT> [-o OUTPUT] [--title TITLE]
 ```
 
 ### Analyzing Your Own Texts
 
 ```bash
 # Single file - outputs automatically named after source
-concept-mapper ingest your_document.txt
-concept-mapper rarities output/corpus/your_document.json
-concept-mapper graph output/corpus/your_document.json -t output/terms/your_document.json
-concept-mapper export output/graphs/your_document.json --format html
+cmapr ingest your_document.txt
+cmapr rarities output/corpus/your_document.json
+cmapr graph output/corpus/your_document.json -t output/terms/your_document.json
+cmapr export output/graphs/your_document.json --format html
 open output/exports/your_document/index.html
 
 # Multiple files - each gets its own outputs, no overwrites!
-concept-mapper ingest text1.txt
-concept-mapper ingest text2.txt
-concept-mapper ingest text3.txt
+cmapr ingest text1.txt
+cmapr ingest text2.txt
+cmapr ingest text3.txt
 ls output/corpus/  # text1.json, text2.json, text3.json
 
 # Directory of files - creates single merged corpus named after directory
-concept-mapper ingest path/to/corpus/ -r -o my_corpus.json
-concept-mapper rarities my_corpus.json -o my_terms.json
-concept-mapper graph my_corpus.json -t my_terms.json -o my_graph.json
-concept-mapper export my_graph.json --format html -o viz/
+cmapr ingest path/to/corpus/ -r -o my_corpus.json
+cmapr rarities my_corpus.json -o my_terms.json
+cmapr graph my_corpus.json -t my_terms.json -o my_graph.json
+cmapr export my_graph.json --format html -o viz/
 
 # Custom output locations (explicit -o always works)
-concept-mapper ingest doc.txt -o corpus.json
-concept-mapper rarities corpus.json -o terms.json
-concept-mapper graph corpus.json -t terms.json -o graph.json
-concept-mapper export graph.json --format html -o viz/
+cmapr ingest doc.txt -o corpus.json
+cmapr rarities corpus.json -o terms.json
+cmapr graph corpus.json -t terms.json -o graph.json
+cmapr export graph.json --format html -o viz/
 ```
 
 ### Tuning Parameters
@@ -614,7 +614,7 @@ If you use this tool in your research, please cite:
   title={Concept Mapper: Philosophical Term Extraction and Network Analysis},
   author={Your Name},
   year={2026},
-  url={https://github.com/yourusername/concept-mapper}
+  url={https://github.com/yourusername/cmapr}
 }
 ```
 
