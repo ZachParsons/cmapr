@@ -1961,7 +1961,9 @@ class TestScorePhilosophicalTerms:
 
     def test_convenience_function_basic(self, test_docs, test_reference):
         """Test convenience function returns simplified results."""
-        results = score_philosophical_terms(test_docs, test_reference, top_n=10)
+        results = score_philosophical_terms(
+            test_docs, test_reference, top_n=10, min_author_freq=1
+        )
 
         # Should return list of (term, score) tuples
         assert isinstance(results, list)
@@ -1977,7 +1979,9 @@ class TestScorePhilosophicalTerms:
 
     def test_convenience_function_sorted(self, test_docs, test_reference):
         """Test that results are sorted by score."""
-        results = score_philosophical_terms(test_docs, test_reference, top_n=10)
+        results = score_philosophical_terms(
+            test_docs, test_reference, top_n=10, min_author_freq=1
+        )
 
         # Scores should be in descending order
         scores = [score for term, score in results]

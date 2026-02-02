@@ -56,6 +56,7 @@ import math
 import re
 from collections import Counter
 from typing import Dict, Set, List, Tuple, Optional
+import string
 from ..corpus.models import ProcessedDocument
 from .frequency import corpus_frequencies
 
@@ -1361,6 +1362,36 @@ def get_filtered_candidates(
 
 
 # Phase 3.6: Hybrid Philosophical Term Scorer
+
+def _is_valid_term(term: str) -> bool:
+    """
+    Check if a term is valid (not punctuation, minimum length, etc.).
+
+    Args:
+        term: Term to validate
+
+    Returns:
+        True if term is valid, False otherwise
+    """
+    # Empty or too short
+    if not term or len(term) < 2:
+        return False
+
+    # All punctuation
+    if all(c in string.punctuation for c in term):
+        return False
+
+    # Common abbreviations that shouldn't be terms
+    if term.lower() in {'i.e', 'e.g', 'etc', 'vs', 'cf'}:
+        return False
+
+    # Must contain at least one letter
+    if not any(c.isalpha() for c in term):
+        return False
+
+    return True
+
+
 class PhilosophicalTermScorer:
     """
     Hybrid scorer combining multiple detection methods for philosophical terms.
@@ -1561,6 +1592,10 @@ class PhilosophicalTermScorer:
         # Score each term
         scored_terms = []
         for term in author_freqs:
+            # Skip invalid terms (punctuation, too short, etc.)
+            if not _is_valid_term(term):
+                continue
+
             if author_freqs[term] >= self.min_author_freq:
                 score_breakdown = self.score_term(term, normalize=True)
                 total_score = score_breakdown["total"]

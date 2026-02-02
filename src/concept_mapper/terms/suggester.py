@@ -19,6 +19,7 @@ def suggest_terms_from_analysis(
     top_n: int = 50,
     max_examples: int = 3,
     use_lemmas: bool = True,
+    min_author_freq: int = 3,
     scorer_weights: Optional[dict] = None,
 ) -> TermList:
     """
@@ -34,6 +35,7 @@ def suggest_terms_from_analysis(
         top_n: Maximum number of terms to suggest (default: 50)
         max_examples: Maximum example sentences per term (default: 3)
         use_lemmas: Whether to use lemmatized forms (default: True)
+        min_author_freq: Minimum occurrences in author corpus (default: 3)
         scorer_weights: Optional custom weights for scorer
 
     Returns:
@@ -48,13 +50,21 @@ def suggest_terms_from_analysis(
     # Use scorer to get top philosophical terms
     if scorer_weights:
         scorer = PhilosophicalTermScorer(
-            docs, reference_corpus, use_lemmas=use_lemmas, weights=scorer_weights
+            docs,
+            reference_corpus,
+            use_lemmas=use_lemmas,
+            min_author_freq=min_author_freq,
+            weights=scorer_weights,
         )
         results = scorer.score_all(min_score=min_score, top_n=top_n)
     else:
         # Use convenience function with default weights
         results_simple = score_philosophical_terms(
-            docs, reference_corpus, use_lemmas=use_lemmas, top_n=top_n
+            docs,
+            reference_corpus,
+            use_lemmas=use_lemmas,
+            min_author_freq=min_author_freq,
+            top_n=top_n,
         )
         # Filter by min_score
         results = [

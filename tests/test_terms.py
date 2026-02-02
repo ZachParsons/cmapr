@@ -574,7 +574,12 @@ class TestSuggester:
     def test_suggest_terms_from_analysis(self, test_docs, test_reference):
         """Test suggesting terms from analysis."""
         term_list = suggest_terms_from_analysis(
-            test_docs, test_reference, min_score=0.5, top_n=10, max_examples=2
+            test_docs,
+            test_reference,
+            min_score=0.5,
+            top_n=10,
+            max_examples=2,
+            min_author_freq=1,
         )
 
         # Should create term list
