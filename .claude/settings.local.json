@@ -52,7 +52,9 @@
       "Bash(xargs ls:*)",
       "Bash(git restore:*)",
       "Bash(uv run ruff format:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(git remote add:*)",
+      "Bash(git log:*)"
     ]
   }
 }

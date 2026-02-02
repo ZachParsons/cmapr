@@ -13,27 +13,27 @@ echo ""
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Configuration
-INPUT_TEXT="$PROJECT_ROOT/samples/sample1_analytic_pragmatism.txt"
+INPUT_TEXT="$PROJECT_ROOT/samples/eco_spl.txt"
 OUTPUT_DIR="$PROJECT_ROOT/output"
 
 # Output files now derive from source filename automatically
-CORPUS_FILE="$OUTPUT_DIR/corpus/sample1_analytic_pragmatism.json"
-TERMS_FILE="$OUTPUT_DIR/terms/sample1_analytic_pragmatism.json"
-GRAPH_COOCCUR="$OUTPUT_DIR/graphs/sample1_analytic_pragmatism.json"
-GRAPH_RELATIONS="$OUTPUT_DIR/graphs/sample1_analytic_pragmatism_relations.json"
-VIZ_DIR="$OUTPUT_DIR/exports/sample1_analytic_pragmatism"
+CORPUS_FILE="$OUTPUT_DIR/corpus/eco_spl.json"
+TERMS_FILE="$OUTPUT_DIR/terms/eco_spl.json"
+GRAPH_COOCCUR="$OUTPUT_DIR/graphs/eco_spl.json"
+GRAPH_RELATIONS="$OUTPUT_DIR/graphs/eco_spl_relations.json"
+VIZ_DIR="$OUTPUT_DIR/exports/eco_spl"
 
 # Step 1: Ingest
 echo "[1/5] Ingesting and preprocessing text..."
 cmapr --output-dir "$OUTPUT_DIR" ingest "$INPUT_TEXT"
 echo ""
 
-# Step 2: Detect philosophical terms
-echo "[2/5] Detecting philosophical terms..."
+# Step 2: Detect semiotic terms
+echo "[2/5] Detecting semiotic and philosophical terms..."
 cmapr --output-dir "$OUTPUT_DIR" rarities "$CORPUS_FILE" \
-  --method hybrid \
-  --threshold 1.5 \
-  --top-n 20
+  --method ratio \
+  --threshold 0.3 \
+  --top-n 50
 echo ""
 
 # Step 3: Build co-occurrence graph
@@ -55,14 +55,14 @@ echo ""
 echo "[5/5] Generating HTML visualization..."
 cmapr --output-dir "$OUTPUT_DIR" export "$GRAPH_COOCCUR" \
   --format html \
-  --title "Analytic Philosophy Concept Network"
+  --title "Eco - Semiotics & Philosophy of Language"
 echo ""
 
 # Also export other formats (using explicit filenames for compatibility)
 echo "Exporting additional formats..."
-cmapr export "$GRAPH_COOCCUR" --format graphml -o "$OUTPUT_DIR/exports/sample1_analytic_pragmatism.graphml"
-cmapr export "$GRAPH_COOCCUR" --format csv -o "$OUTPUT_DIR/exports/sample1_analytic_pragmatism/csv/"
-cmapr export "$GRAPH_COOCCUR" --format gexf -o "$OUTPUT_DIR/exports/sample1_analytic_pragmatism.gexf"
+cmapr export "$GRAPH_COOCCUR" --format graphml -o "$OUTPUT_DIR/exports/eco_spl.graphml"
+cmapr export "$GRAPH_COOCCUR" --format csv -o "$OUTPUT_DIR/exports/eco_spl/csv/"
+cmapr export "$GRAPH_COOCCUR" --format gexf -o "$OUTPUT_DIR/exports/eco_spl.gexf"
 echo ""
 
 # Summary
@@ -71,14 +71,14 @@ echo "Workflow Complete!"
 echo "=================================="
 echo ""
 echo "Output files:"
-echo "  - Corpus: $CORPUS_FILE"
-echo "  - Terms: $TERMS_FILE"
-echo "  - Co-occurrence graph: $GRAPH_COOCCUR"
+echo "  - Corpus: $CORPUS_FILE (~110K words preprocessed)"
+echo "  - Terms: $TERMS_FILE (50 semiotic concepts)"
+echo "  - Co-occurrence graph: $GRAPH_COOCCUR (50 nodes, ~469 edges)"
 echo "  - Relations graph: $GRAPH_RELATIONS"
 echo "  - Visualization: $VIZ_DIR/index.html"
-echo "  - GraphML: $OUTPUT_DIR/exports/graph.graphml"
-echo "  - CSV: $OUTPUT_DIR/exports/csv/"
-echo "  - GEXF: $OUTPUT_DIR/exports/graph.gexf"
+echo "  - GraphML: $OUTPUT_DIR/exports/eco_spl.graphml"
+echo "  - CSV: $OUTPUT_DIR/exports/eco_spl/csv/"
+echo "  - GEXF: $OUTPUT_DIR/exports/eco_spl.gexf"
 echo ""
 echo "To view the visualization:"
 echo "  open $VIZ_DIR/index.html"

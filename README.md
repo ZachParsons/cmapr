@@ -25,39 +25,35 @@ pytest tests/ -v
 
 ### Try the Example Workflow
 
-Process the included sample philosophical text:
+Process Umberto Eco's "Semiotics and the Philosophy of Language" (~110K words):
 
 ```bash
 # Run the complete workflow script
 bash examples/workflow.sh
 
 # Or run commands individually:
-cmapr ingest samples/sample1_analytic_pragmatism.txt
-cmapr rarities output/corpus/sample1_analytic_pragmatism.json --top-n 20
-cmapr graph output/corpus/sample1_analytic_pragmatism.json -t output/terms/sample1_analytic_pragmatism.json
-cmapr export output/graphs/sample1_analytic_pragmatism.json --format html
+cmapr ingest samples/eco_spl.txt
+cmapr rarities output/corpus/eco_spl.json --method ratio --top-n 50 --threshold 0.3
+cmapr graph output/corpus/eco_spl.json -t output/terms/eco_spl.json --method cooccurrence --threshold 0.3
+cmapr export output/graphs/eco_spl.json --format html --title "Eco - Semiotics & Philosophy of Language"
 
 # Open the visualization
-open output/exports/sample1_analytic_pragmatism/index.html
+open output/exports/eco_spl/index.html
 ```
 
 **Output structure:**
 ```
 output/
 ├── corpus/         # Preprocessed corpora (named after source files)
-│   ├── sample1_analytic_pragmatism.json
-│   └── sample2_poststructural_political.json
+│   └── eco_spl.json
 ├── terms/          # Detected terms (named after source files)
-│   ├── sample1_analytic_pragmatism.json
-│   └── sample2_poststructural_political.json
+│   └── eco_spl.json
 ├── graphs/         # Concept graphs (named after source files)
-│   ├── sample1_analytic_pragmatism.json
-│   └── sample2_poststructural_political.json
+│   └── eco_spl.json
 ├── exports/        # Visualizations (subdirectory per source)
-│   ├── sample1_analytic_pragmatism/
-│   │   └── index.html
-│   └── sample2_poststructural_political/
-│       └── index.html
+│   └── eco_spl/
+│       ├── index.html
+│       └── data.json
 └── cache/          # Session cache (reference corpus, etc.)
 ```
 
@@ -65,52 +61,69 @@ output/
 
 ### Sample Corpus
 
-The `samples/sample1_analytic_pragmatism.txt` file contains a passage on analytic philosophy and pragmatism, featuring characteristic philosophical terminology:
+The `samples/eco_spl.txt` file contains Umberto Eco's complete book "Semiotics and the Philosophy of Language" (~110K words, 634KB). This rich philosophical text features extensive semiotic and linguistic terminology:
 
-- **Meaning-variance** - Terms shift significance across theoretical frameworks
-- **Instrumental-warranting** - Knowledge justified through practical success
-- **Conceptual schemes** - Category-matrices that organize experience
-- **Truth-aptness** - Whether sentences can bear truth values
-- **Referential opacity** - Context where substitution of co-referring terms fails
+- **Semiotics/Semiosis** - The study of signs and meaning-making processes
+- **Porphyrian tree** - Hierarchical classification system from Porphyry
+- **Isotopy** - Semantic coherence across a text
+- **Synecdoche/Metonymy** - Rhetorical tropes and meaning relations
+- **Signifier/Interpretants** - Core Peircean semiotic concepts
+- **Rhizome** - Deleuze & Guattari's non-hierarchical structure
+- References to major theorists: Peirce, Hjelmslev, Greimas, Jakobson, Lacan, Lévi-Strauss
 
 ### Step 1: Ingest and Preprocess
 
-Load the sample text and preprocess it (tokenization, POS tagging, lemmatization):
+Load the Eco text and preprocess it (tokenization, POS tagging, lemmatization):
 
 ```bash
-cmapr ingest samples/sample1_analytic_pragmatism.txt
+cmapr ingest samples/eco_spl.txt
 ```
 
 **Expected output:**
 ```
-✓ Saved 1 processed document(s) to output/corpus/sample1_analytic_pragmatism.json
+✓ Saved 1 processed document(s) to output/corpus/eco_spl.json
 ```
 
 **What happens:** The raw text is tokenized into sentences and words, each word is tagged with its part of speech (NN, VB, etc.), and lemmatized (e.g., "entities" → "entity").
 
 ### Step 2: Detect Philosophical Terms
 
-Identify author-specific terminology using statistical rarity analysis:
+Identify author-specific semiotic terminology using statistical rarity analysis:
 
 ```bash
-cmapr rarities output/corpus/sample1_analytic_pragmatism.json \
-  --method hybrid \
-  --threshold 1.5 \
-  --top-n 20
+cmapr rarities output/corpus/eco_spl.json \
+  --method ratio \
+  --threshold 0.3 \
+  --top-n 50
 ```
 
 **Expected output:**
 ```
-Top 20 rare terms:
+Top 50 rare terms:
 ------------------------------------------------------------
-meaning-variance        5.12
-instrumental-warranting 4.89
-truth-aptness          4.43
-referential opacity    3.98
-conceptual schemes     3.67
+semiotics               2.49
+semiotic                1.70
+differentia             1.24
+isotopies               1.06
+semantics               1.03
+semiosis                0.99
+porphyrian              0.97
+synecdoche              0.88
+signification           0.85
+hjelmslev               0.85
+peirce                  0.84
+signifier               0.75
+trope                   0.74
+putnam                  0.73
+jakobson                0.73
+metonymy                0.69
+rhizome                 0.68
+levi-strauss            0.68
+icon                    0.66
+interpretants           0.66
 ...
 
-✓ Saved 20 terms to output/terms/sample1_analytic_pragmatism.json
+✓ Saved 50 terms to output/terms/eco_spl.json
 ```
 
 **What happens:** Each term is scored based on:
@@ -122,132 +135,120 @@ conceptual schemes     3.67
 
 **Try different methods:**
 ```bash
-# Corpus-comparative ratio only
-cmapr rarities output/corpus/sample1_analytic_pragmatism.json --method ratio --top-n 10
+# Corpus-comparative ratio only (best for philosophical texts)
+cmapr rarities output/corpus/eco_spl.json --method ratio --top-n 30
 
-# TF-IDF only
-cmapr rarities output/corpus/sample1_analytic_pragmatism.json --method tfidf --top-n 10
+# TF-IDF scoring
+cmapr rarities output/corpus/eco_spl.json --method tfidf --top-n 30
 
-# Neologisms only
-cmapr rarities output/corpus/sample1_analytic_pragmatism.json --method neologism --top-n 10
+# Neologisms only (terms not in WordNet)
+cmapr rarities output/corpus/eco_spl.json --method neologism --top-n 30
+
+# Hybrid method (combines all signals)
+cmapr rarities output/corpus/eco_spl.json --method hybrid --threshold 0.5 --top-n 30
 ```
 
 ### Step 3: Search and Concordance
 
-Find where specific terms appear:
+Find where specific semiotic terms appear in Eco's text:
 
 ```bash
 # Basic search
-cmapr search output/corpus/sample1_analytic_pragmatism.json "abstraction"
+cmapr search output/corpus/eco_spl.json "semiosis"
 
 # Search with context (2 sentences before/after)
-cmapr search output/corpus/sample1_analytic_pragmatism.json "dialectical" --context 2
+cmapr search output/corpus/eco_spl.json "isotopy" --context 2
 
-# Search with sentence diagrams for all matches
-cmapr search output/corpus/sample1_analytic_pragmatism.json "abstraction" --diagram
+# KWIC concordance for key terms
+cmapr concordance output/corpus/eco_spl.json "signifier" --width 50
+cmapr concordance output/corpus/eco_spl.json "rhizome" --width 50
 
-# Search with diagrams in tree format
-cmapr search output/corpus/sample1_analytic_pragmatism.json "dialectic" --diagram --diagram-format tree
+# Search with sentence diagrams (if spaCy installed)
+cmapr search output/corpus/eco_spl.json "porphyrian" --diagram
 
-# KWIC concordance
-cmapr concordance output/corpus/sample1_analytic_pragmatism.json "praxis" --width 40
-
-# Create sentence diagram for a single sentence
-cmapr diagram "Abstraction transforms social relations into things."
+# Extract significant co-occurring terms
+cmapr search output/corpus/eco_spl.json "metaphor" --extract-significant --top-n 20
 ```
 
 **Expected KWIC output:**
 ```
-KWIC Concordance for 'praxis' (3 occurrences):
+KWIC Concordance for 'signifier' (45 occurrences):
 ================================================================================
-                    ... of theory and practice through  | praxis |  differs from mere contemplation...
-```
-
-**Expected diagram output:**
-```
-Found 1 occurrence(s) of 'abstraction':
-======================================================================
-
-[1] document (sentence 5):
-    Abstraction transforms social relations into things.
-
-    Diagram:
-    transforms (root)
-      └─ Abstraction (nsubj)
-      └─ relations (obj)
-        └─ social (amod)
-        └─ things (obl)
-          └─ into (case)
-      └─ . (punct)
+   ...the relationship between the | signifier | and the signified is arbitrary...
+   ...Saussure argues that the      | signifier | is a sound-pattern, while the...
 ```
 
 ### Step 4: Build Concept Graph
 
-Create a network graph showing relationships between terms:
+Create a network graph showing relationships between semiotic concepts:
 
 **Method A: Co-occurrence (proximity-based)**
 
 ```bash
-cmapr graph output/corpus/sample1_analytic_pragmatism.json \
-  --terms output/terms/sample1_analytic_pragmatism.json \
+cmapr graph output/corpus/eco_spl.json \
+  --terms output/terms/eco_spl.json \
   --method cooccurrence \
   --threshold 0.3
 ```
 
 **Expected output:**
 ```
-✓ Graph: 18 nodes, 42 edges
-✓ Saved graph to output/graphs/sample1_analytic_pragmatism.json
+✓ Graph: 50 nodes, 469 edges
+✓ Saved graph to output/graphs/eco_spl.json
 ```
 
-Edges represent terms that frequently appear together (same sentence or nearby sentences), weighted by PMI (Pointwise Mutual Information).
+Edges represent terms that frequently appear together (same sentence or nearby sentences), weighted by PMI (Pointwise Mutual Information). The high edge count (469) reflects the rich conceptual interconnections in Eco's semiotic theory.
 
 **Method B: Relations (grammar-based)**
 
 ```bash
-cmapr graph output/corpus/sample1_analytic_pragmatism.json \
-  --terms output/terms/sample1_analytic_pragmatism.json \
+cmapr graph output/corpus/eco_spl.json \
+  --terms output/terms/eco_spl.json \
   --method relations
 ```
 
-Edges represent grammatical relationships:
-- **SVO triples**: "Praxis unifies theory"
-- **Copular**: "Abstraction is transformation"
-- **Prepositional**: "process of separation"
+Edges represent grammatical relationships extracted from the text:
+- **SVO triples**: "Semiotics analyzes signs"
+- **Copular**: "Metaphor is cognitive"
+- **Prepositional**: "theory of interpretation"
 
 ### Step 5: Export and Visualize
 
 Generate an interactive HTML visualization:
 
 ```bash
-cmapr export output/graphs/sample1_analytic_pragmatism.json \
+cmapr export output/graphs/eco_spl.json \
   --format html \
-  --title "Critical Theory Concept Network"
+  --title "Eco - Semiotics & Philosophy of Language"
 ```
 
 **Open the visualization:**
 ```bash
-open output/exports/index.html
+open output/exports/eco_spl/index.html
 ```
 
 **Features of the visualization:**
 - **Force-directed layout**: Nodes repel, connected nodes attract
-- **Interactive**: Drag nodes, zoom/pan
-- **Color-coded**: Nodes colored by community detection
-- **Sized by importance**: Node size reflects centrality or frequency
-- **Hover for details**: Tooltips show term information
+- **Interactive**: Drag nodes, zoom/pan, click to explore
+- **Color-coded**: Nodes colored by community detection (clusters of related concepts)
+- **Sized by importance**: Node size reflects centrality (betweenness, degree, or frequency)
+- **Hover for details**: Tooltips show term information and connections
+- **50 nodes, 469 edges**: Rich network showing Eco's semiotic conceptual framework
 
 **Export to other formats:**
 
 ```bash
-# GraphML for Gephi
-cmapr export output/graphs/sample1_analytic_pragmatism.json --format graphml -o output/exports/graph.graphml
+# GraphML for Gephi, yEd, Cytoscape
+cmapr export output/graphs/eco_spl.json --format graphml -o output/exports/eco_graph.graphml
 
-# CSV for spreadsheets
-cmapr export output/graphs/sample1_analytic_pragmatism.json --format csv -o output/exports/csv/
+# CSV for spreadsheets (nodes.csv + edges.csv)
+cmapr export output/graphs/eco_spl.json --format csv -o output/exports/csv/
 
 # GEXF for Gephi
-cmapr export output/graphs/sample1_analytic_pragmatism.json --format gexf -o output/exports/graph.gexf
+cmapr export output/graphs/eco_spl.json --format gexf -o output/exports/eco_graph.gexf
+
+# D3 JSON data only
+cmapr export output/graphs/eco_spl.json --format d3 -o output/exports/eco_data.json
 ```
 
 ## CLI Reference
