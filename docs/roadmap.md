@@ -1217,7 +1217,7 @@ The project is feature-complete for its intended use case. Potential future enha
 
 ### Analysis Enhancements
 
-- [ ] **Contextual relation extraction workflow** - Integrated workflow to analyze search term relationships:
+- [x] **Contextual relation extraction workflow** - Integrated workflow to analyze search term relationships:
   - **Step 1:** Search for term 'x' in corpus, get all appearances with location metadata (x1, x2, ...xn)
   - **Step 2:** For each occurrence, extract significant nouns/verbs/etc. in the same sentence/paragraph/section (y1, y2, ...yn)
   - **Step 3:** Apply significance filtering (corpus frequency, rarity scoring, POS filtering, stopword removal)
