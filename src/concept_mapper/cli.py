@@ -870,6 +870,190 @@ def diagram(ctx, sentence, format, output):
 
 
 # ============================================================================
+# Analyze Context Command
+# ============================================================================
+
+
+@cli.command()
+@click.argument("corpus", type=click.Path(exists=True))
+@click.argument("term")
+@click.option(
+    "--top-n",
+    "-n",
+    type=int,
+    help="Limit to top N most significant terms per context",
+)
+@click.option(
+    "--threshold",
+    "-t",
+    type=float,
+    default=0.1,
+    help="Minimum significance score (default: 0.1)",
+)
+@click.option(
+    "--pos",
+    "-p",
+    type=click.Choice(["nouns", "verbs", "adjectives", "adverbs"]),
+    multiple=True,
+    help="POS types to extract (can specify multiple). Defaults to nouns and verbs.",
+)
+@click.option(
+    "--lemma",
+    "-l",
+    is_flag=True,
+    help="Match lemmatized forms (e.g., 'run' matches 'running', 'ran')",
+)
+@click.option(
+    "--no-relations",
+    is_flag=True,
+    help="Skip grammatical relation extraction (faster, only co-occurrence)",
+)
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["text", "json", "csv", "graph"]),
+    default="text",
+    help="Output format",
+)
+@click.option("--output", "-o", type=click.Path(), help="Output file")
+@click.pass_context
+def analyze_context_cmd(ctx, corpus, term, top_n, threshold, pos, lemma, no_relations, format, output):
+    """
+    Analyze contextual relations for a search term.
+
+    Extracts significant terms co-occurring with the search term and
+    identifies grammatical relations between them.
+
+    Examples:
+        cmapr analyze-context corpus.json "consciousness"
+        cmapr analyze-context corpus.json "being" --top-n 10
+        cmapr analyze-context corpus.json "intentionality" --lemma -p nouns -p verbs
+        cmapr analyze-context corpus.json "dialectic" --format json -o relations.json
+    """
+    from concept_mapper.analysis.contextual_relations import analyze_context
+    import json
+
+    verbose = ctx.obj["verbose"]
+
+    # Load corpus
+    from concept_mapper.corpus.models import ProcessedDocument
+
+    with open(corpus, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    docs = [ProcessedDocument(**doc_data) for doc_data in data]
+
+    if verbose:
+        click.echo(f"Analyzing contextual relations for '{term}'...")
+
+    # Convert pos tuple to list (None if empty)
+    pos_types = list(pos) if pos else None
+
+    # Extract contextual relations
+    relations = analyze_context(
+        search_term=term,
+        docs=docs,
+        significance_threshold=threshold,
+        pos_types=pos_types,
+        match_lemma=lemma,
+        extract_relations=not no_relations,
+        top_n=top_n,
+    )
+
+    if not relations:
+        click.echo(f"No significant contextual relations found for '{term}'")
+        return
+
+    # Display results based on format
+    if format == "text":
+        click.echo(f"\nFound {len(relations)} contextual relations for '{term}':")
+        click.echo("=" * 70)
+
+        # Group by relation type
+        from collections import defaultdict
+
+        by_type = defaultdict(list)
+        for rel in relations:
+            by_type[rel.relation_type].append(rel)
+
+        for rel_type in ["svo", "copular", "prep", "cooccurrence"]:
+            if rel_type in by_type:
+                rels = sorted(by_type[rel_type], key=lambda r: r.score, reverse=True)[:20]
+                click.echo(f"\n{rel_type.upper()} Relations (top 20):")
+                for i, rel in enumerate(rels, 1):
+                    evidence_info = f"{len(rel.evidence)} sentence(s)"
+                    click.echo(
+                        f"  {i}. {rel.source} --{rel.relation_type}--> {rel.target} "
+                        f"(score: {rel.score:.2f}, {evidence_info})"
+                    )
+
+    elif format == "json":
+        from concept_mapper.analysis.contextual_relations import (
+            ContextualRelationExtractor,
+        )
+
+        extractor = ContextualRelationExtractor(docs)
+        json_data = extractor.to_dict(relations)
+
+        if output:
+            output_path = Path(output)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(json_data, f, indent=2, ensure_ascii=False)
+            click.echo(f"✓ Saved {len(relations)} relations to {output_path}")
+        else:
+            click.echo(json.dumps(json_data, indent=2, ensure_ascii=False))
+
+    elif format == "csv":
+        import csv
+
+        if output:
+            output_path = Path(output)
+        else:
+            output_path = Path("relations.csv")
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(output_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                ["source", "relation_type", "target", "score", "evidence_count"]
+            )
+            for rel in relations:
+                writer.writerow(
+                    [
+                        rel.source,
+                        rel.relation_type,
+                        rel.target,
+                        rel.score,
+                        len(rel.evidence),
+                    ]
+                )
+
+        click.echo(f"✓ Saved {len(relations)} relations to {output_path}")
+
+    elif format == "graph":
+        from concept_mapper.analysis.contextual_relations import (
+            ContextualRelationExtractor,
+        )
+
+        extractor = ContextualRelationExtractor(docs)
+        graph_data = extractor.to_graph_data(relations)
+
+        if output:
+            output_path = Path(output)
+        else:
+            output_path = Path("relations_graph.json")
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(graph_data, f, indent=2, ensure_ascii=False)
+
+        click.echo(f"✓ Saved graph with {len(graph_data['nodes'])} nodes and {len(graph_data['edges'])} edges to {output_path}")
+
+
+# ============================================================================
 # Main Entry Point
 # ============================================================================
 

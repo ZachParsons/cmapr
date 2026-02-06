@@ -77,6 +77,11 @@ from .relations import (
     extract_prepositional,
     get_relations,
 )
+from .contextual_relations import (
+    ContextualRelation,
+    ContextualRelationExtractor,
+    analyze_context,
+)
 
 __all__ = [
     # Frequency
@@ -143,4 +148,8 @@ __all__ = [
     "extract_copular",
     "extract_prepositional",
     "get_relations",
+    # Contextual relation extraction
+    "ContextualRelation",
+    "ContextualRelationExtractor",
+    "analyze_context",
 ]

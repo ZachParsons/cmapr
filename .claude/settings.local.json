@@ -55,7 +55,9 @@
       "Bash(awk:*)",
       "Bash(git remote add:*)",
       "Bash(git log:*)",
-      "Bash(pip uninstall:*)"
+      "Bash(pip uninstall:*)",
+      "Bash(docs/roadmap.md <<'EOF'\n### Analysis Enhancements\n\n- [ ] **Contextual relation extraction workflow** - Integrated workflow to analyze search term relationships:\n  - **Step 1:** Search for term 'x' in corpus, get all appearances with location metadata \\(x1, x2, ...xn\\)\n  - **Step 2:** For each occurrence, extract significant nouns/verbs/etc. in the same sentence/paragraph/section \\(y1, y2, ...yn\\)\n  - **Step 3:** Apply significance filtering \\(corpus frequency, rarity scoring, POS filtering, stopword removal\\)\n  - **Step 4:** Infer relations r between search term x and significant terms y \\(xn rn yn\\)\n  - **Output:** Structured relation data: `[\\(x1, r1, y1\\), \\(x2, r2, y2\\), ...]` with evidence sentences\n  - **Implementation:**\n    - Create `src/concept_mapper/analysis/contextual_relations.py` module\n    - Combine existing search, extraction, and relation detection functionality\n    - Add `cmapr analyze-context` CLI command with options for scope \\(sentence/paragraph/section\\)\n    - Support for batch processing multiple search terms\n    - Export results as JSON, CSV, or graph format\nEOF)",
+      "Bash(cmapr analyze-context:*)"
     ]
   }
 }
