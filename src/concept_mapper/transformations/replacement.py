@@ -6,7 +6,7 @@ through POS-aware inflection generation.
 """
 
 from dataclasses import dataclass
-from typing import List, Union, Tuple
+from typing import List, Union
 from ..corpus.models import ProcessedDocument
 from .inflection import InflectionGenerator
 from .phrase_matcher import PhraseMatcher, PhraseMatch
@@ -48,7 +48,7 @@ class SynonymReplacer:
         self,
         spec: ReplacementSpec,
         doc: ProcessedDocument,
-        case_sensitive: bool = False
+        case_sensitive: bool = False,
     ) -> str:
         """
         Replace all occurrences of source with target in document.
@@ -73,10 +73,7 @@ class SynonymReplacer:
             return self._replace_single(spec, doc, case_sensitive)
 
     def _replace_single(
-        self,
-        spec: ReplacementSpec,
-        doc: ProcessedDocument,
-        case_sensitive: bool
+        self, spec: ReplacementSpec, doc: ProcessedDocument, case_sensitive: bool
     ) -> str:
         """
         Replace single-word term with inflection preservation.
@@ -90,7 +87,9 @@ class SynonymReplacer:
             Modified text
         """
         replacements = []
-        source_lemma = spec.source_lemma if case_sensitive else spec.source_lemma.lower()
+        source_lemma = (
+            spec.source_lemma if case_sensitive else spec.source_lemma.lower()
+        )
 
         # Find matching tokens by lemma
         for i, lemma in enumerate(doc.lemmas):
@@ -114,10 +113,7 @@ class SynonymReplacer:
         return self.reconstructor.rebuild(doc.tokens, replacements)
 
     def _replace_phrase(
-        self,
-        spec: ReplacementSpec,
-        doc: ProcessedDocument,
-        case_sensitive: bool
+        self, spec: ReplacementSpec, doc: ProcessedDocument, case_sensitive: bool
     ) -> str:
         """
         Replace multi-word phrase.
@@ -136,9 +132,7 @@ class SynonymReplacer:
         """
         # Find phrase matches
         matches = self.matcher.find_phrase_matches(
-            spec.source_lemma,
-            doc,
-            case_sensitive
+            spec.source_lemma, doc, case_sensitive
         )
 
         # Generate replacements for each match
@@ -148,16 +142,10 @@ class SynonymReplacer:
             # Generate replacement text
             if not spec.target_is_phrase:
                 # Multi → single word: inflect based on phrase head
-                replacement = self._inflect_for_phrase_head(
-                    spec.target_lemma,
-                    match
-                )
+                replacement = self._inflect_for_phrase_head(spec.target_lemma, match)
             else:
                 # Multi → multi word: inflect head word of target phrase
-                replacement = self._inflect_phrase(
-                    spec.target_lemma,
-                    match
-                )
+                replacement = self._inflect_phrase(spec.target_lemma, match)
 
             # Preserve sentence-initial capitalization
             if match.tokens[0][0].isupper():
@@ -169,11 +157,7 @@ class SynonymReplacer:
         # Rebuild text with phrase replacements
         return self.reconstructor.rebuild_phrases(doc.tokens, phrase_replacements)
 
-    def _inflect_for_phrase_head(
-        self,
-        target_lemma: str,
-        match: PhraseMatch
-    ) -> str:
+    def _inflect_for_phrase_head(self, target_lemma: str, match: PhraseMatch) -> str:
         """
         Inflect single target word based on phrase head.
 
@@ -197,11 +181,7 @@ class SynonymReplacer:
 
         return inflected
 
-    def _inflect_phrase(
-        self,
-        target_lemmas: List[str],
-        match: PhraseMatch
-    ) -> str:
+    def _inflect_phrase(self, target_lemmas: List[str], match: PhraseMatch) -> str:
         """
         Inflect multi-word target phrase based on source phrase head.
 
@@ -229,7 +209,7 @@ class SynonymReplacer:
         phrase_tokens = target_lemmas[:head_idx] + [inflected_head]
 
         # Join with spaces
-        return ' '.join(phrase_tokens)
+        return " ".join(phrase_tokens)
 
     def _match_capitalization(self, target: str, original: str) -> str:
         """

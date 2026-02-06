@@ -121,7 +121,7 @@ class TestInflectionGenerator:
         forms = generator.get_all_forms("run")
         assert isinstance(forms, dict)
         # Should have verb forms
-        assert 'VBD' in forms or 'VB' in forms
+        assert "VBD" in forms or "VB" in forms
 
     # Multi-syllable words
     def test_multi_syllable_verb(self, generator):

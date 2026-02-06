@@ -5,7 +5,7 @@ Handles spacing, punctuation attachment, and contractions to produce
 natural-looking output text.
 """
 
-from typing import List, Tuple, Dict
+from typing import List, Tuple
 
 
 class TextReconstructor:
@@ -14,18 +14,16 @@ class TextReconstructor:
     """
 
     # Punctuation that attaches to previous token (no space before)
-    ATTACH_LEFT = {'.', ',', '!', '?', ';', ':', ')', ']', '}', "'"}
+    ATTACH_LEFT = {".", ",", "!", "?", ";", ":", ")", "]", "}", "'"}
 
     # Punctuation that attaches to next token (no space after)
-    ATTACH_RIGHT = {'(', '[', '{'}
+    ATTACH_RIGHT = {"(", "[", "{"}
 
     # Contraction parts that attach to previous token
     CONTRACTIONS = {"'s", "'t", "'re", "'ve", "'d", "'ll", "n't", "'m"}
 
     def rebuild(
-        self,
-        original_tokens: List[str],
-        replacements: List[Tuple[int, str]]
+        self, original_tokens: List[str], replacements: List[Tuple[int, str]]
     ) -> str:
         """
         Rebuild text from tokens with replacements.
@@ -91,10 +89,10 @@ class TextReconstructor:
                 result.append(token)
             else:
                 # Normal case: add space before token
-                result.append(' ')
+                result.append(" ")
                 result.append(token)
 
-        return ''.join(result)
+        return "".join(result)
 
     def _is_attach_left(self, token: str) -> bool:
         """
@@ -124,7 +122,7 @@ class TextReconstructor:
     def rebuild_phrases(
         self,
         original_tokens: List[str],
-        phrase_replacements: List[Tuple[int, int, str]]
+        phrase_replacements: List[Tuple[int, int, str]],
     ) -> str:
         """
         Rebuild text with multi-word phrase replacements.
@@ -144,7 +142,9 @@ class TextReconstructor:
             'The medium resists.'
         """
         # Sort replacements by start index (reverse order for safe deletion)
-        sorted_replacements = sorted(phrase_replacements, key=lambda x: x[0], reverse=True)
+        sorted_replacements = sorted(
+            phrase_replacements, key=lambda x: x[0], reverse=True
+        )
 
         # Create new token list
         new_tokens = original_tokens.copy()

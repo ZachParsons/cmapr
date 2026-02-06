@@ -11,10 +11,10 @@ from .replacement import SynonymReplacer, ReplacementSpec
 from .text_reconstruction import TextReconstructor
 
 __all__ = [
-    'InflectionGenerator',
-    'PhraseMatcher',
-    'PhraseMatch',
-    'SynonymReplacer',
-    'ReplacementSpec',
-    'TextReconstructor',
+    "InflectionGenerator",
+    "PhraseMatcher",
+    "PhraseMatch",
+    "SynonymReplacer",
+    "ReplacementSpec",
+    "TextReconstructor",
 ]

@@ -14,12 +14,12 @@ from ..corpus.models import ProcessedDocument
 class PhraseMatch:
     """A matched phrase span in a document."""
 
-    start_idx: int           # Starting token index (inclusive)
-    end_idx: int             # Ending token index (exclusive)
-    tokens: List[str]        # Original tokens in span
-    lemmas: List[str]        # Lemmatized tokens in span
-    pos_tags: List[str]      # POS tags for span (without words)
-    head_idx: int            # Index of head word within span (relative to start)
+    start_idx: int  # Starting token index (inclusive)
+    end_idx: int  # Ending token index (exclusive)
+    tokens: List[str]  # Original tokens in span
+    lemmas: List[str]  # Lemmatized tokens in span
+    pos_tags: List[str]  # POS tags for span (without words)
+    head_idx: int  # Index of head word within span (relative to start)
 
     @property
     def head_pos(self) -> str:
@@ -49,7 +49,7 @@ class PhraseMatcher:
         self,
         phrase_lemmas: List[str],
         doc: ProcessedDocument,
-        case_sensitive: bool = False
+        case_sensitive: bool = False,
     ) -> List[PhraseMatch]:
         """
         Find all occurrences of a phrase in document.
@@ -78,7 +78,7 @@ class PhraseMatcher:
         # Sliding window over document lemmas
         for i in range(len(doc.lemmas) - n + 1):
             # Get window of lemmas
-            window = doc.lemmas[i:i+n]
+            window = doc.lemmas[i : i + n]
 
             # Normalize window for comparison
             if not case_sensitive:
@@ -87,19 +87,19 @@ class PhraseMatcher:
             # Check for match
             if window == phrase_lemmas:
                 # Extract POS tags (without words, just tags)
-                pos_tags_span = [tag for _, tag in doc.pos_tags[i:i+n]]
+                pos_tags_span = [tag for _, tag in doc.pos_tags[i : i + n]]
 
                 # Find head word in phrase
-                head_idx = self._find_head_word(doc.pos_tags[i:i+n])
+                head_idx = self._find_head_word(doc.pos_tags[i : i + n])
 
                 # Create match object
                 match = PhraseMatch(
                     start_idx=i,
-                    end_idx=i+n,
-                    tokens=doc.tokens[i:i+n],
-                    lemmas=doc.lemmas[i:i+n],  # Use original case
+                    end_idx=i + n,
+                    tokens=doc.tokens[i : i + n],
+                    lemmas=doc.lemmas[i : i + n],  # Use original case
                     pos_tags=pos_tags_span,
-                    head_idx=head_idx
+                    head_idx=head_idx,
                 )
                 matches.append(match)
 
@@ -125,16 +125,14 @@ class PhraseMatcher:
         # Scan right-to-left for noun or verb (content word)
         for i in range(len(pos_tags) - 1, -1, -1):
             _, tag = pos_tags[i]
-            if tag.startswith(('NN', 'VB')):
+            if tag.startswith(("NN", "VB")):
                 return i
 
         # Fallback: last word is head
         return len(pos_tags) - 1
 
     def find_phrase_positions(
-        self,
-        phrase_lemmas: List[str],
-        doc: ProcessedDocument
+        self, phrase_lemmas: List[str], doc: ProcessedDocument
     ) -> List[Tuple[int, int]]:
         """
         Find position spans of phrase matches (simpler version).
