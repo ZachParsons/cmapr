@@ -1221,6 +1221,33 @@ The project is feature-complete for its intended use case. Potential future enha
   - **Unambiguous** - Remove conditional language that allows multiple interpretations
   - Example transformation: "Prefer functional syntax over OOP" → "Use functions. Only use classes for: [specific cases]"
   - Focus on actionable rules that can be verified (pass/fail), not philosophical guidelines
+- [ ] **Remove sampleN texts and replace with Eco sample** - The old sample1, sample2, sample3 texts should be removed from everywhere in the codebase. Replace all references and usage with the Eco sample text as the primary sample corpus. Update tests, examples, and documentation accordingly.
+- [ ] **Reduce README and consolidate with api-reference.md** - The README contains duplication with api-reference.md. Move detailed API information to api-reference.md and keep README concise with just overview, installation, quick start, and links to detailed docs.
+
+### Infrastructure Cleanup
+
+- [ ] **Investigate need for pos_tagger.py** - Review spike/pos_tagger.py to determine if it's still needed or can be removed. This was the original prototype before the main implementation. If functionality has been fully migrated to the main codebase, remove it.
+- [ ] **Investigate and remove unused infrastructure directories/files** - Audit the codebase for unused directories, files, or infrastructure code that may have been created during development but are no longer needed. Document findings and remove dead code.
+
+### Input/Output Enhancements
+
+- [ ] **Add text cleaning preprocessing step** - Add preprocessing functionality to clean and format badly formatted source input texts (e.g., copy-pasted documents). Handle common issues:
+  - Remove or relocate dislocated page numbers
+  - Fix unnecessarily split words (e.g., "obj ection" → "objection")
+  - Remove non-word characters not in the original text
+  - Detect and fix common OCR/copy-paste artifacts
+  - Preserve intentional formatting (paragraph breaks, etc.)
+  - Add as optional preprocessing step before tokenization
+  - Create `src/concept_mapper/preprocessing/text_cleaner.py` module
+- [ ] **Add PDF input and output support** - Extend corpus loading and export capabilities to support PDF files:
+  - **Input:** Load PDF files directly in corpus loader (use PyPDF2 or pdfplumber)
+  - Handle multi-page documents with proper text extraction
+  - Preserve document structure where possible
+  - **Output:** Export visualizations and reports to PDF format
+  - Export term lists and analysis results as formatted PDFs
+  - Consider PDF export for concordance displays and context windows
+  - Add PDF-related dependencies to pyproject.toml
+  - Update CLI commands to accept/output PDF files
 
 ### Recent Completions
 
