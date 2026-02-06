@@ -1215,3 +1215,17 @@ The project is feature-complete for its intended use case. Potential future enha
   - Add PDF-related dependencies to pyproject.toml
   - Update CLI commands to accept/output PDF files
 
+### Analysis Enhancements
+
+- [ ] **Contextual relation extraction workflow** - Integrated workflow to analyze search term relationships:
+  - **Step 1:** Search for term 'x' in corpus, get all appearances with location metadata (x1, x2, ...xn)
+  - **Step 2:** For each occurrence, extract significant nouns/verbs/etc. in the same sentence/paragraph/section (y1, y2, ...yn)
+  - **Step 3:** Apply significance filtering (corpus frequency, rarity scoring, POS filtering, stopword removal)
+  - **Step 4:** Infer relations r between search term x and significant terms y (xn rn yn)
+  - **Output:** Structured relation data: `[(x1, r1, y1), (x2, r2, y2), ...]` with evidence sentences
+  - **Implementation:**
+    - Create `src/concept_mapper/analysis/contextual_relations.py` module
+    - Combine existing search, extraction, and relation detection functionality
+    - Add `cmapr analyze-context` CLI command with options for scope (sentence/paragraph/section)
+    - Support for batch processing multiple search terms
+    - Export results as JSON, CSV, or graph format
