@@ -131,8 +131,8 @@ def derive_identifier(file_path: Path) -> str:
         Sanitized identifier string
 
     Examples:
-        >>> derive_identifier(Path("sample1_analytic_pragmatism.txt"))
-        'sample1_analytic_pragmatism'
+        >>> derive_identifier(Path("eco_spl.txt"))
+        'eco_spl'
         >>> derive_identifier(Path("My Text (2024).txt"))
         'My_Text_2024'
         >>> derive_identifier(Path("file-with-dashes.txt"))
@@ -182,8 +182,8 @@ def infer_output_path(
         Path object: output_dir/subdir/identifier{suffix}{extension}
 
     Examples:
-        >>> infer_output_path(Path("sample1.txt"), Path("output"), "corpus")
-        Path('output/corpus/sample1.json')
+        >>> infer_output_path(Path("eco_spl.txt"), Path("output"), "corpus")
+        Path('output/corpus/eco_spl.json')
         >>> infer_output_path(Path("data.txt"), Path("out"), "graphs", "_cooccur", ".json")
         Path('out/graphs/data_cooccur.json')
     """

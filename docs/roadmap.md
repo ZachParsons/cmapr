@@ -1,5 +1,5 @@
 # Roadmap contains
-Past: stages/phases of developent, checklist of checked tasks, changelog of significant additions/edits/pivots.
+Past: stages/phases of development, checklist of checked tasks, changelog of significant additions/edits/pivots.
 Present: planned work, ready for dev or WIP,checklist of unchecked tasks.
 Future: 'roadmap' of future planned tasks, unplanned features.
 
@@ -253,7 +253,7 @@ The following functionality already exists in the spike directory and can be ref
 - NLTK data: punkt, punkt_tab, averaged_perceptron_tagger, averaged_perceptron_tagger_eng
 
 ### Sample corpus
-- ✅ Sample texts for testing (sample1, sample2, sample3 covering diverse philosophical traditions)
+- ✅ Sample text for testing (eco_spl.txt from Umberto Eco's "A Theory of Semiotics")
 
 ### Additional features (not in roadmap, but available in spike)
 - Chunking with regex patterns (tryout_nltk.py:62-88)
@@ -538,7 +538,7 @@ Identify author-specific conceptual vocabulary - terms with specialized meaning 
 
 **Test Coverage:**
 - 103 rarity detection tests (unit + integration)
-- Tests on real philosophical corpus (sample1-3)
+- Tests on real philosophical corpus (eco_spl.txt)
 - All edge cases covered (empty docs, missing terms, etc.)
 
 **Explicitly deprioritized:**
@@ -920,44 +920,6 @@ Unified command-line access.
 
 ---
 
-## Dependency Graph
-
-```
-Phase 0 (scaffolding)
-    │
-    ▼
-Phase 1 (corpus/preprocessing) ◄── foundation for all analysis
-    │
-    ▼
-Phase 2 (frequencies)
-    │
-    ▼
-Phase 3 (rarity detection)
-    │
-    ▼
-Phase 4 (term lists) ◄── curation checkpoint, human review
-    │
-    ├────────────────┬────────────────┐
-    ▼                ▼                ▼
-Phase 5          Phase 6          Phase 7
-(search)      (co-occurrence)   (relations)
-                   │                │
-                   └───────┬────────┘
-                           ▼
-                       Phase 8 (graph construction)
-                           │
-                           ▼
-                       Phase 9 (export/viz)
-                           │
-                           ▼
-                       Phase 10 (CLI)
-                           │
-                           ▼
-                       Phase 11 (docs)
-```
-
----
-
 ## Notes for Development
 
 - **Test as you go:** Each phase includes test tasks. Run tests before moving to next phase.
@@ -1109,7 +1071,11 @@ Phase 5          Phase 6          Phase 7
 - ✅ Integration into larger research pipelines
 - ✅ Extension and customization
 
----
+- [x] **Rename CLI command to `cmapr`** (2026-02-01) - Renamed command from `cmapr` to `cmapr` for easier typing. Updated entry point in pyproject.toml and all references in documentation (README.md, api-reference.md), example scripts, and test files. Breaking change - `cmapr` command no longer available.
+- [x] **Extract significant terms feature** (2026-02-01) - Added `--extract-significant` flag to search command. Extracts and scores significant nouns/verbs from sentences containing a search term. Features: corpus-frequency scoring (default) or hybrid rarity scoring, POS filtering, stopword removal (~200 common words), automatic exclusion of search term, aggregation across sentences. Stopwords stored in `data/reference/stopwords.json`. Tests: 13 passing.
+- [x] Fix API inconsistencies in docs (load_document → load_file, TermList constructor)
+- [x] Convert multi-line examples to one-liners for copy-paste friendliness
+- [x] Remove deprecated requirements.txt (use pyproject.toml)
 
 ## Next Steps (Optional Future Work)
 
@@ -1249,211 +1215,3 @@ The project is feature-complete for its intended use case. Potential future enha
   - Add PDF-related dependencies to pyproject.toml
   - Update CLI commands to accept/output PDF files
 
-### Recent Completions
-
-- [x] **Rename CLI command to `cmapr`** (2026-02-01) - Renamed command from `cmapr` to `cmapr` for easier typing. Updated entry point in pyproject.toml and all references in documentation (README.md, api-reference.md), example scripts, and test files. Breaking change - `cmapr` command no longer available.
-- [x] **Extract significant terms feature** (2026-02-01) - Added `--extract-significant` flag to search command. Extracts and scores significant nouns/verbs from sentences containing a search term. Features: corpus-frequency scoring (default) or hybrid rarity scoring, POS filtering, stopword removal (~200 common words), automatic exclusion of search term, aggregation across sentences. Stopwords stored in `data/reference/stopwords.json`. Tests: 13 passing.
-- [x] Fix API inconsistencies in docs (load_document → load_file, TermList constructor)
-- [x] Convert multi-line examples to one-liners for copy-paste friendliness
-- [x] Remove deprecated requirements.txt (use pyproject.toml)
-
----
-
-## Version History
-
-### [1.0.0] - 2026-01-25
-
-**Phase 11: Documentation & Polish ✅**
-
-**Added:**
-- Complete example workflow in `examples/` directory
-  - Sample philosophical text (Hegelian style)
-  - Step-by-step walkthrough documentation
-  - Bash workflow script (`workflow.sh`)
-  - Python API workflow script (`workflow.py`)
-- Comprehensive API reference documentation (`docs/api-reference.md`)
-  - Complete coverage of all public APIs
-  - Type signatures and parameter descriptions
-  - Usage examples for each module
-- Enhanced README with:
-  - Links to all documentation
-  - Complete roadmap status
-  - Quick start guide
-
-**Project Status:**
-- ✅ All 11 phases complete
-- ✅ 540 tests passing (2 skipped)
-- ✅ Full pipeline: text → preprocessing → term detection → graph → visualization
-- ✅ CLI and Python API fully documented
-- ✅ Ready for production use
-
-### [0.10.0] - 2026-01-24
-
-**Phase 10: CLI Interface ✅**
-
-**Added:**
-- Unified command-line interface using Click framework
-- Commands: `ingest`, `rarities`, `search`, `concordance`, `graph`, `export`
-- Global options: `--verbose`, `--output-dir`
-- Progress bars for batch operations
-- Package installation with entry point
-- 23 comprehensive CLI tests
-- setup.py for package distribution
-
-### [0.9.0] - 2026-01-23
-
-**Phase 9: Export & Visualization ✅**
-
-**Added:**
-- D3.js JSON export for interactive visualizations
-- GraphML export for Gephi, yEd, Cytoscape
-- DOT export for Graphviz
-- CSV export for spreadsheets
-- GEXF export for Gephi
-- Standalone HTML visualization generator
-- Force-directed graph layout
-- Interactive features: drag, zoom, pan, tooltips
-- Community detection coloring
-- Node sizing by centrality
-- 30 comprehensive tests
-
-### [0.8.0] - 2026-01-22
-
-**Phase 8: Graph Construction ✅**
-
-**Added:**
-- `ConceptGraph` class wrapping NetworkX
-- Graph builders from co-occurrence matrices
-- Graph builders from relation extraction
-- Graph operations: merge, prune, filter, subgraph
-- Graph metrics: centrality, communities, paths, density
-- Support for directed and undirected graphs
-- Node and edge attribute management
-- 62 comprehensive tests
-
-### [0.7.0] - 2026-01-21
-
-**Phase 7: Relation Extraction ✅**
-
-**Added:**
-- SVO (Subject-Verb-Object) triple extraction
-- Copular definition extraction (X is Y)
-- Prepositional relation extraction (X of Y)
-- Pattern-based extraction using NLTK POS tagging
-- Evidence aggregation for relations
-- Relation filtering and type selection
-- 35 comprehensive tests
-
-**Note:** SpaCy dependency parsing deferred due to Python 3.14 compatibility. Pattern-based approach is effective for philosophical texts.
-
-### [0.6.0] - 2026-01-20
-
-**Phase 6: Co-occurrence Analysis ✅**
-
-**Added:**
-- Sentence-level co-occurrence counting
-- N-sentence window co-occurrence
-- PMI (Pointwise Mutual Information) calculation
-- LLR (Log-Likelihood Ratio) significance testing
-- Co-occurrence matrix building (count, PMI, LLR methods)
-- Filtered co-occurrence (curated term lists only)
-- Matrix export to CSV
-- 45 comprehensive tests
-
-### [0.5.0] - 2026-01-19
-
-**Phase 5: Search & Concordance ✅**
-
-**Added:**
-- Basic sentence search
-- Multi-term search (any/all)
-- KWIC (Key Word In Context) concordance displays
-- Context window extraction (N sentences before/after)
-- Dispersion analysis across corpus
-- Position tracking and coverage statistics
-- 52 comprehensive tests
-
-### [0.4.0] - 2026-01-18
-
-**Phase 4: Term List Management ✅**
-
-**Added:**
-- `TermEntry` and `TermList` data structures
-- CRUD operations for term lists
-- JSON, CSV, TXT import/export
-- Bulk operations and filtering
-- Auto-population from rarity analysis
-- Term suggestion system
-- Statistics and metadata management
-- 47 comprehensive tests
-
-### [0.3.0] - 2026-01-17
-
-**Phase 3: Philosophical Term Detection ✅**
-
-**Added:**
-- `PhilosophicalTermScorer` with multi-method detection
-- Corpus-comparative rarity analysis
-- TF-IDF scoring against reference corpus
-- Neologism detection (WordNet lookup)
-- Definitional context extraction (8 patterns)
-- POS-filtered candidate extraction
-- Hybrid scoring with weighted components
-- High-confidence term filtering (multi-signal agreement)
-- 103 comprehensive tests
-
-**Methods:**
-- Relative frequency ratio
-- TF-IDF vs. reference
-- Neologism detection
-- Definitional context counting
-- Capitalization (reified abstractions)
-
-### [0.2.0] - 2026-01-16
-
-**Phase 2: Frequency Analysis & TF-IDF ✅**
-
-**Added:**
-- Word frequency distributions
-- Corpus-level frequency aggregation
-- Document frequency counting
-- Brown corpus reference loading
-- TF-IDF calculation
-- POS-filtered frequencies
-- Frequency caching
-- 21 comprehensive tests
-
-### [0.1.0] - 2026-01-15
-
-**Phase 1: Corpus Preprocessing ✅**
-
-**Added:**
-- Document and corpus loading
-- Sentence tokenization
-- Word tokenization
-- POS (Part of Speech) tagging
-- Lemmatization with WordNet
-- Unified preprocessing pipeline
-- `Document` and `ProcessedDocument` data models
-- 46 comprehensive tests
-
-### [0.0.1] - 2026-01-14
-
-**Phase 0: Project Scaffolding ✅**
-
-**Added:**
-- Project directory structure
-- Git repository initialization
-- NLTK data download scripts
-- Sample test corpus (5 files, 95KB)
-- Test corpus manifest with expected values
-- Storage abstraction layer
-- JSON backend implementation
-- 12 storage tests
-- requirements.txt with dependencies
-
----
-
-**Project Status:** ✅ COMPLETE AND READY FOR USE
-
-**Contact:** See README.md for contribution guidelines and issue reporting.

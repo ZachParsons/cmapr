@@ -768,7 +768,7 @@ class TestSourceDerivedFilenames:
         output_dir = tmp_path / "output"
 
         # Create a simple graph file with source-derived name
-        graph_file = tmp_path / "sample1_analytic.json"
+        graph_file = tmp_path / "eco_spl.json"
         graph = ConceptGraph()
         graph.add_node("term1")
         graph.add_node("term2")
@@ -788,8 +788,8 @@ class TestSourceDerivedFilenames:
         )
 
         assert result.exit_code == 0
-        # Should create sample1_analytic/ directory (not visualization/)
-        expected_viz = output_dir / "exports" / "sample1_analytic" / "index.html"
+        # Should create eco_spl/ directory (not visualization/)
+        expected_viz = output_dir / "exports" / "eco_spl" / "index.html"
         assert expected_viz.exists()
         assert not (output_dir / "exports" / "visualization" / "index.html").exists()
 
@@ -798,13 +798,13 @@ class TestSourceDerivedFilenames:
         output_dir = tmp_path / "output"
 
         # Create two different text files
-        text1 = tmp_path / "sample1.txt"
+        text1 = tmp_path / "eco_spl.txt"
         text1.write_text(
             "Geist is a concept. Aufhebung is dialectical. "
             "Geist and Aufhebung are fundamental to Hegel."
         )
 
-        text2 = tmp_path / "sample2.txt"
+        text2 = tmp_path / "eco_spl_alt.txt"
         text2.write_text(
             "Intentionality is directedness. Consciousness is awareness. "
             "Intentionality and consciousness are central to Brentano."
@@ -817,7 +817,7 @@ class TestSourceDerivedFilenames:
         )
         assert result1.exit_code == 0
 
-        corpus1 = output_dir / "corpus" / "sample1.json"
+        corpus1 = output_dir / "corpus" / "eco_spl.json"
         assert corpus1.exists()
         corpus1_content = corpus1.read_text()
 
@@ -828,7 +828,7 @@ class TestSourceDerivedFilenames:
         )
         assert result2.exit_code == 0
 
-        corpus2 = output_dir / "corpus" / "sample2.json"
+        corpus2 = output_dir / "corpus" / "eco_spl_alt.json"
         assert corpus2.exists()
 
         # Verify first corpus wasn't overwritten

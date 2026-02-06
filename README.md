@@ -379,7 +379,7 @@ from concept_mapper.terms.manager import TermManager
 from concept_mapper.export import export_d3_json, export_graphml, export_csv, export_gexf, generate_html
 
 # 1. Load and preprocess
-doc = load_file("samples/sample1_analytic_pragmatism.txt")
+doc = load_file("samples/eco_spl.txt")
 processed = preprocess(doc)
 print(f"✓ Processed {len(processed.sentences)} sentences")
 
@@ -473,9 +473,7 @@ print(f"\n✓ Visualization ready: {html_path}")
 
 The `samples/` directory contains sample texts to use as inputs:
 
-- `sample1_analytic_pragmatism.txt` - Analytic philosophy and pragmatism concepts (212 words)
-- `sample2_poststructural_political.txt` - Poststructural and political philosophy concepts (203 words)
-- `sample3_mind_consciousness.txt` - Philosophy of mind and consciousness concepts (290 words)
+- `eco_spl.txt` - Excerpt from Umberto Eco's "A Theory of Semiotics" - primary sample text for testing and examples
 
 ## Example Workflows
 
@@ -529,7 +527,7 @@ To adapt these workflows for your own texts:
 ```
 
 **Directory organization rationale:**
-- **`samples/`** - Three sample input texts (sample1, sample2, sample3) covering diverse philosophical traditions. For testing and learning.
+- **`samples/`** - Sample input texts for testing and learning (primary: eco_spl.txt from Umberto Eco's "A Theory of Semiotics").
 - **`examples/`** - Workflow scripts only (no data files). Shows how to use the tool.
 - **`data/reference/`** - Bundled reference datasets that ship with the tool (e.g., Brown corpus frequencies). Not user-generated.
 - **`output/`** - All generated results. Fully gitignored and can be safely deleted. Organized into subdirectories by output type.

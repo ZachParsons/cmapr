@@ -30,8 +30,7 @@ print(f"Found {len(files)} sample documents")
 **Expected output:**
 ```
 Found n sample documents
-  - sample1_analytic_pragmatism.txt
-  - sample2_poststructural_political.txt
+  - eco_spl.txt
   - ...
 ```
 
@@ -48,7 +47,7 @@ from concept_mapper.corpus.loader import load_file
 from concept_mapper.preprocessing.pipeline import preprocess
 
 # Load a document
-doc = load_file("samples/sample1_analytic_pragmatism.txt")
+doc = load_file("samples/eco_spl.txt")
 print(f"Loaded: {doc.metadata.get('title', 'untitled')}")
 print(f"Length: {len(doc.text)} characters\n")
 
@@ -474,13 +473,13 @@ for i, match in enumerate(matches[:3], 1):
 ```
 Found 23 sentences containing 'abstraction'
 
-1. [sample1_analytic_pragmatism.txt:45]
+1. [eco_spl.txt:45]
    The historical knowledge of the proletariat begins with abstraction.
 
-2. [sample1_analytic_pragmatism.txt:78]
+2. [eco_spl.txt:78]
    Abstraction transforms social relations into thing-like structures.
 
-3. [sample1_analytic_pragmatism.txt:112]
+3. [eco_spl.txt:112]
    Only by understanding abstraction can consciousness overcome it.
 ```
 
@@ -521,7 +520,7 @@ print(format_context_windows(windows[:2], separator="---"))
 ```
 Context windows (2 sentences before/after):
 
-[sample1_analytic_pragmatism.txt:45]
+[eco_spl.txt:45]
 
   The proletariat must understand its historical position.
   This understanding requires grasping fundamental categories.
@@ -530,7 +529,7 @@ Context windows (2 sentences before/after):
   These relations appear as independent things.
 ---
 
-[sample1_analytic_pragmatism.txt:78]
+[eco_spl.txt:78]
 ...
 ```
 
@@ -559,9 +558,9 @@ Dispersion analysis for 'abstraction':
   Average per document: 7.7
 
 Document distribution:
-  sample1_analytic_pragmatism.txt: 18 occurrences at sentences [45, 78, 112, 156, 203]...
+  eco_spl.txt: 18 occurrences at sentences [45, 78, 112, 156, 203]...
   hegel_excerpt.txt: 3 occurrences at sentences [12, 34, 67]...
-  sample2_poststructural_political.txt: 2 occurrences at sentences [5, 8]...
+  eco_spl.txt: 2 occurrences at sentences [5, 8]...
 ```
 
 ---
@@ -821,7 +820,7 @@ from concept_mapper.analysis import (
 
 # 1. Load and preprocess
 print("Loading document...")
-doc = load_file("samples/sample1_analytic_pragmatism.txt")
+doc = load_file("samples/eco_spl.txt")
 processed = preprocess(doc)
 print(f"✓ Processed {processed.num_sentences} sentences\n")
 
@@ -1153,7 +1152,7 @@ from concept_mapper.graph import (
 )
 
 # 1. Load and preprocess
-doc = load_file("samples/sample1_analytic_pragmatism.txt")
+doc = load_file("samples/eco_spl.txt")
 docs = [preprocess(doc)]
 
 # 2. Detect key terms
@@ -1332,7 +1331,7 @@ from concept_mapper.graph import graph_from_cooccurrence, centrality, detect_com
 from concept_mapper.export import generate_html, export_csv
 
 # 1. Load and analyze text
-doc = load_file("samples/sample1_analytic_pragmatism.txt")
+doc = load_file("samples/eco_spl.txt")
 docs = [preprocess(doc)]
 
 reference = load_reference_corpus()
@@ -1465,7 +1464,7 @@ cmapr --help
 
 ```bash
 # 1. Ingest and preprocess documents
-cmapr ingest samples/sample1_analytic_pragmatism.txt -o output/corpus.json
+cmapr ingest samples/eco_spl.txt -o output/corpus.json
 
 # 2. Detect philosophical terms
 cmapr rarities output/corpus.json \
