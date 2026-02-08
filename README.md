@@ -289,6 +289,9 @@ cmapr graph <corpus> --terms <terms> [--method METHOD] [--threshold N] [-o OUTPU
 
 # Export/visualize graph
 cmapr export <graph> --format <FORMAT> [-o OUTPUT] [--title TITLE]
+
+# Replace term with synonym (preserves inflections)
+cmapr replace <corpus> <source> <target> [-o OUTPUT] [--preview]
 ```
 
 ### Analyzing Your Own Texts
@@ -447,10 +450,12 @@ sign,cooccurrence,signifier,3.21,12,1,1.5,1.5.1
 ### Text Processing & Analysis
 - **Document Loading** - Load single files or entire directories of texts
 - **Preprocessing** - Tokenization, POS tagging, and lemmatization with NLTK
+- **OCR/PDF Cleaning** - Automatic cleanup of spacing issues, split words, page numbers
 - **Structure Detection** - Automatic extraction of document hierarchy (chapters, sections, subsections)
 - **Frequency Analysis** - Word frequencies, TF-IDF scoring, corpus comparison
 - **Search & Concordance** - Find terms in context with KWIC displays and context windows
 - **Contextual Analysis** - Extract significant terms and relations with structural location tracking
+- **Synonym Replacement** - Replace terms while preserving grammatical inflections (tense, number, degree)
 
 ### Term Detection
 - **Multi-Method Detection** - 5 statistical signals for identifying philosophical terms:
@@ -481,7 +486,7 @@ sign,cooccurrence,signifier,3.21,12,1,1.5,1.5.1
 - **Customizable** - Node sizing, community coloring, evidence display
 
 ### User Interfaces
-- **CLI** - Complete command-line interface with 6 commands
+- **CLI** - Complete command-line interface with 10 commands
 - **Python API** - Full programmatic access with comprehensive docstrings
 - **Batch Processing** - Progress bars and multi-file support
 
