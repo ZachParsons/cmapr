@@ -125,16 +125,7 @@ def ingest(ctx, path, output, recursive, pattern):
     # Serialize processed documents
     serialized = []
     for doc in processed:
-        serialized.append(
-            {
-                "raw_text": doc.raw_text,
-                "sentences": doc.sentences,
-                "tokens": doc.tokens,
-                "lemmas": doc.lemmas,
-                "pos_tags": doc.pos_tags,
-                "metadata": doc.metadata,
-            }
-        )
+        serialized.append(doc.to_dict())
 
     # Validate before saving
     validate_corpus(serialized)
@@ -874,6 +865,172 @@ def diagram(ctx, sentence, format, output):
 # ============================================================================
 
 
+def _group_relations_by_structure(relations, level="chapter"):
+    """
+    Group relations by document structure.
+
+    Args:
+        relations: List of ContextualRelation objects
+        level: Grouping level (chapter, section, subsection)
+
+    Returns:
+        Dictionary mapping structure keys to lists of relations
+    """
+    from collections import defaultdict
+
+    grouped = defaultdict(lambda: {"relations": [], "title": "", "parent": None})
+
+    for rel in relations:
+        if not rel.evidence_locations:
+            # No structure info - put in "unstructured" group
+            key = "unstructured"
+            grouped[key]["relations"].append(rel)
+            grouped[key]["title"] = "Unstructured Content"
+            continue
+
+        # Use first location for grouping
+        loc = rel.evidence_locations[0]
+
+        if level == "chapter" and loc.chapter:
+            key = f"{loc.chapter}"
+            grouped[key]["relations"].append(rel)
+            grouped[key]["title"] = loc.chapter_title or f"Chapter {loc.chapter}"
+        elif level == "section" and loc.section:
+            key = f"{loc.section}"
+            grouped[key]["relations"].append(rel)
+            grouped[key]["title"] = loc.section_title or f"Section {loc.section}"
+            grouped[key]["parent"] = loc.chapter_title if loc.chapter else None
+        elif level == "subsection" and loc.subsection:
+            key = f"{loc.subsection}"
+            grouped[key]["relations"].append(rel)
+            grouped[key]["title"] = (
+                loc.subsection_title or f"Subsection {loc.subsection}"
+            )
+            grouped[key]["parent"] = loc.section_title if loc.section else None
+        else:
+            # Fallback to unstructured
+            key = "unstructured"
+            grouped[key]["relations"].append(rel)
+            grouped[key]["title"] = "Unstructured Content"
+
+    return grouped
+
+
+def _display_structured_text(term, grouped_relations, docs):
+    """
+    Display relations grouped by structure in text format.
+
+    Args:
+        term: Search term
+        grouped_relations: Dictionary from _group_relations_by_structure
+        docs: List of ProcessedDocument objects (for structure info)
+    """
+    from collections import defaultdict
+
+    click.echo(f"\nFound contextual relations for '{term}'")
+    click.echo("=" * 80)
+
+    # Sort groups by key
+    sorted_groups = sorted(grouped_relations.items())
+
+    for group_key, group_data in sorted_groups:
+        title = group_data["title"]
+        relations = group_data["relations"]
+
+        if not relations:
+            continue
+
+        # Display group header
+        click.echo(f"\n{'=' * 80}")
+        click.echo(f"{title}")
+        click.echo(f"{'=' * 80}")
+
+        # Group relations by type
+        by_type = defaultdict(list)
+        for rel in relations:
+            by_type[rel.relation_type].append(rel)
+
+        # Display each type
+        for rel_type in ["svo", "copular", "prep", "cooccurrence"]:
+            if rel_type not in by_type:
+                continue
+
+            rels = sorted(by_type[rel_type], key=lambda r: r.score, reverse=True)[:10]
+
+            click.echo(f"\n  {rel_type.upper()} Relations ({len(rels)} shown):")
+            click.echo("  " + "-" * 76)
+
+            for i, rel in enumerate(rels, 1):
+                evidence_info = f"{len(rel.evidence)} occurrence(s)"
+
+                # Show first location if available
+                loc_str = ""
+                if rel.evidence_locations:
+                    loc = rel.evidence_locations[0]
+                    if loc.section:
+                        loc_str = f" [{loc.section}]"
+                    elif loc.chapter:
+                        loc_str = f" [{loc.chapter}]"
+
+                click.echo(
+                    f"    {i}. {rel.source} → {rel.target} "
+                    f"(score: {rel.score:.2f}, {evidence_info}){loc_str}"
+                )
+
+                # Show first evidence sentence
+                if rel.evidence:
+                    first_evidence = (
+                        rel.evidence[0][:100] + "..."
+                        if len(rel.evidence[0]) > 100
+                        else rel.evidence[0]
+                    )
+                    click.echo(f'       "{first_evidence}"')
+
+
+def _get_structure_summary(docs):
+    """
+    Get summary of document structure.
+
+    Args:
+        docs: List of ProcessedDocument objects
+
+    Returns:
+        Dictionary with structure information
+    """
+    has_structure = any(doc.structure_nodes for doc in docs)
+
+    if not has_structure:
+        return {"has_structure": False}
+
+    # Collect all structure nodes
+    all_chapters = []
+    all_sections = []
+
+    for doc in docs:
+        for node in doc.structure_nodes:
+            if node.level == "chapter":
+                all_chapters.append(
+                    {
+                        "number": node.number,
+                        "title": node.title,
+                    }
+                )
+            elif node.level == "section":
+                all_sections.append(
+                    {
+                        "number": node.number,
+                        "title": node.title,
+                    }
+                )
+
+    return {
+        "has_structure": True,
+        "num_chapters": len(all_chapters),
+        "num_sections": len(all_sections),
+        "chapters": all_chapters,
+    }
+
+
 @cli.command(name="analyze")
 @click.argument("corpus", type=click.Path(exists=True))
 @click.argument("term")
@@ -916,8 +1073,32 @@ def diagram(ctx, sentence, format, output):
     help="Output format",
 )
 @click.option("--output", "-o", type=click.Path(), help="Output file")
+@click.option(
+    "--group-by",
+    type=click.Choice(["none", "chapter", "section", "subsection"]),
+    default="chapter",
+    help="Group results by document structure (default: chapter)",
+)
+@click.option(
+    "--show-structure",
+    is_flag=True,
+    help="Display full document structure outline",
+)
 @click.pass_context
-def analyze(ctx, corpus, term, top_n, threshold, pos, lemma, no_relations, format, output):
+def analyze(
+    ctx,
+    corpus,
+    term,
+    top_n,
+    threshold,
+    pos,
+    lemma,
+    no_relations,
+    format,
+    output,
+    group_by,
+    show_structure,
+):
     """
     Analyze contextual relations for a search term.
 
@@ -941,7 +1122,7 @@ def analyze(ctx, corpus, term, top_n, threshold, pos, lemma, no_relations, forma
     with open(corpus, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    docs = [ProcessedDocument(**doc_data) for doc_data in data]
+    docs = [ProcessedDocument.from_dict(doc_data) for doc_data in data]
 
     if verbose:
         click.echo(f"Analyzing contextual relations for '{term}'...")
@@ -964,28 +1145,48 @@ def analyze(ctx, corpus, term, top_n, threshold, pos, lemma, no_relations, forma
         click.echo(f"No significant contextual relations found for '{term}'")
         return
 
+    # Show structure summary if requested
+    if show_structure:
+        structure_info = _get_structure_summary(docs)
+        if structure_info["has_structure"]:
+            click.echo("\nDocument Structure:")
+            click.echo(f"  Chapters: {structure_info['num_chapters']}")
+            click.echo(f"  Sections: {structure_info['num_sections']}")
+            click.echo()
+
     # Display results based on format
     if format == "text":
-        click.echo(f"\nFound {len(relations)} contextual relations for '{term}':")
-        click.echo("=" * 70)
+        # Check if we have structure and should group
+        has_structure = any(rel.evidence_locations for rel in relations)
 
-        # Group by relation type
-        from collections import defaultdict
+        if has_structure and group_by != "none":
+            # Use structured display
+            grouped = _group_relations_by_structure(relations, level=group_by)
+            _display_structured_text(term, grouped, docs)
+        else:
+            # Use flat display
+            click.echo(f"\nFound {len(relations)} contextual relations for '{term}':")
+            click.echo("=" * 70)
 
-        by_type = defaultdict(list)
-        for rel in relations:
-            by_type[rel.relation_type].append(rel)
+            # Group by relation type
+            from collections import defaultdict
 
-        for rel_type in ["svo", "copular", "prep", "cooccurrence"]:
-            if rel_type in by_type:
-                rels = sorted(by_type[rel_type], key=lambda r: r.score, reverse=True)[:20]
-                click.echo(f"\n{rel_type.upper()} Relations (top 20):")
-                for i, rel in enumerate(rels, 1):
-                    evidence_info = f"{len(rel.evidence)} sentence(s)"
-                    click.echo(
-                        f"  {i}. {rel.source} --{rel.relation_type}--> {rel.target} "
-                        f"(score: {rel.score:.2f}, {evidence_info})"
-                    )
+            by_type = defaultdict(list)
+            for rel in relations:
+                by_type[rel.relation_type].append(rel)
+
+            for rel_type in ["svo", "copular", "prep", "cooccurrence"]:
+                if rel_type in by_type:
+                    rels = sorted(
+                        by_type[rel_type], key=lambda r: r.score, reverse=True
+                    )[:20]
+                    click.echo(f"\n{rel_type.upper()} Relations (top 20):")
+                    for i, rel in enumerate(rels, 1):
+                        evidence_info = f"{len(rel.evidence)} sentence(s)"
+                        click.echo(
+                            f"  {i}. {rel.source} --{rel.relation_type}--> {rel.target} "
+                            f"(score: {rel.score:.2f}, {evidence_info})"
+                        )
 
     elif format == "json":
         from concept_mapper.analysis.contextual_relations import (
@@ -993,7 +1194,17 @@ def analyze(ctx, corpus, term, top_n, threshold, pos, lemma, no_relations, forma
         )
 
         extractor = ContextualRelationExtractor(docs)
-        json_data = extractor.to_dict(relations)
+        relations_data = extractor.to_dict(relations)
+
+        # Add structure information
+        structure_info = _get_structure_summary(docs)
+
+        json_data = {
+            "search_term": term,
+            "num_relations": len(relations),
+            "relations": relations_data,
+            "structure": structure_info,
+        }
 
         if output:
             output_path = Path(output)
@@ -1017,9 +1228,28 @@ def analyze(ctx, corpus, term, top_n, threshold, pos, lemma, no_relations, forma
         with open(output_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(
-                ["source", "relation_type", "target", "score", "evidence_count"]
+                [
+                    "source",
+                    "relation_type",
+                    "target",
+                    "score",
+                    "evidence_count",
+                    "chapter",
+                    "section",
+                    "subsection",
+                ]
             )
             for rel in relations:
+                # Get first location if available
+                chapter = ""
+                section = ""
+                subsection = ""
+                if rel.evidence_locations:
+                    loc = rel.evidence_locations[0]
+                    chapter = loc.chapter or ""
+                    section = loc.section or ""
+                    subsection = loc.subsection or ""
+
                 writer.writerow(
                     [
                         rel.source,
@@ -1027,6 +1257,9 @@ def analyze(ctx, corpus, term, top_n, threshold, pos, lemma, no_relations, forma
                         rel.target,
                         rel.score,
                         len(rel.evidence),
+                        chapter,
+                        section,
+                        subsection,
                     ]
                 )
 
@@ -1050,7 +1283,9 @@ def analyze(ctx, corpus, term, top_n, threshold, pos, lemma, no_relations, forma
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(graph_data, f, indent=2, ensure_ascii=False)
 
-        click.echo(f"✓ Saved graph with {len(graph_data['nodes'])} nodes and {len(graph_data['edges'])} edges to {output_path}")
+        click.echo(
+            f"✓ Saved graph with {len(graph_data['nodes'])} nodes and {len(graph_data['edges'])} edges to {output_path}"
+        )
 
 
 # ============================================================================

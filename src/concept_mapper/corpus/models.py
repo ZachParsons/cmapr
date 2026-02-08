@@ -13,6 +13,95 @@ from typing import Any, Dict, List, Optional
 
 
 @dataclass
+class StructureNode:
+    """
+    Hierarchical structure element representing document organization.
+
+    Captures semantic organization units like chapters, sections, and subsections
+    with their hierarchical relationships.
+    """
+
+    level: str  # "chapter", "section", "subsection", "paragraph"
+    number: str  # "1", "1.2", "1.2.3" or generated
+    title: str
+    start_index: int  # First sentence in this section
+    end_index: int  # Last sentence (exclusive)
+    parent_number: Optional[str] = None
+    children: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "level": self.level,
+            "number": self.number,
+            "title": self.title,
+            "start_index": self.start_index,
+            "end_index": self.end_index,
+            "parent_number": self.parent_number,
+            "children": self.children,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "StructureNode":
+        """Create StructureNode from dictionary."""
+        return cls(
+            level=data["level"],
+            number=data["number"],
+            title=data["title"],
+            start_index=data["start_index"],
+            end_index=data["end_index"],
+            parent_number=data.get("parent_number"),
+            children=data.get("children", []),
+        )
+
+
+@dataclass
+class SentenceLocation:
+    """
+    Flattened location info for fast lookup of sentence position in document structure.
+
+    Provides immediate access to a sentence's containing chapter, section, and subsection
+    without traversing the hierarchical tree.
+    """
+
+    sent_index: int
+    chapter: Optional[str] = None
+    chapter_title: Optional[str] = None
+    section: Optional[str] = None
+    section_title: Optional[str] = None
+    subsection: Optional[str] = None
+    subsection_title: Optional[str] = None
+    paragraph: Optional[int] = None  # Fallback numbering
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "sent_index": self.sent_index,
+            "chapter": self.chapter,
+            "chapter_title": self.chapter_title,
+            "section": self.section,
+            "section_title": self.section_title,
+            "subsection": self.subsection,
+            "subsection_title": self.subsection_title,
+            "paragraph": self.paragraph,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "SentenceLocation":
+        """Create SentenceLocation from dictionary."""
+        return cls(
+            sent_index=data["sent_index"],
+            chapter=data.get("chapter"),
+            chapter_title=data.get("chapter_title"),
+            section=data.get("section"),
+            section_title=data.get("section_title"),
+            subsection=data.get("subsection"),
+            subsection_title=data.get("subsection_title"),
+            paragraph=data.get("paragraph"),
+        )
+
+
+@dataclass
 class Document:
     """
     A single text document with metadata.
@@ -68,6 +157,8 @@ class ProcessedDocument:
     - Tokens (word-level)
     - POS tags (part-of-speech)
     - Lemmas (base forms)
+    - Structure nodes (document hierarchy)
+    - Sentence locations (position in hierarchy)
     """
 
     raw_text: str
@@ -76,6 +167,8 @@ class ProcessedDocument:
     pos_tags: List[tuple[str, str]] = field(default_factory=list)
     lemmas: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    structure_nodes: List[StructureNode] = field(default_factory=list)
+    sentence_locations: List[SentenceLocation] = field(default_factory=list)
 
     @property
     def title(self) -> Optional[str]:
@@ -101,6 +194,8 @@ class ProcessedDocument:
             "pos_tags": self.pos_tags,
             "lemmas": self.lemmas,
             "metadata": self.metadata,
+            "structure_nodes": [node.to_dict() for node in self.structure_nodes],
+            "sentence_locations": [loc.to_dict() for loc in self.sentence_locations],
         }
 
     @classmethod
@@ -113,6 +208,14 @@ class ProcessedDocument:
             pos_tags=data.get("pos_tags", []),
             lemmas=data.get("lemmas", []),
             metadata=data.get("metadata", {}),
+            structure_nodes=[
+                StructureNode.from_dict(node)
+                for node in data.get("structure_nodes", [])
+            ],
+            sentence_locations=[
+                SentenceLocation.from_dict(loc)
+                for loc in data.get("sentence_locations", [])
+            ],
         )
 
 

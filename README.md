@@ -318,13 +318,126 @@ cmapr export graph.json --format html -o viz/
 - `--threshold`: Minimum edge weight (higher = sparser graph, only strong connections)
 - `--method`: Construction method (cooccurrence vs. relations)
 
+### Contextual Analysis with Structure Detection
+
+The `analyze` command extracts contextual relations for a search term and automatically groups results by document structure (chapters, sections, subsections):
+
+```bash
+# Analyze with chapter-level grouping (default)
+cmapr analyze corpus.json "sign" --top-n 10 --group-by chapter
+
+# Group by section for finer granularity
+cmapr analyze corpus.json "language" --group-by section
+
+# Disable grouping for flat output
+cmapr analyze corpus.json "meaning" --group-by none
+
+# Show document structure outline
+cmapr analyze corpus.json "semiotics" --show-structure
+
+# Export with location metadata
+cmapr analyze corpus.json "sign" --format json -o relations.json
+cmapr analyze corpus.json "sign" --format csv -o relations.csv
+```
+
+**Structure Detection:**
+
+The ingestion process automatically detects document structure using multiple pattern recognition strategies (in priority order):
+
+1. **Numbered headings**: `1.`, `1.2.`, `1.2.3.` (most reliable for academic texts)
+2. **Named chapters**: `Chapter 1`, `Part I`, `Section 3`
+3. **Markdown headings**: `#`, `##`, `###`
+4. **All-caps headings**: `INTRODUCTION`, `CONCLUSION`
+5. **Paragraph boundaries**: Fallback when no formal structure found
+
+**Example Output:**
+
+```
+Found contextual relations for 'sign'
+================================================================================
+
+================================================================================
+Chapter 1: Signs
+================================================================================
+
+  SVO Relations (5 shown):
+  ----------------------------------------------------------------------------
+    1. sign → represents → object (score: 2.45, 3 occurrences) [1.5.1]
+       "Signs are not merely labels..."
+
+  COOCCURRENCE Relations (10 shown):
+  ----------------------------------------------------------------------------
+    1. sign ↔ signifier (score: 3.21, 12 occurrences) [1.5]
+    2. sign ↔ meaning (score: 2.87, 8 occurrences) [1.7]
+
+================================================================================
+Chapter 2: Dictionary vs. Encyclopedia
+================================================================================
+  ...
+```
+
+**JSON Output with Locations:**
+
+The JSON format includes full location metadata for each relation:
+
+```json
+{
+  "search_term": "sign",
+  "num_relations": 45,
+  "relations": [
+    {
+      "source": "sign",
+      "target": "object",
+      "relation_type": "svo",
+      "score": 2.45,
+      "evidence": ["Signs are not merely labels..."],
+      "evidence_locations": [
+        {
+          "sent_index": 42,
+          "chapter": "1",
+          "chapter_title": "Signs",
+          "section": "1.5",
+          "section_title": "The deconstruction of the linguistic sign"
+        }
+      ]
+    }
+  ],
+  "structure": {
+    "has_structure": true,
+    "num_chapters": 7,
+    "num_sections": 23
+  }
+}
+```
+
+**CSV Output with Location Columns:**
+
+```csv
+source,relation_type,target,score,evidence_count,chapter,section,subsection
+sign,svo,object,2.45,3,1,1.5,
+sign,cooccurrence,signifier,3.21,12,1,1.5,1.5.1
+```
+
+**Analyze Command Options:**
+
+- `--top-n N`: Limit to top N most significant terms per context
+- `--threshold T`: Minimum significance score (default: 0.1)
+- `--pos TYPE`: POS types to extract (nouns, verbs, adjectives, adverbs)
+- `--lemma`: Match lemmatized forms (e.g., 'run' matches 'running', 'ran')
+- `--no-relations`: Skip grammatical relations (faster, co-occurrence only)
+- `--group-by LEVEL`: Group by chapter, section, subsection, or none
+- `--show-structure`: Display document structure outline
+- `--format FORMAT`: Output format (text, json, csv, graph)
+
 ## Features
 
 ### Text Processing & Analysis
 - **Document Loading** - Load single files or entire directories of texts
 - **Preprocessing** - Tokenization, POS tagging, and lemmatization with NLTK
+- **Structure Detection** - Automatic extraction of document hierarchy (chapters, sections, subsections)
 - **Frequency Analysis** - Word frequencies, TF-IDF scoring, corpus comparison
 - **Search & Concordance** - Find terms in context with KWIC displays and context windows
+- **Contextual Analysis** - Extract significant terms and relations with structural location tracking
 
 ### Term Detection
 - **Multi-Method Detection** - 5 statistical signals for identifying philosophical terms:

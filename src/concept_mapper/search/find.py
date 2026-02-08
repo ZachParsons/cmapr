@@ -5,8 +5,8 @@ Provides structured search results with document metadata and positions.
 """
 
 from dataclasses import dataclass
-from typing import List
-from ..corpus.models import ProcessedDocument
+from typing import List, Optional
+from ..corpus.models import ProcessedDocument, SentenceLocation
 
 
 @dataclass
@@ -20,6 +20,7 @@ class SentenceMatch:
         sent_index: Sentence index within document (0-based)
         term_positions: List of character positions where term appears in sentence
         term: The search term that matched
+        location: Optional structural location in document (chapter, section, etc.)
     """
 
     sentence: str
@@ -27,6 +28,7 @@ class SentenceMatch:
     sent_index: int
     term_positions: List[int]
     term: str
+    location: Optional[SentenceLocation] = None
 
     def __str__(self) -> str:
         """String representation showing document and sentence."""
@@ -132,6 +134,11 @@ def find_sentences(
                         start = pos + 1
 
             if found:
+                # Get location info if available
+                location = None
+                if sent_idx < len(doc.sentence_locations):
+                    location = doc.sentence_locations[sent_idx]
+
                 # Create match object
                 match = SentenceMatch(
                     sentence=sentence.strip(),
@@ -139,6 +146,7 @@ def find_sentences(
                     sent_index=sent_idx,
                     term_positions=positions if positions else [0],
                     term=term,
+                    location=location,
                 )
                 matches.append(match)
 

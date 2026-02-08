@@ -5,16 +5,14 @@ Combines search, term extraction, and relation detection to analyze
 how a search term relates to significant terms in its context.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional, Literal, TYPE_CHECKING
 from collections import defaultdict
 
-from concept_mapper.corpus.models import ProcessedDocument
+from concept_mapper.corpus.models import ProcessedDocument, SentenceLocation
 
 if TYPE_CHECKING:
-    from concept_mapper.search.find import SentenceMatch
-    from concept_mapper.search.extract import SignificantTermsResult
-    from concept_mapper.analysis.relations import Relation
+    pass
 
 
 @dataclass
@@ -29,13 +27,16 @@ class ContextualRelation:
         score: Significance score of the target term
         evidence: List of sentences where this relation appears
         metadata: Additional information (e.g., verb, preposition)
+        evidence_locations: Structural locations of evidence sentences
     """
+
     source: str
     relation_type: str
     target: str
     score: float
     evidence: List[str]
     metadata: dict
+    evidence_locations: List[SentenceLocation] = field(default_factory=list)
 
 
 class ContextualRelationExtractor:
@@ -113,13 +114,18 @@ class ContextualRelationExtractor:
         relations = []
 
         # Group significant terms by sentence for aggregation
-        term_scores = defaultdict(lambda: {"scores": [], "sentences": []})
+        term_scores = defaultdict(
+            lambda: {"scores": [], "sentences": [], "locations": []}
+        )
 
         for result in significant_results:
             sentence = result.sentence_match.sentence
+            location = result.sentence_match.location
             for term, score, _ in result.significant_terms:
                 term_scores[term]["scores"].append(score)
                 term_scores[term]["sentences"].append(sentence)
+                if location:
+                    term_scores[term]["locations"].append(location)
 
         # Create co-occurrence relations
         for term, data in term_scores.items():
@@ -132,6 +138,7 @@ class ContextualRelationExtractor:
                     score=avg_score,
                     evidence=data["sentences"],
                     metadata={"occurrences": len(data["sentences"])},
+                    evidence_locations=data["locations"],
                 )
             )
 
@@ -145,6 +152,12 @@ class ContextualRelationExtractor:
                 case_sensitive=False,
             )
 
+            # Build a sentence-to-location map from our matches
+            sentence_to_location = {}
+            for match in matches:
+                if match.location:
+                    sentence_to_location[match.sentence] = match.location
+
             # Convert to ContextualRelation format
             for rel in grammatical_rels:
                 # Check if target is in our significant terms
@@ -156,6 +169,12 @@ class ContextualRelationExtractor:
                     # Assign default score for grammatically related terms
                     score = 0.5
 
+                # Collect locations for evidence sentences
+                locations = []
+                for evidence_sent in rel.evidence:
+                    if evidence_sent in sentence_to_location:
+                        locations.append(sentence_to_location[evidence_sent])
+
                 relations.append(
                     ContextualRelation(
                         source=rel.source,
@@ -164,6 +183,7 @@ class ContextualRelationExtractor:
                         score=score,
                         evidence=rel.evidence,
                         metadata=rel.metadata,
+                        evidence_locations=locations,
                     )
                 )
 
@@ -216,6 +236,7 @@ class ContextualRelationExtractor:
                 "score": rel.score,
                 "evidence": rel.evidence,
                 "metadata": rel.metadata,
+                "evidence_locations": [loc.to_dict() for loc in rel.evidence_locations],
             }
             for rel in relations
         ]
