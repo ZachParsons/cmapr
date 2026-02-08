@@ -15,11 +15,11 @@ install:
 
 format:
 	@echo "🔧 Formatting code with Ruff..."
-	@uv run ruff format *.py src/ tests/ scripts/
+	@uv run ruff format src/ tests/ scripts/
 
 lint:
 	@echo "🔍 Linting code with Ruff..."
-	@uv run ruff check *.py src/ tests/ scripts/ --fix
+	@uv run ruff check src/ tests/ scripts/ --fix
 
 test:
 	@echo "🧪 Running tests..."
@@ -30,7 +30,6 @@ check: format lint test
 
 shell:
 	@uv run ipython -i -c "\
-import pos_tagger; \
 from src.concept_mapper.corpus import load_file, load_directory, Document, Corpus; \
 from src.concept_mapper.preprocessing import preprocess, preprocess_corpus, filter_by_pos; \
 from src.concept_mapper.analysis import word_frequencies, pos_filtered_frequencies, corpus_frequencies, load_reference_corpus, corpus_tfidf_scores, tfidf; \
@@ -50,5 +49,5 @@ print('  Definitional: get_definitional_sentences, get_highly_defined_terms'); \
 print('  POS Filtering: filter_by_pos_tags, get_philosophical_term_candidates'); \
 print('  POS Filtering: get_compound_terms, get_filtered_candidates'); \
 print('  Hybrid Scorer: PhilosophicalTermScorer, score_philosophical_terms'); \
-print('  Utils: Counter, pos_tagger'); \
+print('  Utils: Counter'); \
 "
