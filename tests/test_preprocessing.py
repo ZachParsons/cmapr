@@ -244,3 +244,38 @@ class TestPipeline:
 
         # Check sentences are split correctly
         assert processed.num_sentences == 2
+
+    def test_preprocess_with_ocr_cleaning(self):
+        """Test preprocessing with OCR cleaning enabled."""
+        # Text with OCR artifacts: split words, spacing issues, page numbers
+        doc = Document(
+            text="1 . 5. The obsti nacy of the signif icant.\n42\nMore content here."
+        )
+        processed = preprocess(doc, clean_ocr=True)
+
+        # Check that text was cleaned
+        # Page number (42) should be removed
+        assert "42" not in processed.raw_text or processed.raw_text.count("42") == 0
+
+        # Split words should be rejoined in the cleaned text
+        # The cleaned text is stored in raw_text after cleaning
+        assert (
+            "obstinacy" in processed.raw_text.lower()
+            or "obsti nacy" not in processed.raw_text.lower()
+        )
+
+        # Spacing should be fixed (1 . 5. → 1.5.)
+        assert "1.5." in processed.raw_text or "1 . 5." not in processed.raw_text
+
+        # Tokenization should work on cleaned text
+        assert processed.num_tokens > 0
+        assert processed.num_sentences > 0
+
+    def test_preprocess_without_ocr_cleaning(self):
+        """Test that OCR cleaning is not applied by default."""
+        doc = Document(text="1 . 5. The obsti nacy.\n42\n")
+        processed = preprocess(doc, clean_ocr=False)
+
+        # Without cleaning, OCR artifacts should remain
+        # (This verifies the default behavior)
+        assert processed.raw_text == doc.text

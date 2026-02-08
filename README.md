@@ -86,6 +86,19 @@ cmapr ingest samples/eco_spl.txt
 
 **What happens:** The raw text is tokenized into sentences and words, each word is tagged with its part of speech (NN, VB, etc.), and lemmatized (e.g., "entities" → "entity").
 
+**OCR/PDF Cleaning:** For texts from scanned PDFs or with OCR errors, use the `--clean-ocr` flag to automatically fix common issues:
+
+```bash
+cmapr ingest scanned_document.txt --clean-ocr
+```
+
+This cleans:
+- Split words ("obsti nacy" → "obstinacy")
+- Joined words ("betweenexpression" → "between expression")
+- Spacing issues in headings ("1 . 5." → "1.5.")
+- OCR character errors ("interpretatio11" → "interpretatioll")
+- Standalone page numbers
+
 ### Step 2: Detect Philosophical Terms
 
 Identify author-specific semiotic terminology using statistical rarity analysis:
@@ -257,7 +270,7 @@ cmapr export output/graphs/eco_spl.json --format d3 -o output/exports/eco_data.j
 
 ```bash
 # Ingest and preprocess text
-cmapr ingest <path> [-o OUTPUT] [-r]
+cmapr ingest <path> [-o OUTPUT] [-r] [--clean-ocr]
 
 # Detect rare/philosophical terms
 cmapr rarities <corpus> [--method METHOD] [--threshold N] [--top-n N] [-o OUTPUT]
