@@ -1,156 +1,133 @@
 # Claude Code Rules for cmapr
 
-## Project Context
-This is an NLP project for concept mapping and linguistic analysis using spaCy and Stanza.
+## Project Overview
+NLP project for concept mapping and linguistic analysis using NLTK and Stanza.
 
-## Code Style & Quality
+---
 
-### Python Standards
-- Follow PEP 8 conventions
-- Use type hints for function signatures
-- Keep functions focused and single-purpose
-- Use descriptive variable names
+## Code Standards
 
-### Functional Programming Style
-- **Prefer expressions over statements** - Use functional constructs when possible
-- **Prefer functional syntax over OOP** - Functions and composition over classes when appropriate
-- **Design for composability** - Functions should be easy to chain and combine
-- Example: Prefer `map()`, list comprehensions, and function composition over imperative loops
+### Style
+- Follow PEP 8 with type hints for all functions
+- Prefer functional style: expressions over statements, composition over classes
+- Keep functions focused, single-purpose, and composable
+- Use descriptive names; avoid unnecessary comments
 
-### Formatting & Linting
-- Use `make format` to run code formatting
-- Run `make test` before committing changes
-- Check linting with ruff before submitting code
+### Tooling
+- **Package manager**: `uv` (not pip)
+- **Format**: `ruff format src/ tests/ scripts/`
+- **Lint**: `ruff check src/ tests/ scripts/ --fix`
+- **Test**: `pytest tests/ -v`
+- **Pre-commit**: `make check` (format + lint + test) - **REQUIRED before every commit**
 
-## Testing Requirements
+---
 
-### Test Coverage
-- **ALWAYS write tests for new or changed functionality** - No exceptions
-- Tests live in `tests/` directory
-- Use pytest for all testing
-- Run tests with `make test` or `pytest tests/ -v`
+## Testing (Non-Negotiable)
 
-### Test Style
-- Use descriptive test names that explain what's being tested
-- Include both positive and negative test cases
-- Test edge cases and error conditions
+### Requirements
+- **ALWAYS write tests** for new or changed functionality - no exceptions
+- Test edge cases, errors, and both positive/negative scenarios
+- Use descriptive test names that explain the behavior
 
 ### Test Data
-- **NEVER add redundant test or sample data without approval**
-- We have the Philosopher source text - reuse existing test data
-- Don't create new sample files for every feature or test
-- Ask first before adding new test corpora
+- **NEVER add redundant test data** without approval
+- Reuse existing samples (eco_spl.txt)
+- Ask before adding new test corpora
+
+---
 
 ## Documentation
 
-### Code Documentation
-- Add docstrings to public functions and classes
-- Explain WHY not WHAT (code shows what, docs explain why)
-- Update docs/ when adding new features
+### Principles
+- **NEVER duplicate documentation** - one authoritative source per topic
+- **Link, don't copy** - reference central docs instead of duplicating
+- Explain WHY in docs, not WHAT (code shows what)
+- Define acronyms and technical terms on first use
 
-### Documentation Structure
-- **NEVER duplicate documentation** - READMEs, usage guides, API references should be centrally located
-- Keep documentation in one authoritative place (avoid copies across files)
-- Link to central docs rather than duplicating content
+### Structure
+- **README.md**: Features, quickstart, project structure
+- **docs/api-reference.md**: Detailed API documentation
+- **docs/roadmap.md**: Planning, todos, completed work, future plans
+- **docs/*.md**: Feature-specific guides (when needed)
 
-### Acronyms & Terminology
-- **Always explain acronyms in a centralized place** - Use the README or a glossary
-- Define technical terms on first use
-- Maintain consistency in terminology across all docs
+### Rules for AI Assistants
+**NEVER create new markdown files without explicit approval.** This includes:
+- No TASKS.md, TODO.md, BACKLOG.md, VALIDATION.md, etc.
+- No duplicate READMEs in subdirectories
+- No planning files at project root
 
-### Examples & Shell Usage
-- **Prefer one-liners over multi-line examples** - Users paste into shell, so make it easy
-- **Provide runner functions** - Compose functionality into single-paste functions to avoid multiple paste steps
-- Add usage examples to `examples/` for new features
-- Keep examples simple and focused
-- Test that examples actually work
+**Where to put content:**
+- Tasks/todos → `docs/roadmap.md`
+- Features → `docs/api-reference.md` or dedicated `docs/<feature>.md`
+- Structure → README.md "Project Structure" section
+
+**When in doubt, ASK FIRST.**
+
+### Before Committing
+Verify documentation is current:
+- README.md reflects new features/changes
+- API reference (docs/api-reference.md) is up-to-date
+- Roadmap reflects completion status
+- No stale information contradicts your changes
+
+---
 
 ## Development Workflow
 
 ### Dependencies
-- This project uses `uv` for package management
-- Add dependencies via `uv add <package>`
-- Do NOT use pip directly
-- **Use modern tooling** - Prefer existing packages over adding new ones
-- **Justify overlapping functionality** - If proposing a new package that overlaps with existing tools, explain and justify the change
-- Examples: uv vs poetry (uv is faster, modern), NLTK vs Stanza (NLTK for basic NLP, Stanza for advanced parsing)
-
-### Pre-Commit Checks
-- **ALWAYS run `make check` before committing** - This installs deps, formats, lints, and tests
-- Never commit without running the full check
-- Fix all test failures and lint errors before committing
-- **Check if documentation needs updating** - Before committing, verify:
-  - README.md reflects any new features or changes
-  - API reference (docs/api-reference.md) is current
-  - Roadmaps or project status docs reflect completion/changes
-  - No stale information contradicts your changes
+- Add via `uv add <package>` (never use pip directly)
+- Justify new packages if they overlap with existing tools
+- Prefer modern, maintained packages
 
 ### Git Practices
-- Write clear, descriptive commit messages
+- Clear, descriptive commit messages
 - Focus commits on single logical changes
-- Don't commit generated files or cache directories
+- Never commit generated files, cache, or virtualenvs
 
-## AI Assistant Guidelines
+### AI Assistant Guidelines
 
-### Communication & Collaboration
-- **Ask questions during development** - Don't assume, ask the lead developer for clarification
-- **Get feedback early and often** - Check assumptions before implementing
-- **Explain your reasoning** - When suggesting changes or additions, explain the rationale
+**Communication:**
+- Ask questions during development - don't assume
+- Get feedback early and often
+- Explain your reasoning for changes
 
-### Documentation & Markdown Files - STRICT RULES
-- **NEVER create new markdown files without explicit approval** - This includes:
-  - No TASKS.md, TODO.md, BACKLOG.md, VALIDATION.md, MIGRATION.md, REORGANIZATION.md, etc.
-  - No explanatory docs, summaries, or planning files at project root
-  - No duplicate READMEs in subdirectories
-- **Where to put content instead:**
-  - Planning/tasks/todos → `docs/roadmap.md`
-  - Project changes/major updates → `docs/roadmap.md`
-  - Feature documentation → Add to `docs/api-reference.md`
-  - Directory explanations → Add to README.md "Project Structure" section
-- **When in doubt, ASK FIRST** - If you think a new markdown file is needed, ask before creating it
-- **Consolidate, don't create** - Add content to existing docs rather than creating new files
-
-### AI-Generated Artifacts Storage
-- **ALL AI-generated planning artifacts MUST go in the roadmap** - Never create separate task files
-- **Consolidate in docs/roadmap.md** - All todos, completed work summaries, maintenance tasks, future plans
-- **Use roadmap sections:**
-  - "Ongoing Maintenance Tasks" - Current maintenance todos
-  - "Recent Completions" - Recently finished work
-  - "Next Steps (Optional Future Work)" - Future enhancements
-- **Keep history** - Don't remove completed items, mark them with [x]
-
-### When Writing Code
+**When writing code:**
 - Read existing code first to understand patterns
-- Match the existing code style and structure
-- Don't over-engineer solutions
+- Match existing style and structure
 - Prefer editing existing files over creating new ones
+- Don't over-engineer or add unnecessary abstractions
 
-### When Adding Features
-- Check if similar functionality already exists
-- Follow established patterns in the codebase
-- Update tests and docs along with code changes
-- **Ask questions before major decisions** - Consult the user on design choices
+**When adding features:**
+- Check if similar functionality exists
+- Follow established patterns
+- Update tests and docs with code changes
+- Ask before major design decisions
 
-### What to Avoid
-- Don't add unnecessary abstractions
-- Don't create helpers for one-off operations
-- Don't add comments explaining obvious code
-- Don't add error handling for impossible scenarios
-- Don't create new markdown documentation files without asking first
+**What to avoid:**
+- Helpers for one-off operations
+- Error handling for impossible scenarios
+- Comments explaining obvious code
+- New markdown files without asking
 
-## Project-Specific Notes
+---
+
+## Project-Specific Rules
 
 ### NLP Processing
-- The project uses NLTK and Stanza (not spaCy currently)
-- Lemmatization is preferred for concept matching
-- Dependency parsing is used for sentence structure analysis
+- Uses NLTK (basic NLP) and Stanza (dependency parsing)
+- Lemmatization for concept matching
+- Dependency parsing for sentence structure
 
-### Output Conventions
-- **NEVER output user-defined functionality to project root**
-- **ALWAYS use subdirectories of `./output/`** for generated files
+### Output Files
+- **ALWAYS use `./output/` subdirectories** for generated files
 - Structure: `output/corpus/`, `output/terms/`, `output/graphs/`, `output/exports/`
-- Keep the project root clean
+- **NEVER output to project root**
 
 ### CLI Tool
-- Main CLI is `cmapr` (defined in `src/concept_mapper/cli.py`)
-- Test CLI changes with the examples in `examples/`
+- Main CLI: `cmapr` (defined in `src/concept_mapper/cli.py`)
+- Test CLI changes with examples in `examples/`
+
+### Examples & Shell Usage
+- Prefer one-liners for easy copy-paste
+- Provide runner functions to avoid multiple paste steps
+- Test that examples actually work
