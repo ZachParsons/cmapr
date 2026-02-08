@@ -67,17 +67,26 @@ def cli(ctx, verbose, output_dir):
 @click.option(
     "--pattern", "-p", default="*.txt", help="File pattern for recursive mode"
 )
+@click.option(
+    "--clean-ocr",
+    is_flag=True,
+    help="Clean OCR/PDF artifacts (spacing, split words, page numbers)",
+)
 @click.pass_context
-def ingest(ctx, path, output, recursive, pattern):
+def ingest(ctx, path, output, recursive, pattern, clean_ocr):
     """
     Load and preprocess documents.
 
     PATH can be a file or directory. Processes documents through
     tokenization, POS tagging, and lemmatization.
 
+    Use --clean-ocr for texts from PDFs with OCR errors (spacing issues,
+    split words, page numbers, etc.).
+
     Examples:
         cmapr ingest document.txt -o corpus.json
         cmapr ingest corpus/ -r -p "*.txt" -o corpus.json
+        cmapr ingest scanned.txt --clean-ocr -o corpus.json
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -101,12 +110,15 @@ def ingest(ctx, path, output, recursive, pattern):
 
     # Preprocess
     if verbose:
-        click.echo("Preprocessing documents...")
+        if clean_ocr:
+            click.echo("Preprocessing documents (with OCR cleaning)...")
+        else:
+            click.echo("Preprocessing documents...")
 
     processed = []
     with click.progressbar(docs, label="Processing") as bar:
         for doc in bar:
-            processed.append(preprocess(doc))
+            processed.append(preprocess(doc, clean_ocr=clean_ocr))
 
     # Save
     if output:

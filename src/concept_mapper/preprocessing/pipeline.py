@@ -8,17 +8,21 @@ all stages: tokenization → POS tagging → lemmatization.
 from typing import List
 
 from ..corpus.models import Document, ProcessedDocument
+from .cleaning import clean_text
 from .lemmatize import lemmatize_tagged
 from .structure import DocumentStructureDetector
 from .tagging import tag_tokens
 from .tokenize import tokenize_sentences, tokenize_words
 
 
-def preprocess(document: Document, detect_structure: bool = True) -> ProcessedDocument:
+def preprocess(
+    document: Document, detect_structure: bool = True, clean_ocr: bool = False
+) -> ProcessedDocument:
     """
     Preprocess a single document through full pipeline.
 
     Pipeline stages:
+    0. Text cleaning (optional) - OCR/PDF artifact removal
     1. Sentence tokenization
     2. Word tokenization
     3. POS tagging
@@ -28,6 +32,7 @@ def preprocess(document: Document, detect_structure: bool = True) -> ProcessedDo
     Args:
         document: Input Document object
         detect_structure: Whether to detect document structure (default: True)
+        clean_ocr: Whether to clean OCR/PDF artifacts (default: False)
 
     Returns:
         ProcessedDocument with all linguistic annotations
@@ -41,6 +46,10 @@ def preprocess(document: Document, detect_structure: bool = True) -> ProcessedDo
         ['the', 'cat', 'sit']
     """
     text = document.text
+
+    # 0. Clean OCR/PDF artifacts if requested
+    if clean_ocr:
+        text = clean_text(text)
 
     # 1. Sentence tokenization
     sentences = tokenize_sentences(text)
