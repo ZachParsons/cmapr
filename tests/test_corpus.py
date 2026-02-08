@@ -12,6 +12,7 @@ from src.concept_mapper.corpus import (
     ProcessedDocument,
     load_directory,
     load_file,
+    load_pdf,
     load_text,
 )
 
@@ -288,3 +289,91 @@ class TestLoader:
         """Test loading file as directory."""
         with pytest.raises(NotADirectoryError):
             load_directory(sample_file)
+
+    @pytest.fixture
+    def sample_pdf(self, tmp_path):
+        """Create a sample PDF file for testing."""
+        try:
+            # Try to import reportlab to create a test PDF
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import letter
+
+            pdf_path = tmp_path / "sample.pdf"
+            c = canvas.Canvas(str(pdf_path), pagesize=letter)
+            c.drawString(100, 750, "This is the first page of the PDF.")
+            c.drawString(100, 730, "It has multiple lines.")
+            c.showPage()
+            c.drawString(100, 750, "This is the second page.")
+            c.save()
+            return pdf_path
+        except ImportError:
+            # If reportlab not available, skip PDF creation tests
+            pytest.skip("reportlab not available for PDF test creation")
+
+    def test_load_pdf_basic(self, sample_pdf):
+        """Test loading text from a PDF file."""
+        text = load_pdf(sample_pdf)
+
+        assert isinstance(text, str)
+        assert "first page" in text.lower()
+        assert "second page" in text.lower()
+
+    def test_load_pdf_multipage_separation(self, sample_pdf):
+        """Test that PDF pages are separated with double newlines."""
+        text = load_pdf(sample_pdf)
+
+        # Pages should be separated by double newline
+        assert "\n\n" in text
+
+    def test_load_pdf_via_load_file(self, sample_pdf):
+        """Test loading PDF through load_file function."""
+        doc = load_file(sample_pdf)
+
+        assert isinstance(doc, Document)
+        assert "first page" in doc.text.lower()
+        assert doc.title == "sample"
+        assert doc.metadata["filename"] == "sample.pdf"
+
+    def test_load_pdf_via_load_file_with_metadata(self, sample_pdf):
+        """Test loading PDF with custom metadata."""
+        metadata = {"title": "Test PDF", "author": "Test Author"}
+        doc = load_file(sample_pdf, metadata=metadata)
+
+        assert doc.title == "Test PDF"
+        assert doc.author == "Test Author"
+
+    def test_load_pdf_not_found(self, tmp_path):
+        """Test loading non-existent PDF file."""
+        with pytest.raises(FileNotFoundError):
+            load_pdf(tmp_path / "nonexistent.pdf")
+
+    def test_load_directory_with_pdf_files(self, tmp_path):
+        """Test loading directory containing PDF files."""
+        try:
+            from reportlab.pdfgen import canvas
+
+            dir_path = tmp_path / "mixed_corpus"
+            dir_path.mkdir()
+
+            # Create text file
+            (dir_path / "doc1.txt").write_text("Text document.")
+
+            # Create PDF file
+            pdf_path = dir_path / "doc2.pdf"
+            c = canvas.Canvas(str(pdf_path))
+            c.drawString(100, 750, "PDF document.")
+            c.save()
+
+            # Load all files (both .txt and .pdf)
+            corpus = load_directory(dir_path, pattern="*.*", recursive=False)
+
+            # Should load both text and PDF
+            assert len(corpus) >= 1  # At least text file
+
+            # Load only PDFs
+            corpus = load_directory(dir_path, pattern="*.pdf", recursive=False)
+            assert len(corpus) == 1
+            assert "PDF document" in corpus[0].text
+
+        except ImportError:
+            pytest.skip("reportlab not available for PDF test creation")

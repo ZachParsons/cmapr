@@ -10,6 +10,13 @@ from typing import Dict, Optional, Union
 
 from .models import Corpus, Document
 
+try:
+    import pdfplumber
+
+    PDF_SUPPORT = True
+except ImportError:
+    PDF_SUPPORT = False
+
 
 def load_text(file_path: Union[str, Path]) -> str:
     """
@@ -36,12 +43,50 @@ def load_text(file_path: Union[str, Path]) -> str:
         return path.read_text(encoding="latin-1")
 
 
+def load_pdf(file_path: Union[str, Path]) -> str:
+    """
+    Extract text from a PDF file.
+
+    Uses pdfplumber to extract text from all pages and combines them
+    with double newline separation between pages.
+
+    Args:
+        file_path: Path to PDF file
+
+    Returns:
+        Extracted text from all pages
+
+    Raises:
+        ImportError: If pdfplumber is not installed
+        FileNotFoundError: If file doesn't exist
+    """
+    if not PDF_SUPPORT:
+        raise ImportError(
+            "pdfplumber is required for PDF support. "
+            "Install with: pip install pdfplumber"
+        )
+
+    path = Path(file_path)
+    pages_text = []
+
+    with pdfplumber.open(path) as pdf:
+        for page_num, page in enumerate(pdf.pages, 1):
+            text = page.extract_text()
+            if text:  # Only add non-empty pages
+                pages_text.append(text)
+
+    # Join pages with double newline (paragraph separator)
+    return "\n\n".join(pages_text)
+
+
 def load_file(file_path: Union[str, Path], metadata: Optional[Dict] = None) -> Document:
     """
     Load a single file into a Document object.
 
+    Supports both text files (.txt, .md, etc.) and PDF files (.pdf).
+
     Args:
-        file_path: Path to text file
+        file_path: Path to text or PDF file
         metadata: Optional metadata dict (if None, extracts from filename)
 
     Returns:
@@ -49,9 +94,15 @@ def load_file(file_path: Union[str, Path], metadata: Optional[Dict] = None) -> D
 
     Raises:
         FileNotFoundError: If file doesn't exist
+        ImportError: If PDF file but pdfplumber not installed
     """
     path = Path(file_path)
-    text = load_text(path)
+
+    # Detect file type and load accordingly
+    if path.suffix.lower() == ".pdf":
+        text = load_pdf(path)
+    else:
+        text = load_text(path)
 
     # Create metadata if not provided
     if metadata is None:

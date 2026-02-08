@@ -13,6 +13,7 @@ dependencies = [
     "stanza>=1.8",        # Dependency parsing for sentence diagrams
     "networkx>=3.2",      # Graph construction and algorithms
     "click>=8.1",         # Command-line interface
+    "pdfplumber>=0.10",   # PDF text extraction
 ]
 
 [project.optional-dependencies]
@@ -21,6 +22,7 @@ dev = [
     "pytest>=8.3",        # Tests ⭐
     "ruff>=0.6",          # Linter + formatter ⭐
     "ipython>=8.27",      # REPL w/ autoreload ⭐
+    "reportlab>=4.0",     # PDF generation for tests
 ]
 
 [project.scripts]
