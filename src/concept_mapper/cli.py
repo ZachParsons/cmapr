@@ -11,6 +11,7 @@ from pathlib import Path
 
 # Import core functionality
 from concept_mapper.corpus.loader import load_file, load_directory
+from concept_mapper.corpus.models import ProcessedDocument
 from concept_mapper.preprocessing.pipeline import preprocess
 from concept_mapper.analysis.reference import load_reference_corpus
 from concept_mapper.analysis.rarity import PhilosophicalTermScorer
@@ -1293,6 +1294,122 @@ def analyze(
         click.echo(
             f"✓ Saved graph with {len(graph_data['nodes'])} nodes and {len(graph_data['edges'])} edges to {output_path}"
         )
+
+
+@cli.command()
+@click.argument("corpus")
+@click.argument("source")
+@click.argument("target")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    help="Output file path (default: print to stdout)",
+)
+@click.option(
+    "--preview",
+    is_flag=True,
+    help="Show preview of changes without saving",
+)
+@click.pass_context
+def replace(ctx, corpus, source, target, output, preview):
+    """
+    Replace term with synonym while preserving inflections.
+
+    Replaces SOURCE term with TARGET synonym throughout the corpus,
+    automatically preserving grammatical inflections (tense, number, degree).
+
+    SOURCE and TARGET can be:
+    - Single words: "run" "sprint"
+    - Multi-word phrases (comma-separated): "body,without,organs" "medium"
+
+    Examples:
+        # Single word replacement
+        cmapr replace corpus.json "run" "sprint" -o output.txt
+
+        # Phrase to single word
+        cmapr replace corpus.json "body,without,organs" "medium" -o output.txt
+
+        # Phrase to phrase
+        cmapr replace corpus.json "body,without,organs" "blank,resistant,field" -o output.txt
+
+        # Preview changes
+        cmapr replace corpus.json "run" "sprint" --preview
+    """
+    from .transformations.replacement import ReplacementSpec, SynonymReplacer
+
+    verbose = ctx.obj["verbose"]
+
+    # Load corpus
+    if verbose:
+        click.echo(f"Loading corpus from {corpus}...")
+
+    with open(corpus, "r", encoding="utf-8") as f:
+        corpus_data = json.load(f)
+
+    if not corpus_data:
+        click.echo("Error: Empty corpus", err=True)
+        ctx.exit(1)
+
+    docs = [ProcessedDocument.from_dict(d) for d in corpus_data]
+
+    # Parse source and target (detect multi-word phrases)
+    def parse_term(term_str):
+        """Parse term string into single word or phrase list."""
+        if "," in term_str:
+            # Multi-word phrase: split by comma
+            return [lemma.strip() for lemma in term_str.split(",")]
+        else:
+            # Single word
+            return term_str.strip()
+
+    source_lemma = parse_term(source)
+    target_lemma = parse_term(target)
+
+    # Create replacement spec
+    spec = ReplacementSpec(source_lemma, target_lemma)
+
+    if verbose:
+        source_display = (
+            " ".join(source_lemma) if isinstance(source_lemma, list) else source_lemma
+        )
+        target_display = (
+            " ".join(target_lemma) if isinstance(target_lemma, list) else target_lemma
+        )
+        click.echo(f'Replacing "{source_display}" with "{target_display}"...')
+
+    # Perform replacements
+    replacer = SynonymReplacer()
+    results = []
+
+    for doc in docs:
+        replaced_text = replacer.replace_in_document(spec, doc, case_sensitive=False)
+        results.append(replaced_text)
+
+    # Combine all documents
+    combined_text = "\n\n".join(results)
+
+    # Preview or save
+    if preview:
+        click.echo("\nPreview of changes:")
+        click.echo("=" * 70)
+        # Show first 1000 characters
+        preview_text = combined_text[:1000]
+        if len(combined_text) > 1000:
+            preview_text += "\n... (truncated)"
+        click.echo(preview_text)
+        click.echo("=" * 70)
+        click.echo(
+            f"\nTotal length: {len(combined_text)} characters across {len(results)} document(s)"
+        )
+    elif output:
+        # Save to file
+        with open(output, "w", encoding="utf-8") as f:
+            f.write(combined_text)
+        click.echo(f"✓ Saved replaced text to {output}")
+    else:
+        # Print to stdout
+        click.echo(combined_text)
 
 
 # ============================================================================

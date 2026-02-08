@@ -918,3 +918,139 @@ class TestSourceDerivedFilenames:
 
         viz_file = output_dir / "exports" / "sample" / "index.html"
         assert viz_file.exists()
+
+
+class TestReplaceCommand:
+    """Tests for replace command."""
+
+    def test_replace_single_word(self, runner, sample_corpus_json):
+        """Test replacing single word with synonym."""
+        result = runner.invoke(
+            cli, ["replace", str(sample_corpus_json), "dialectical", "dynamic"]
+        )
+        assert result.exit_code == 0
+        assert "dynamic" in result.output
+        assert "dialectical" not in result.output
+
+    def test_replace_with_preview(self, runner, sample_corpus_json):
+        """Test replace with preview flag."""
+        result = runner.invoke(
+            cli,
+            ["replace", str(sample_corpus_json), "dialectical", "dynamic", "--preview"],
+        )
+        assert result.exit_code == 0
+        assert "Preview of changes:" in result.output
+        assert "Total length:" in result.output
+
+    def test_replace_with_output_file(self, runner, sample_corpus_json, tmp_path):
+        """Test replace with output file."""
+        output_file = tmp_path / "replaced.txt"
+        result = runner.invoke(
+            cli,
+            [
+                "replace",
+                str(sample_corpus_json),
+                "dialectical",
+                "dynamic",
+                "-o",
+                str(output_file),
+            ],
+        )
+        assert result.exit_code == 0
+        assert output_file.exists()
+        content = output_file.read_text()
+        assert "dynamic" in content
+        assert "dialectical" not in content
+
+    def test_replace_preserves_inflection(self, runner, tmp_path):
+        """Test that replacement preserves grammatical inflections."""
+        # Create corpus with various inflections
+        from concept_mapper.corpus.loader import load_file
+        from concept_mapper.preprocessing.pipeline import preprocess
+
+        text_file = tmp_path / "inflection_test.txt"
+        text_file.write_text("The cat runs. The cats ran quickly.")
+
+        doc = load_file(text_file)
+        processed = preprocess(doc)
+
+        corpus_file = tmp_path / "corpus.json"
+        with open(corpus_file, "w") as f:
+            json.dump([processed.to_dict()], f)
+
+        result = runner.invoke(cli, ["replace", str(corpus_file), "run", "sprint"])
+        assert result.exit_code == 0
+        # Should preserve tense: "runs" → "sprints", "ran" → "sprinted"
+        assert "sprints" in result.output
+        assert "sprinted" in result.output
+
+    def test_replace_phrase_to_single(self, runner, tmp_path):
+        """Test replacing multi-word phrase with single word."""
+        from concept_mapper.corpus.loader import load_file
+        from concept_mapper.preprocessing.pipeline import preprocess
+
+        text_file = tmp_path / "phrase_test.txt"
+        text_file.write_text("The body without organs is a concept.")
+
+        doc = load_file(text_file)
+        processed = preprocess(doc)
+
+        corpus_file = tmp_path / "corpus.json"
+        with open(corpus_file, "w") as f:
+            json.dump([processed.to_dict()], f)
+
+        result = runner.invoke(
+            cli, ["replace", str(corpus_file), "body,without,organ", "medium"]
+        )
+        assert result.exit_code == 0
+        assert "medium" in result.output
+        assert "body without" not in result.output
+
+    def test_replace_phrase_to_phrase(self, runner, tmp_path):
+        """Test replacing phrase with another phrase."""
+        from concept_mapper.corpus.loader import load_file
+        from concept_mapper.preprocessing.pipeline import preprocess
+
+        text_file = tmp_path / "phrase_test.txt"
+        # Use clearer context so POS tagger identifies "organs" as noun
+        text_file.write_text("The body without organs is important.")
+
+        doc = load_file(text_file)
+        processed = preprocess(doc)
+
+        corpus_file = tmp_path / "corpus.json"
+        with open(corpus_file, "w") as f:
+            json.dump([processed.to_dict()], f)
+
+        result = runner.invoke(
+            cli,
+            [
+                "replace",
+                str(corpus_file),
+                "body,without,organ",
+                "blank,resistant,field",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "blank resistant" in result.output
+        assert "field" in result.output
+
+    def test_replace_no_matches(self, runner, sample_corpus_json):
+        """Test replace when term not found in corpus."""
+        result = runner.invoke(
+            cli, ["replace", str(sample_corpus_json), "nonexistent", "replacement"]
+        )
+        assert result.exit_code == 0
+        # Should return original text unchanged
+        assert "dialectical" in result.output or "Geist" in result.output
+
+    def test_replace_empty_corpus(self, runner, tmp_path):
+        """Test replace on empty corpus."""
+        corpus_file = tmp_path / "empty.json"
+        corpus_file.write_text("[]")
+
+        result = runner.invoke(
+            cli, ["replace", str(corpus_file), "word", "replacement"]
+        )
+        assert result.exit_code == 1
+        assert "Empty corpus" in result.output
