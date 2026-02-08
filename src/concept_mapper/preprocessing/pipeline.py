@@ -10,6 +10,7 @@ from typing import List
 from ..corpus.models import Document, ProcessedDocument
 from .cleaning import clean_text
 from .lemmatize import lemmatize_tagged
+from .segment import get_paragraph_indices
 from .structure import DocumentStructureDetector
 from .tagging import tag_tokens
 from .tokenize import tokenize_sentences, tokenize_words
@@ -74,6 +75,9 @@ def preprocess(
             # Fail gracefully - structure detection is optional
             pass
 
+    # 6. Paragraph segmentation
+    paragraph_indices = get_paragraph_indices(text, sentences)
+
     return ProcessedDocument(
         raw_text=text,
         sentences=sentences,
@@ -83,6 +87,7 @@ def preprocess(
         metadata=document.metadata.copy(),
         structure_nodes=structure_nodes,
         sentence_locations=sentence_locations,
+        paragraph_indices=paragraph_indices,
     )
 
 

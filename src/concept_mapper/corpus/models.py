@@ -169,6 +169,7 @@ class ProcessedDocument:
     metadata: Dict[str, Any] = field(default_factory=dict)
     structure_nodes: List[StructureNode] = field(default_factory=list)
     sentence_locations: List[SentenceLocation] = field(default_factory=list)
+    paragraph_indices: List[int] = field(default_factory=list)
 
     @property
     def title(self) -> Optional[str]:
@@ -196,6 +197,7 @@ class ProcessedDocument:
             "metadata": self.metadata,
             "structure_nodes": [node.to_dict() for node in self.structure_nodes],
             "sentence_locations": [loc.to_dict() for loc in self.sentence_locations],
+            "paragraph_indices": self.paragraph_indices,
         }
 
     @classmethod
@@ -216,6 +218,7 @@ class ProcessedDocument:
                 SentenceLocation.from_dict(loc)
                 for loc in data.get("sentence_locations", [])
             ],
+            paragraph_indices=data.get("paragraph_indices", []),
         )
 
 
