@@ -52,6 +52,7 @@ class TextCleaner:
         fix_spacing: bool = True,
         fix_ocr_chars: bool = True,
         fix_split_words: bool = True,
+        fix_joined_words: bool = True,
         remove_page_numbers: bool = True,
         min_word_length: int = 2,
     ):
@@ -62,12 +63,14 @@ class TextCleaner:
             fix_spacing: Fix spacing issues around punctuation
             fix_ocr_chars: Fix common OCR character substitutions
             fix_split_words: Attempt to rejoin split words
+            fix_joined_words: Attempt to split incorrectly joined words
             remove_page_numbers: Remove standalone page numbers
             min_word_length: Minimum length for valid words
         """
         self.fix_spacing = fix_spacing
         self.fix_ocr_chars = fix_ocr_chars
         self.fix_split_words = fix_split_words
+        self.fix_joined_words = fix_joined_words
         self.remove_page_numbers = remove_page_numbers
         self.min_word_length = min_word_length
 
@@ -92,6 +95,9 @@ class TextCleaner:
 
         if self.fix_split_words:
             text = self._fix_split_words(text)
+
+        if self.fix_joined_words:
+            text = self._fix_joined_words(text)
 
         # Final cleanup
         text = self._final_cleanup(text)
@@ -173,8 +179,12 @@ class TextCleaner:
             part1 = match.group(1)
             part2 = match.group(2)
 
-            # Require minimum lengths
-            if len(part1) < 4 or len(part2) < 3:
+            # For very short first parts (2-3 chars), be more conservative
+            if len(part1) < 2:
+                return match.group(0)
+
+            # Require second part to be at least 3 chars
+            if len(part2) < 3:
                 return match.group(0)
 
             # Don't join if either part is a common complete word
@@ -194,24 +204,96 @@ class TextCleaner:
                 "will",
                 "clean",
                 "clear",
+                "can",
+                "for",
+                "not",
+                "but",
+                "all",
+                "has",
             }
             if part1.lower() in common_words or part2.lower() in common_words:
                 return match.group(0)
 
             # Don't join if first part ends with common suffixes (-ly, -ed, -ing, -er)
-            if re.search(r"(ly|ed|ing|er)$", part1, re.IGNORECASE):
+            if len(part1) > 4 and re.search(r"(ly|ed|ing|er)$", part1, re.IGNORECASE):
+                return match.group(0)
+
+            # Only join if first part is short (likely incomplete fragment)
+            # Longer first parts are probably complete words
+            if len(part1) > 6:
                 return match.group(0)
 
             # Join them
             return part1 + part2
 
         # Pattern 1: consonant ending + vowel beginning (e.g., "signif icant")
-        pattern1 = r"\b([a-z]{3,}[bcdfghjklmnpqrstvwxyz])\s+([aeiouy][a-z]{2,})\b"
+        # Allow 1+ chars before consonant to catch short fragments
+        pattern1 = r"\b([a-z]+[bcdfghjklmnpqrstvwxyz])\s+([aeiouy][a-z]{2,})\b"
         text = re.sub(pattern1, maybe_join, text, flags=re.IGNORECASE)
 
-        # Pattern 2: vowel ending + consonant beginning (e.g., "obsti nacy")
-        pattern2 = r"\b([a-z]{3,}[aeiouy])\s+([bcdfghjklmnpqrstvwxyz][a-z]{2,})\b"
+        # Pattern 2: vowel ending + consonant beginning (e.g., "obsti nacy", "li nguistic")
+        # Allow 1+ chars before vowel to catch short fragments like "li"
+        pattern2 = r"\b([a-z]+[aeiouy])\s+([bcdfghjklmnpqrstvwxyz][a-z]{2,})\b"
         text = re.sub(pattern2, maybe_join, text, flags=re.IGNORECASE)
+
+        return text
+
+    def _fix_joined_words(self, text: str) -> str:
+        """
+        Attempt to split incorrectly joined words.
+
+        Strategy: Look for patterns where common small words are joined
+        to other words without spaces (e.g., "betweenexpression").
+
+        This is conservative - only splits at known word boundaries.
+        """
+        # Common small words that often get joined incorrectly
+        # (prepositions, articles, conjunctions)
+        common_prefixes = [
+            "between",
+            "within",
+            "without",
+            "through",
+            "around",
+            "before",
+            "after",
+            "under",
+            "over",
+            "about",
+            "above",
+            "below",
+            "inside",
+            "outside",
+            "into",
+            "onto",
+            "upon",
+            "towards",
+            "toward",
+        ]
+
+        # Pattern: commonword + capitalized word or another word
+        for prefix in common_prefixes:
+            # Look for: prefix + [lowercase letter starting a new word]
+            # e.g., "betweenexpression" → "between expression"
+            pattern = r"\b(" + re.escape(prefix) + r")([a-z]{3,})\b"
+
+            def maybe_split(match):
+                prefix_part = match.group(1)
+                rest_part = match.group(2)
+
+                # Only split if rest part looks like a distinct word
+                # (starts with common word beginnings or is long enough)
+                if len(rest_part) >= 5:
+                    return prefix_part + " " + rest_part
+
+                return match.group(0)  # Keep as-is
+
+            text = re.sub(pattern, maybe_split, text, flags=re.IGNORECASE)
+
+        # Look for adjective+noun or compound words that should be split
+        # Pattern: lowercase + uppercase (CamelCase-like errors)
+        # e.g., "structuralArrangements" → "structural Arrangements"
+        text = re.sub(r"([a-z])([A-Z])", r"\1 \2", text)
 
         return text
 
@@ -234,6 +316,7 @@ def clean_text(
     fix_spacing: bool = True,
     fix_ocr_chars: bool = True,
     fix_split_words: bool = True,
+    fix_joined_words: bool = True,
     remove_page_numbers: bool = True,
 ) -> str:
     """
@@ -244,6 +327,7 @@ def clean_text(
         fix_spacing: Fix spacing issues around punctuation
         fix_ocr_chars: Fix common OCR character substitutions
         fix_split_words: Attempt to rejoin split words
+        fix_joined_words: Attempt to split incorrectly joined words
         remove_page_numbers: Remove standalone page numbers
 
     Returns:
@@ -258,6 +342,7 @@ def clean_text(
         fix_spacing=fix_spacing,
         fix_ocr_chars=fix_ocr_chars,
         fix_split_words=fix_split_words,
+        fix_joined_words=fix_joined_words,
         remove_page_numbers=remove_page_numbers,
     )
     return cleaner.clean(text)
