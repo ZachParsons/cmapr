@@ -874,7 +874,7 @@ def diagram(ctx, sentence, format, output):
 # ============================================================================
 
 
-@cli.command()
+@cli.command(name="analyze")
 @click.argument("corpus", type=click.Path(exists=True))
 @click.argument("term")
 @click.option(
@@ -917,7 +917,7 @@ def diagram(ctx, sentence, format, output):
 )
 @click.option("--output", "-o", type=click.Path(), help="Output file")
 @click.pass_context
-def analyze_context_cmd(ctx, corpus, term, top_n, threshold, pos, lemma, no_relations, format, output):
+def analyze(ctx, corpus, term, top_n, threshold, pos, lemma, no_relations, format, output):
     """
     Analyze contextual relations for a search term.
 
@@ -925,10 +925,10 @@ def analyze_context_cmd(ctx, corpus, term, top_n, threshold, pos, lemma, no_rela
     identifies grammatical relations between them.
 
     Examples:
-        cmapr analyze-context corpus.json "consciousness"
-        cmapr analyze-context corpus.json "being" --top-n 10
-        cmapr analyze-context corpus.json "intentionality" --lemma -p nouns -p verbs
-        cmapr analyze-context corpus.json "dialectic" --format json -o relations.json
+        cmapr analyze corpus.json "consciousness"
+        cmapr analyze corpus.json "being" --top-n 10
+        cmapr analyze corpus.json "intentionality" --lemma -p nouns -p verbs
+        cmapr analyze corpus.json "dialectic" --format json -o relations.json
     """
     from concept_mapper.analysis.contextual_relations import analyze_context
     import json

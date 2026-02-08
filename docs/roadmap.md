@@ -1226,6 +1226,6 @@ The project is feature-complete for its intended use case. Potential future enha
   - **Implementation:**
     - Create `src/concept_mapper/analysis/contextual_relations.py` module
     - Combine existing search, extraction, and relation detection functionality
-    - Add `cmapr analyze-context` CLI command with options for scope (sentence/paragraph/section)
+    - Add `cmapr analyze` CLI command with options for scope (sentence/paragraph/section)
     - Support for batch processing multiple search terms
     - Export results as JSON, CSV, or graph format
