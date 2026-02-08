@@ -2,10 +2,10 @@
 Tests for paragraph segmentation.
 """
 
-from src.concept_mapper.preprocessing.segment import (
-    segment_paragraphs,
+from concept_mapper.preprocessing.segment import (
     get_paragraph_indices,
     get_paragraph_spans,
+    segment_paragraphs,
 )
 
 
@@ -192,8 +192,8 @@ class TestIntegration:
 
     def test_preprocess_with_paragraphs(self):
         """Test that preprocessing includes paragraph indices."""
-        from src.concept_mapper.corpus.models import Document
-        from src.concept_mapper.preprocessing import preprocess
+        from concept_mapper.corpus.models import Document
+        from concept_mapper.preprocessing import preprocess
 
         text = "First sentence.\n\nSecond sentence in new paragraph."
         doc = Document(text=text)
@@ -208,8 +208,8 @@ class TestIntegration:
 
     def test_serialization_includes_paragraphs(self):
         """Test that paragraph indices are preserved in serialization."""
-        from src.concept_mapper.corpus.models import Document
-        from src.concept_mapper.preprocessing import preprocess
+        from concept_mapper.corpus.models import Document
+        from concept_mapper.preprocessing import preprocess
 
         text = "P1.\n\nP2."
         doc = Document(text=text)
@@ -220,7 +220,7 @@ class TestIntegration:
         assert "paragraph_indices" in data
 
         # Deserialize
-        from src.concept_mapper.corpus.models import ProcessedDocument
+        from concept_mapper.corpus.models import ProcessedDocument
 
         restored = ProcessedDocument.from_dict(data)
         assert restored.paragraph_indices == processed.paragraph_indices
