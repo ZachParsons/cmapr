@@ -989,14 +989,9 @@ def _display_structured_text(term, grouped_relations, docs):
                     f"(score: {rel.score:.2f}, {evidence_info}){loc_str}"
                 )
 
-                # Show first evidence sentence
+                # Show first evidence sentence (full text)
                 if rel.evidence:
-                    first_evidence = (
-                        rel.evidence[0][:100] + "..."
-                        if len(rel.evidence[0]) > 100
-                        else rel.evidence[0]
-                    )
-                    click.echo(f'       "{first_evidence}"')
+                    click.echo(f'       "{rel.evidence[0]}"')
 
 
 def _get_structure_summary(docs):
