@@ -102,6 +102,9 @@ class DocumentStructureDetector:
                 }
             )
 
+        # Filter out table of contents / index entries
+        nodes = self._filter_toc_entries(nodes, text)
+
         return nodes if len(nodes) >= 2 else None  # Require at least 2 headings
 
     def _detect_named_chapters(
@@ -243,6 +246,100 @@ class DocumentStructureDetector:
             )
 
         return nodes if len(nodes) >= 2 else None
+
+    def _filter_toc_entries(self, nodes: List[Dict], text: str) -> List[Dict]:
+        """
+        Filter out table of contents and index entries.
+
+        Strategy: Detect TOC region (high density of numbered entries with page numbers
+        in first 15% of document) and skip all entries from that region.
+        """
+        if not nodes:
+            return nodes
+
+        text_length = len(text)
+        toc_threshold = int(text_length * 0.15)  # First 15% might be TOC
+
+        # Find nodes with page numbers in early part of document
+        early_nodes_with_pages = []
+        for node in nodes:
+            if node["position"] < toc_threshold:
+                title_parts = node["title"].rsplit(None, 1)
+                has_page_number = (
+                    len(title_parts) == 2
+                    and title_parts[-1].isdigit()
+                    and len(title_parts[-1]) <= 4
+                )
+                if has_page_number:
+                    early_nodes_with_pages.append(node)
+
+        # If many nodes with page numbers found in early part, likely a TOC section
+        if len(early_nodes_with_pages) > 10:
+            # Find the end of TOC region (position of last early node with page num)
+            toc_end_position = max(n["position"] for n in early_nodes_with_pages)
+
+            # Filter out all nodes before TOC end
+            filtered = [n for n in nodes if n["position"] > toc_end_position]
+
+            # Clean page numbers from remaining titles
+            for node in filtered:
+                title_parts = node["title"].rsplit(None, 1)
+                if (
+                    len(title_parts) == 2
+                    and title_parts[-1].isdigit()
+                    and len(title_parts[-1]) <= 4
+                ):
+                    node["title"] = title_parts[0]
+
+            # Also remove junk (very high numbers, short titles)
+            cleaned = []
+            for node in filtered:
+                num = node["number"]
+                title = node["title"]
+
+                # Skip if chapter number is > 20
+                if "." not in num:
+                    try:
+                        if int(num) > 20:
+                            continue
+                    except ValueError:
+                        continue
+
+                # Skip if title is too short
+                if len(title) < 10:
+                    continue
+
+                cleaned.append(node)
+
+            # Final de-duplication: keep first occurrence of each number
+            seen = set()
+            final = []
+            for node in cleaned:
+                if node["number"] not in seen:
+                    seen.add(node["number"])
+                    final.append(node)
+
+            return final
+        else:
+            # No clear TOC detected - just clean page numbers and de-duplicate
+            for node in nodes:
+                title_parts = node["title"].rsplit(None, 1)
+                if (
+                    len(title_parts) == 2
+                    and title_parts[-1].isdigit()
+                    and len(title_parts[-1]) <= 4
+                ):
+                    node["title"] = title_parts[0]
+
+            # De-duplicate
+            seen = set()
+            final = []
+            for node in nodes:
+                if node["number"] not in seen:
+                    seen.add(node["number"])
+                    final.append(node)
+
+            return final
 
     def _detect_paragraphs(
         self, text: str, sentences: List[str]
