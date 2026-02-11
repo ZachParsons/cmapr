@@ -58,7 +58,12 @@
       "Bash(pip uninstall:*)",
       "Bash(cmapr analyze-context:*)",
       "Bash(cmapr analyze --help:*)",
-      "Bash(cmapr analyze:*)"
+      "Bash(cmapr analyze:*)",
+      "Bash(python -m concept_mapper.cli:*)",
+      "Bash(cmapr replace --help:*)",
+      "Bash(cmapr ingest:*)",
+      "Bash(cmapr replace:*)",
+      "Bash(cmapr --help:*)"
     ]
   }
 }
