@@ -104,9 +104,8 @@ def cooccurs_in_paragraph(
     """
     Count terms that co-occur with target term in the same paragraph.
 
-    Note: Requires paragraph segmentation. Currently treats each document
-    as a single paragraph since Phase 1.7 (paragraph segmentation) is not
-    yet implemented.
+    Uses paragraph segmentation from ProcessedDocument.paragraph_indices to
+    identify paragraph boundaries and count co-occurrences within paragraphs.
 
     Args:
         term: Target term to find co-occurrences for
@@ -119,20 +118,49 @@ def cooccurs_in_paragraph(
     Example:
         >>> cooccurs = cooccurs_in_paragraph("intentionality", docs)
     """
-    # TODO: Implement proper paragraph segmentation (Phase 1.7)
-    # For now, treat each document as a single paragraph
     cooccurrences = Counter()
-
     search_term = term if case_sensitive else term.lower()
 
     for doc in docs:
-        # Check if term appears anywhere in document
-        full_text = " ".join(doc.sentences)
-        text_compare = full_text if case_sensitive else full_text.lower()
+        # If no paragraph indices, fall back to treating document as one paragraph
+        if not doc.paragraph_indices:
+            full_text = " ".join(doc.sentences)
+            text_compare = full_text if case_sensitive else full_text.lower()
 
-        if search_term in text_compare:
-            # Count all words in the entire document
-            words = full_text.split()
+            if search_term in text_compare:
+                words = full_text.split()
+                for word in words:
+                    cleaned = word.strip('.,;:!?"()[]{}').lower()
+                    if cleaned and cleaned != search_term.lower():
+                        cooccurrences[cleaned] += 1
+            continue
+
+        # Group sentences by paragraph
+        paragraphs_with_term = set()
+        paragraph_sentences = {}  # para_idx -> list of sentences
+
+        for sent_idx, sentence in enumerate(doc.sentences):
+            # Get paragraph index for this sentence
+            if sent_idx < len(doc.paragraph_indices):
+                para_idx = doc.paragraph_indices[sent_idx]
+            else:
+                # Fallback if paragraph_indices is shorter than sentences
+                para_idx = 0
+
+            # Add sentence to paragraph group
+            if para_idx not in paragraph_sentences:
+                paragraph_sentences[para_idx] = []
+            paragraph_sentences[para_idx].append(sentence)
+
+            # Check if this sentence contains the search term
+            sentence_compare = sentence if case_sensitive else sentence.lower()
+            if search_term in sentence_compare:
+                paragraphs_with_term.add(para_idx)
+
+        # Count words in paragraphs containing the term
+        for para_idx in paragraphs_with_term:
+            para_text = " ".join(paragraph_sentences[para_idx])
+            words = para_text.split()
             for word in words:
                 cleaned = word.strip('.,;:!?"()[]{}').lower()
                 if cleaned and cleaned != search_term.lower():

@@ -610,7 +610,7 @@ Find where and how terms appear.
   - [x] `find_sentences_any()`, `find_sentences_all()` for multiple terms
   - [x] `count_term_occurrences()` for frequency counting
   - [x] Case-sensitive and case-insensitive search
-  - [ ] Support lemma matching option *(deferred: TODO in code)*
+  - [x] Support lemma matching option (`match_lemma=True` parameter)
   - [x] Tests: 12 tests covering all search functionality
 
 - [x] **5.2 KWIC (Key Word In Context) concordance** (`src/concept_mapper/search/concordance.py`)
