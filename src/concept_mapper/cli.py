@@ -929,7 +929,7 @@ def _group_relations_by_structure(relations, level="chapter"):
     return grouped
 
 
-def _display_structured_text(term, grouped_relations, docs):
+def _display_structured_text(term, grouped_relations, docs, verbose=False):
     """
     Display relations grouped by structure in text format.
 
@@ -937,6 +937,7 @@ def _display_structured_text(term, grouped_relations, docs):
         term: Search term
         grouped_relations: Dictionary from _group_relations_by_structure
         docs: List of ProcessedDocument objects (for structure info)
+        verbose: If True, show detailed output with scores and evidence
     """
     from collections import defaultdict
 
@@ -964,35 +965,46 @@ def _display_structured_text(term, grouped_relations, docs):
             by_type[rel.relation_type].append(rel)
 
         # Display each type
-        for rel_type in ["svo", "copular", "prep", "cooccurrence"]:
-            if rel_type not in by_type:
-                continue
+        if verbose:
+            # Verbose mode: show detailed output with scores and evidence
+            for rel_type in ["svo", "copular", "prep", "cooccurrence"]:
+                if rel_type not in by_type:
+                    continue
 
-            rels = sorted(by_type[rel_type], key=lambda r: r.score, reverse=True)[:10]
+                rels = sorted(by_type[rel_type], key=lambda r: r.score, reverse=True)[:10]
 
-            click.echo(f"\n  {rel_type.upper()} Relations ({len(rels)} shown):")
-            click.echo("  " + "-" * 76)
+                click.echo(f"\n  {rel_type.upper()} Relations ({len(rels)} shown):")
+                click.echo("  " + "-" * 76)
 
-            for i, rel in enumerate(rels, 1):
-                evidence_info = f"{len(rel.evidence)} occurrence(s)"
+                for i, rel in enumerate(rels, 1):
+                    evidence_info = f"{len(rel.evidence)} occurrence(s)"
 
-                # Show first location if available
-                loc_str = ""
-                if rel.evidence_locations:
-                    loc = rel.evidence_locations[0]
-                    if loc.section:
-                        loc_str = f" [{loc.section}]"
-                    elif loc.chapter:
-                        loc_str = f" [{loc.chapter}]"
+                    # Show first location if available
+                    loc_str = ""
+                    if rel.evidence_locations:
+                        loc = rel.evidence_locations[0]
+                        if loc.section:
+                            loc_str = f" [{loc.section}]"
+                        elif loc.chapter:
+                            loc_str = f" [{loc.chapter}]"
 
-                click.echo(
-                    f"    {i}. {rel.source} → {rel.target} "
-                    f"(score: {rel.score:.2f}, {evidence_info}){loc_str}"
-                )
+                    click.echo(
+                        f"    {i}. {rel.source} → {rel.target} "
+                        f"(score: {rel.score:.2f}, {evidence_info}){loc_str}"
+                    )
 
-                # Show first evidence sentence (full text)
-                if rel.evidence:
-                    click.echo(f'       "{rel.evidence[0]}"')
+                    # Show first evidence sentence (full text)
+                    if rel.evidence:
+                        click.echo(f'       "{rel.evidence[0]}"')
+        else:
+            # Minimal mode: just list significant terms
+            all_terms = set()
+            for rel in relations:
+                all_terms.add(rel.target)
+
+            if all_terms:
+                terms_list = sorted(all_terms)
+                click.echo(f"\n  Significant terms: {', '.join(terms_list)}")
 
 
 def _get_structure_summary(docs):
@@ -1092,6 +1104,13 @@ def _get_structure_summary(docs):
     is_flag=True,
     help="Display full document structure outline",
 )
+@click.option(
+    "--verbose",
+    "-v",
+    "show_details",
+    is_flag=True,
+    help="Show detailed output with scores, evidence sentences, and occurrence counts",
+)
 @click.pass_context
 def analyze(
     ctx,
@@ -1106,6 +1125,7 @@ def analyze(
     output,
     group_by,
     show_structure,
+    show_details,
 ):
     """
     Analyze contextual relations for a search term.
@@ -1167,34 +1187,41 @@ def analyze(
         # Check if we have structure and should group
         has_structure = any(rel.evidence_locations for rel in relations)
 
+
         if has_structure and group_by != "none":
             # Use structured display
             grouped = _group_relations_by_structure(relations, level=group_by)
-            _display_structured_text(term, grouped, docs)
+            _display_structured_text(term, grouped, docs, verbose=show_details)
         else:
             # Use flat display
-            click.echo(f"\nFound {len(relations)} contextual relations for '{term}':")
-            click.echo("=" * 70)
-
-            # Group by relation type
             from collections import defaultdict
 
-            by_type = defaultdict(list)
-            for rel in relations:
-                by_type[rel.relation_type].append(rel)
+            if show_details:
+                # Verbose mode: show detailed output
+                click.echo(f"\nFound {len(relations)} contextual relations for '{term}':")
+                click.echo("=" * 70)
 
-            for rel_type in ["svo", "copular", "prep", "cooccurrence"]:
-                if rel_type in by_type:
-                    rels = sorted(
-                        by_type[rel_type], key=lambda r: r.score, reverse=True
-                    )[:20]
-                    click.echo(f"\n{rel_type.upper()} Relations (top 20):")
-                    for i, rel in enumerate(rels, 1):
-                        evidence_info = f"{len(rel.evidence)} sentence(s)"
-                        click.echo(
-                            f"  {i}. {rel.source} --{rel.relation_type}--> {rel.target} "
-                            f"(score: {rel.score:.2f}, {evidence_info})"
-                        )
+                by_type = defaultdict(list)
+                for rel in relations:
+                    by_type[rel.relation_type].append(rel)
+
+                for rel_type in ["svo", "copular", "prep", "cooccurrence"]:
+                    if rel_type in by_type:
+                        rels = sorted(
+                            by_type[rel_type], key=lambda r: r.score, reverse=True
+                        )[:20]
+                        click.echo(f"\n{rel_type.upper()} Relations (top 20):")
+                        for i, rel in enumerate(rels, 1):
+                            evidence_info = f"{len(rel.evidence)} sentence(s)"
+                            click.echo(
+                                f"  {i}. {rel.source} --{rel.relation_type}--> {rel.target} "
+                                f"(score: {rel.score:.2f}, {evidence_info})"
+                            )
+            else:
+                # Minimal mode: just list significant terms
+                click.echo(f"\nSignificant terms co-occurring with '{term}':")
+                all_terms = sorted(set(rel.target for rel in relations))
+                click.echo(", ".join(all_terms))
 
     elif format == "json":
         from concept_mapper.analysis.contextual_relations import (
