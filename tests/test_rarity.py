@@ -35,6 +35,7 @@ from src.concept_mapper.analysis.rarity import (
     score_philosophical_terms,
     CONTENT_WORD_POS_TAGS,
     FUNCTION_WORD_POS_TAGS,
+    _is_valid_term,
 )
 
 
@@ -2099,3 +2100,64 @@ class TestHybridScorerOnRealCorpus:
 
         # Different weighting may produce different top terms
         # (not guaranteed, but likely with diverse signals)
+
+
+class TestIsValidTerm:
+    """Test term validation to filter out tokenization artifacts."""
+
+    def test_reject_contraction_fragments(self):
+        """Test that common contraction fragments are rejected."""
+        # Common contraction fragments from NLTK word_tokenize
+        invalid_fragments = ["'s", "'t", "'m", "'d", "'ll", "'ve", "'re", "n't", "wo", "ca", "ng"]
+
+        for fragment in invalid_fragments:
+            assert not _is_valid_term(fragment), f"'{fragment}' should be rejected"
+
+    def test_reject_mostly_punctuation(self):
+        """Test that terms with more punctuation than letters are rejected."""
+        invalid_terms = ["'a", "a'", "'b'", "..a"]
+
+        for term in invalid_terms:
+            assert not _is_valid_term(term), f"'{term}' should be rejected"
+
+    def test_accept_valid_philosophical_terms(self):
+        """Test that legitimate philosophical terms are accepted."""
+        valid_terms = ["dasein", "phenomenology", "consciousness", "being", "intentionality"]
+
+        for term in valid_terms:
+            assert _is_valid_term(term), f"'{term}' should be accepted"
+
+    def test_accept_hyphenated_compounds(self):
+        """Test that hyphenated philosophical terms are accepted."""
+        valid_compounds = ["being-in-the-world", "thing-in-itself", "self-consciousness"]
+
+        for term in valid_compounds:
+            assert _is_valid_term(term), f"'{term}' should be accepted"
+
+    def test_reject_too_short(self):
+        """Test that single-character terms are rejected."""
+        assert not _is_valid_term("a")
+        assert not _is_valid_term("I")
+        assert not _is_valid_term("")
+
+    def test_reject_all_punctuation(self):
+        """Test that pure punctuation is rejected."""
+        assert not _is_valid_term("...")
+        assert not _is_valid_term("!!!")
+        assert not _is_valid_term("--")
+
+    def test_reject_common_abbreviations(self):
+        """Test that common abbreviations are rejected."""
+        assert not _is_valid_term("i.e")
+        assert not _is_valid_term("e.g")
+        assert not _is_valid_term("etc")
+
+    def test_accept_edge_cases(self):
+        """Test edge cases for valid terms."""
+        # Two-letter words should be accepted if they're real words
+        assert _is_valid_term("is")
+        assert _is_valid_term("be")
+
+        # Words with internal apostrophes/punctuation should be accepted
+        # if they have sufficient letters
+        assert _is_valid_term("o'clock")  # 6 letters, 1 punct - valid

@@ -1390,6 +1390,25 @@ def _is_valid_term(term: str) -> bool:
     if not any(c.isalpha() for c in term):
         return False
 
+    # Filter out NLTK tokenization artifacts (contraction fragments)
+    # These are produced when word_tokenize splits contractions:
+    # "It's" -> ['It', "'s"], "won't" -> ['wo', "n't"], etc.
+    contraction_fragments = {
+        "'s", "'t", "'m", "'d", "'ll", "'ve", "'re",  # Standard contractions
+        "n't", "wo", "ca", "na", "ta",  # Negative/modal fragments
+        "gon", "wan", "got",  # gonna, wanna, gotta fragments
+        "ng",  # -ing suffix sometimes incorrectly tokenized
+    }
+    if term.lower() in contraction_fragments:
+        return False
+
+    # Filter out terms that are mostly punctuation with minimal letters
+    # (e.g., "'s", "n't", etc. that might have escaped above)
+    alpha_chars = sum(1 for c in term if c.isalpha())
+    punct_chars = sum(1 for c in term if c in string.punctuation)
+    if punct_chars > 0 and alpha_chars <= 2 and punct_chars >= alpha_chars:
+        return False
+
     return True
 
 
