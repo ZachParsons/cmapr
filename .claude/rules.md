@@ -28,6 +28,7 @@ NLP project for concept mapping and linguistic analysis using NLTK and Stanza.
 - **ALWAYS write tests** for new or changed functionality - no exceptions
 - Test edge cases, errors, and both positive/negative scenarios
 - Use descriptive test names that explain the behavior
+- **When a bug or unexpected result is reported: add a regression test** that asserts the bad behavior cannot recur, before or alongside the fix
 
 ### Test Data
 - **NEVER add redundant test data** without approval

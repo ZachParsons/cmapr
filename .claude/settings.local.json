@@ -63,7 +63,8 @@
       "Bash(cmapr replace --help:*)",
       "Bash(cmapr ingest:*)",
       "Bash(cmapr replace:*)",
-      "Bash(cmapr --help:*)"
+      "Bash(cmapr --help:*)",
+      "Bash(cmapr rarities:*)"
     ]
   }
 }
