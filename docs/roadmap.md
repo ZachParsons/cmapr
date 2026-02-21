@@ -486,6 +486,7 @@ src/concept_mapper/
 - Temporal analysis across an author's career
 - Web interface
 - Database backend for large-scale corpora
+- **Investigate pdfplumber for source text ingestion** — determine whether pdfplumber can replace the current two-file workflow (raw OCR text + manually cleaned table of contents) by extracting structured text and TOC directly from the source PDF.
 
 ---
 
