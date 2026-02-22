@@ -1460,7 +1460,7 @@ class TestPhilosophicalTermCandidates:
         """Documents with philosophical content."""
         text = """
         Being and consciousness are fundamental concepts in phenomenology.
-        The phenomenological method investigates subjective experience.
+        Philosophers investigate subjective experience through phenomenology.
         Intentionality refers to the directedness of consciousness.
         """
         doc = Document(text=text, metadata={})
@@ -2108,7 +2108,19 @@ class TestIsValidTerm:
     def test_reject_contraction_fragments(self):
         """Test that common contraction fragments are rejected."""
         # Common contraction fragments from NLTK word_tokenize
-        invalid_fragments = ["'s", "'t", "'m", "'d", "'ll", "'ve", "'re", "n't", "wo", "ca", "ng"]
+        invalid_fragments = [
+            "'s",
+            "'t",
+            "'m",
+            "'d",
+            "'ll",
+            "'ve",
+            "'re",
+            "n't",
+            "wo",
+            "ca",
+            "ng",
+        ]
 
         for fragment in invalid_fragments:
             assert not _is_valid_term(fragment), f"'{fragment}' should be rejected"
@@ -2122,14 +2134,24 @@ class TestIsValidTerm:
 
     def test_accept_valid_philosophical_terms(self):
         """Test that legitimate philosophical terms are accepted."""
-        valid_terms = ["dasein", "phenomenology", "consciousness", "being", "intentionality"]
+        valid_terms = [
+            "dasein",
+            "phenomenology",
+            "consciousness",
+            "being",
+            "intentionality",
+        ]
 
         for term in valid_terms:
             assert _is_valid_term(term), f"'{term}' should be accepted"
 
     def test_accept_hyphenated_compounds(self):
         """Test that hyphenated philosophical terms are accepted."""
-        valid_compounds = ["being-in-the-world", "thing-in-itself", "self-consciousness"]
+        valid_compounds = [
+            "being-in-the-world",
+            "thing-in-itself",
+            "self-consciousness",
+        ]
 
         for term in valid_compounds:
             assert _is_valid_term(term), f"'{term}' should be accepted"

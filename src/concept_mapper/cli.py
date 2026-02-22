@@ -73,8 +73,13 @@ def cli(ctx, verbose, output_dir):
     is_flag=True,
     help="Clean OCR/PDF artifacts (spacing, split words, page numbers)",
 )
+@click.option(
+    "--toc",
+    type=click.Path(exists=True),
+    help="Table of contents file for guided structure detection",
+)
 @click.pass_context
-def ingest(ctx, path, output, recursive, pattern, clean_ocr):
+def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc):
     """
     Load and preprocess documents.
 
@@ -84,10 +89,14 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr):
     Use --clean-ocr for texts from PDFs with OCR errors (spacing issues,
     split words, page numbers, etc.).
 
+    Use --toc to provide a table of contents file for accurate structure
+    detection when automatic detection fails or is unreliable.
+
     Examples:
         cmapr ingest document.txt -o corpus.json
         cmapr ingest corpus/ -r -p "*.txt" -o corpus.json
         cmapr ingest scanned.txt --clean-ocr -o corpus.json
+        cmapr ingest eco_spl.txt --toc eco_spl_toc.txt -o corpus.json
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -109,17 +118,28 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr):
     if verbose:
         click.echo(f"Loaded {len(docs)} document(s)")
 
+    # Convert TOC path to Path object if provided
+    toc_file = Path(toc) if toc else None
+
     # Preprocess
     if verbose:
-        if clean_ocr:
+        if clean_ocr and toc_file:
+            click.echo(
+                "Preprocessing documents (with OCR cleaning and TOC-guided structure detection)..."
+            )
+        elif clean_ocr:
             click.echo("Preprocessing documents (with OCR cleaning)...")
+        elif toc_file:
+            click.echo(
+                "Preprocessing documents (with TOC-guided structure detection)..."
+            )
         else:
             click.echo("Preprocessing documents...")
 
     processed = []
     with click.progressbar(docs, label="Processing") as bar:
         for doc in bar:
-            processed.append(preprocess(doc, clean_ocr=clean_ocr))
+            processed.append(preprocess(doc, clean_ocr=clean_ocr, toc_file=toc_file))
 
     # Save
     if output:
@@ -878,20 +898,146 @@ def diagram(ctx, sentence, format, output):
 # ============================================================================
 
 
-def _group_relations_by_structure(relations, level="chapter"):
+def _get_pos_label(pos_tag):
+    """
+    Convert Penn Treebank POS tag to readable label.
+
+    Args:
+        pos_tag: Penn Treebank POS tag (e.g., NN, VBD, JJ)
+
+    Returns:
+        Readable POS label (e.g., noun, verb, adj)
+    """
+    if pos_tag.startswith("NN"):
+        return "noun"
+    elif pos_tag.startswith("VB"):
+        return "verb"
+    elif pos_tag.startswith("JJ"):
+        return "adj"
+    elif pos_tag.startswith("RB"):
+        return "adv"
+    elif pos_tag.startswith("IN"):
+        return "prep"
+    elif pos_tag.startswith("DT"):
+        return "det"
+    elif pos_tag.startswith("PR"):
+        return "pron"
+    elif pos_tag.startswith("CD"):
+        return "num"
+    elif pos_tag == "CC":
+        return "conj"
+    else:
+        return "other"
+
+
+def _build_hierarchical_path(loc, level, structure_nodes=None):
+    """
+    Build a hierarchical path string for a location.
+
+    Reconstructs the full hierarchy based on section numbering (e.g., "1.5.1"
+    belongs to section "1.5" which belongs to chapter "1"), looking up titles
+    from structure nodes when available.
+
+    Args:
+        loc: SentenceLocation object
+        level: Display level (chapter, section, subsection)
+        structure_nodes: Optional list of StructureNode objects for title lookup
+
+    Returns:
+        Hierarchical path string like "1. Signs / 1.5. Title / 1.5.1. Subtitle"
+    """
+    # Build a lookup map from structure nodes if provided
+    node_map = {}
+    if structure_nodes:
+        for node in structure_nodes:
+            node_map[node.number] = node
+
+    parts = []
+
+    if level == "chapter":
+        # Just chapter
+        if loc.chapter:
+            title = loc.chapter_title or f"Chapter {loc.chapter}"
+            parts.append(f"{loc.chapter}. {title}" if loc.chapter_title else title)
+
+    elif level == "section":
+        # Chapter / Section
+        if loc.section:
+            # Extract chapter number from section (e.g., "1.5" -> "1")
+            chapter_num = (
+                loc.section.split(".")[0] if "." in loc.section else loc.section
+            )
+
+            # Add chapter
+            if chapter_num in node_map:
+                chapter_title = node_map[chapter_num].title
+                parts.append(f"{chapter_num}. {chapter_title}")
+            elif loc.chapter == chapter_num and loc.chapter_title:
+                parts.append(f"{chapter_num}. {loc.chapter_title}")
+            else:
+                parts.append(f"Chapter {chapter_num}")
+
+            # Add section
+            section_title = loc.section_title or f"Section {loc.section}"
+            parts.append(
+                f"{loc.section}. {section_title}"
+                if loc.section_title
+                else section_title
+            )
+
+    elif level == "subsection":
+        # Chapter / Section / Subsection
+        if loc.subsection:
+            # Extract chapter and section from subsection (e.g., "1.5.1" -> "1", "1.5")
+            parts_nums = loc.subsection.split(".")
+            if len(parts_nums) >= 3:
+                chapter_num = parts_nums[0]
+                section_num = f"{parts_nums[0]}.{parts_nums[1]}"
+
+                # Add chapter
+                if chapter_num in node_map:
+                    chapter_title = node_map[chapter_num].title
+                    parts.append(f"{chapter_num}. {chapter_title}")
+                else:
+                    parts.append(f"Chapter {chapter_num}")
+
+                # Add section
+                if section_num in node_map:
+                    section_title = node_map[section_num].title
+                    parts.append(f"{section_num}. {section_title}")
+                else:
+                    parts.append(f"Section {section_num}")
+
+                # Add subsection
+                subsection_title = (
+                    loc.subsection_title or f"Subsection {loc.subsection}"
+                )
+                parts.append(
+                    f"{loc.subsection}. {subsection_title}"
+                    if loc.subsection_title
+                    else subsection_title
+                )
+
+    return " / ".join(parts) if parts else "Unstructured Content"
+
+
+def _group_relations_by_structure(relations, level="chapter", structure_nodes=None):
     """
     Group relations by document structure.
 
     Args:
         relations: List of ContextualRelation objects
         level: Grouping level (chapter, section, subsection)
+        structure_nodes: Optional list of StructureNode objects for hierarchical path lookup
 
     Returns:
         Dictionary mapping structure keys to lists of relations
     """
     from collections import defaultdict
 
-    grouped = defaultdict(lambda: {"relations": [], "title": "", "parent": None})
+    grouped = defaultdict(
+        lambda: {"relations": [], "title": "", "path": "", "parent": None}
+    )
 
     for rel in relations:
         if not rel.evidence_locations:
@@ -908,10 +1054,16 @@ def _group_relations_by_structure(relations, level="chapter"):
             key = f"{loc.chapter}"
             grouped[key]["relations"].append(rel)
             grouped[key]["title"] = loc.chapter_title or f"Chapter {loc.chapter}"
+            grouped[key]["path"] = _build_hierarchical_path(
+                loc, "chapter", structure_nodes
+            )
         elif level == "section" and loc.section:
             key = f"{loc.section}"
             grouped[key]["relations"].append(rel)
             grouped[key]["title"] = loc.section_title or f"Section {loc.section}"
+            grouped[key]["path"] = _build_hierarchical_path(
+                loc, "section", structure_nodes
+            )
             grouped[key]["parent"] = loc.chapter_title if loc.chapter else None
         elif level == "subsection" and loc.subsection:
             key = f"{loc.subsection}"
@@ -919,12 +1071,16 @@ def _group_relations_by_structure(relations, level="chapter"):
             grouped[key]["title"] = (
                 loc.subsection_title or f"Subsection {loc.subsection}"
             )
+            grouped[key]["path"] = _build_hierarchical_path(
+                loc, "subsection", structure_nodes
+            )
             grouped[key]["parent"] = loc.section_title if loc.section else None
         else:
             # Fallback to unstructured
             key = "unstructured"
             grouped[key]["relations"].append(rel)
             grouped[key]["title"] = "Unstructured Content"
+            grouped[key]["path"] = "Unstructured Content"
 
     return grouped
 
@@ -948,15 +1104,15 @@ def _display_structured_text(term, grouped_relations, docs, verbose=False):
     sorted_groups = sorted(grouped_relations.items())
 
     for group_key, group_data in sorted_groups:
-        title = group_data["title"]
+        path = group_data.get("path", group_data["title"])
         relations = group_data["relations"]
 
         if not relations:
             continue
 
-        # Display group header
+        # Display group header with hierarchical path
         click.echo(f"\n{'=' * 80}")
-        click.echo(f"{title}")
+        click.echo(f"{path}")
         click.echo(f"{'=' * 80}")
 
         # Group relations by type
@@ -971,7 +1127,9 @@ def _display_structured_text(term, grouped_relations, docs, verbose=False):
                 if rel_type not in by_type:
                     continue
 
-                rels = sorted(by_type[rel_type], key=lambda r: r.score, reverse=True)[:10]
+                rels = sorted(by_type[rel_type], key=lambda r: r.score, reverse=True)[
+                    :10
+                ]
 
                 click.echo(f"\n  {rel_type.upper()} Relations ({len(rels)} shown):")
                 click.echo("  " + "-" * 76)
@@ -997,14 +1155,36 @@ def _display_structured_text(term, grouped_relations, docs, verbose=False):
                     if rel.evidence:
                         click.echo(f'       "{rel.evidence[0]}"')
         else:
-            # Minimal mode: just list significant terms
-            all_terms = set()
-            for rel in relations:
-                all_terms.add(rel.target)
+            # Minimal mode: list significant terms with POS tags
+            # Build term -> POS mapping from documents
+            term_pos = {}
+            for doc in docs:
+                for i, (token, pos) in enumerate(doc.pos_tags):
+                    term = doc.lemmas[i] if i < len(doc.lemmas) else token
+                    if term not in term_pos:
+                        term_pos[term] = pos
 
-            if all_terms:
-                terms_list = sorted(all_terms)
-                click.echo(f"\n  Significant terms: {', '.join(terms_list)}")
+            # Collect terms with their POS tags
+            term_pos_list = []
+            for rel in relations:
+                pos = term_pos.get(rel.target, "UNK")
+                # Convert Penn Treebank tags to readable labels
+                pos_label = _get_pos_label(pos)
+                term_pos_list.append((pos_label, rel.target))
+
+            if term_pos_list:
+                # Group by POS for better organization
+                from collections import defaultdict
+
+                by_pos = defaultdict(list)
+                for pos_label, term in term_pos_list:
+                    by_pos[pos_label].append(term)
+
+                click.echo("\n  Significant terms:")
+                for pos_label in sorted(by_pos.keys()):
+                    terms = sorted(set(by_pos[pos_label]))
+                    for term in terms:
+                        click.echo(f"    {pos_label}: {term}")
 
 
 def _get_structure_summary(docs):
@@ -1187,10 +1367,15 @@ def analyze(
         # Check if we have structure and should group
         has_structure = any(rel.evidence_locations for rel in relations)
 
-
         if has_structure and group_by != "none":
             # Use structured display
-            grouped = _group_relations_by_structure(relations, level=group_by)
+            # Extract structure nodes from first doc (assuming single doc corpus)
+            structure_nodes = (
+                docs[0].structure_nodes if docs and docs[0].structure_nodes else None
+            )
+            grouped = _group_relations_by_structure(
+                relations, level=group_by, structure_nodes=structure_nodes
+            )
             _display_structured_text(term, grouped, docs, verbose=show_details)
         else:
             # Use flat display
@@ -1198,7 +1383,9 @@ def analyze(
 
             if show_details:
                 # Verbose mode: show detailed output
-                click.echo(f"\nFound {len(relations)} contextual relations for '{term}':")
+                click.echo(
+                    f"\nFound {len(relations)} contextual relations for '{term}':"
+                )
                 click.echo("=" * 70)
 
                 by_type = defaultdict(list)
@@ -1218,10 +1405,35 @@ def analyze(
                                 f"(score: {rel.score:.2f}, {evidence_info})"
                             )
             else:
-                # Minimal mode: just list significant terms
+                # Minimal mode: list significant terms with POS tags
                 click.echo(f"\nSignificant terms co-occurring with '{term}':")
-                all_terms = sorted(set(rel.target for rel in relations))
-                click.echo(", ".join(all_terms))
+
+                # Build term -> POS mapping from documents
+                term_pos = {}
+                for doc in docs:
+                    for i, (token, pos) in enumerate(doc.pos_tags):
+                        term = doc.lemmas[i] if i < len(doc.lemmas) else token
+                        if term not in term_pos:
+                            term_pos[term] = pos
+
+                # Collect terms with their POS tags
+                term_pos_list = []
+                for rel in relations:
+                    pos = term_pos.get(rel.target, "UNK")
+                    pos_label = _get_pos_label(pos)
+                    term_pos_list.append((pos_label, rel.target))
+
+                # Group by POS for better organization
+                from collections import defaultdict
+
+                by_pos = defaultdict(list)
+                for pos_label, term in term_pos_list:
+                    by_pos[pos_label].append(term)
+
+                for pos_label in sorted(by_pos.keys()):
+                    terms = sorted(set(by_pos[pos_label]))
+                    for term in terms:
+                        click.echo(f"  {pos_label}: {term}")
 
     elif format == "json":
         from concept_mapper.analysis.contextual_relations import (

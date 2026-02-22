@@ -2,8 +2,7 @@
 Tests for lemmatization with inflect fallback.
 """
 
-import pytest
-from src.concept_mapper.preprocessing.lemmatize import (
+from concept_mapper.preprocessing.lemmatize import (
     lemmatize,
     lemmatize_tagged,
     get_wordnet_pos,
@@ -79,7 +78,7 @@ class TestLemmatizeTagged:
         """Test plural proper nouns (NNPS) with inflect fallback."""
         tagged = [
             ("Semiotics", "NNPS"),  # Proper plural - will use inflect
-            ("semiotics", "NNS"),   # Plural noun - will use inflect
+            ("semiotics", "NNS"),  # Plural noun - will use inflect
             ("Isotopies", "NNPS"),  # Proper plural - will use inflect
         ]
         lemmas = lemmatize_tagged(tagged)
@@ -88,9 +87,9 @@ class TestLemmatizeTagged:
     def test_singular_nouns_unchanged(self):
         """Test that singular nouns are not incorrectly pluralized."""
         tagged = [
-            ("semiosis", "NN"),    # Singular, should stay as-is
-            ("process", "NN"),     # Singular, should stay as-is
-            ("Paris", "NNP"),      # Proper noun, should stay as-is
+            ("semiosis", "NN"),  # Singular, should stay as-is
+            ("process", "NN"),  # Singular, should stay as-is
+            ("Paris", "NNP"),  # Proper noun, should stay as-is
         ]
         lemmas = lemmatize_tagged(tagged)
         # These should NOT be changed to "semiosi", "proces", "pari"

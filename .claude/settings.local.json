@@ -64,7 +64,10 @@
       "Bash(cmapr ingest:*)",
       "Bash(cmapr replace:*)",
       "Bash(cmapr --help:*)",
-      "Bash(cmapr rarities:*)"
+      "Bash(cmapr rarities:*)",
+      "Bash(python -m src.concept_mapper.cli ingest:*)",
+      "Bash(python -m src.concept_mapper.cli:*)",
+      "Bash(jq:*)"
     ]
   }
 }

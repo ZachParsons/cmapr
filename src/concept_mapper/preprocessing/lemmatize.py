@@ -123,7 +123,7 @@ def lemmatize_tagged(tagged_tokens: List[tuple[str, str]]) -> List[str]:
         # try inflect to handle specialized terms not in WordNet
         # Only apply to NNS (plural noun) and NNPS (proper plural noun) to avoid
         # incorrectly singularizing words like "semiosis", "process", "Paris"
-        if lemma == word_lower and pos_tag in ('NNS', 'NNPS'):
+        if lemma == word_lower and pos_tag in ("NNS", "NNPS"):
             singular = _inflect_engine.singular_noun(word_lower)
             if singular:
                 lemma = singular

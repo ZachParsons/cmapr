@@ -5,7 +5,8 @@ Provides unified entry point for preprocessing documents through
 all stages: tokenization → POS tagging → lemmatization.
 """
 
-from typing import List
+from pathlib import Path
+from typing import List, Optional
 
 from ..corpus.models import Document, ProcessedDocument
 from .cleaning import clean_text
@@ -17,7 +18,10 @@ from .tokenize import tokenize_sentences, tokenize_words
 
 
 def preprocess(
-    document: Document, detect_structure: bool = True, clean_ocr: bool = False
+    document: Document,
+    detect_structure: bool = True,
+    clean_ocr: bool = False,
+    toc_file: Optional[Path] = None,
 ) -> ProcessedDocument:
     """
     Preprocess a single document through full pipeline.
@@ -34,6 +38,7 @@ def preprocess(
         document: Input Document object
         detect_structure: Whether to detect document structure (default: True)
         clean_ocr: Whether to clean OCR/PDF artifacts (default: False)
+        toc_file: Optional path to table of contents file for guided structure detection
 
     Returns:
         ProcessedDocument with all linguistic annotations
@@ -70,7 +75,9 @@ def preprocess(
     if detect_structure:
         try:
             detector = DocumentStructureDetector()
-            structure_nodes, sentence_locations = detector.detect(text, sentences)
+            structure_nodes, sentence_locations = detector.detect(
+                text, sentences, toc_file=toc_file
+            )
         except Exception:
             # Fail gracefully - structure detection is optional
             pass

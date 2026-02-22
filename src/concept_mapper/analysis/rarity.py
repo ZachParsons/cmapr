@@ -1394,9 +1394,21 @@ def _is_valid_term(term: str) -> bool:
     # These are produced when word_tokenize splits contractions:
     # "It's" -> ['It', "'s"], "won't" -> ['wo', "n't"], etc.
     contraction_fragments = {
-        "'s", "'t", "'m", "'d", "'ll", "'ve", "'re",  # Standard contractions
-        "n't", "wo", "ca", "na", "ta",  # Negative/modal fragments
-        "gon", "wan", "got",  # gonna, wanna, gotta fragments
+        "'s",
+        "'t",
+        "'m",
+        "'d",
+        "'ll",
+        "'ve",
+        "'re",  # Standard contractions
+        "n't",
+        "wo",
+        "ca",
+        "na",
+        "ta",  # Negative/modal fragments
+        "gon",
+        "wan",
+        "got",  # gonna, wanna, gotta fragments
         "ng",  # -ing suffix sometimes incorrectly tokenized
     }
     if term.lower() in contraction_fragments:

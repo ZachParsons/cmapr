@@ -6,6 +6,7 @@ to preserve semantic context during analysis.
 """
 
 import re
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from concept_mapper.corpus.models import SentenceLocation, StructureNode
@@ -35,7 +36,7 @@ class DocumentStructureDetector:
     ALLCAPS_HEADING = re.compile(r"^([A-Z][A-Z\s]{3,})$", re.MULTILINE)
 
     def detect(
-        self, text: str, sentences: List[str]
+        self, text: str, sentences: List[str], toc_file: Optional[Path] = None
     ) -> Tuple[List[StructureNode], List[SentenceLocation]]:
         """
         Detect document structure and map sentences to locations.
@@ -43,11 +44,18 @@ class DocumentStructureDetector:
         Args:
             text: Full document text
             sentences: List of sentence strings
+            toc_file: Optional path to table of contents file for guided detection
 
         Returns:
             Tuple of (structure_nodes, sentence_locations)
         """
-        # Try detection methods in priority order
+        # Try TOC-based detection first (if provided)
+        if toc_file:
+            nodes = self._detect_from_toc(toc_file, text, sentences)
+            if nodes:
+                return self._build_structure(nodes, sentences)
+
+        # Try automatic detection methods in priority order
         nodes = self._detect_numbered_headings(text, sentences)
         if nodes:
             return self._build_structure(nodes, sentences)
@@ -246,6 +254,255 @@ class DocumentStructureDetector:
             )
 
         return nodes if len(nodes) >= 2 else None
+
+    def _detect_from_toc(
+        self, toc_file: Path, text: str, sentences: List[str]
+    ) -> Optional[List[Dict]]:
+        """
+        Detect structure using a manually-created table of contents file.
+
+        The TOC file should be in markdown format with hierarchy indicated by:
+        - ## N. Title — page  (chapters)
+        - - N.N. Title — page  (sections, with bullet)
+        -   - N.N.N. Title — page  (subsections, with indent + bullet)
+
+        Args:
+            toc_file: Path to TOC file
+            text: Source document text
+            sentences: List of sentences from source
+
+        Returns:
+            List of node dictionaries with level, number, title, position
+        """
+        if not toc_file.exists():
+            return None
+
+        # Read and parse TOC file
+        toc_content = toc_file.read_text(encoding="utf-8")
+        toc_entries = self._parse_toc_markdown(toc_content)
+
+        if not toc_entries:
+            return None
+
+        # Match TOC entries to positions in source text
+        nodes = []
+        for entry in toc_entries:
+            position = self._find_heading_in_text(entry["title"], text)
+            if position is not None:
+                nodes.append(
+                    {
+                        "level": entry["level"],
+                        "number": entry["number"],
+                        "title": entry["title"],
+                        "position": position,
+                    }
+                )
+
+        # Ensure chapters appear before their sections
+        nodes = self._ensure_chapter_positions(nodes, toc_entries)
+
+        return nodes if len(nodes) >= 2 else None
+
+    def _ensure_chapter_positions(
+        self, nodes: List[Dict], toc_entries: List[Dict]
+    ) -> List[Dict]:
+        """
+        Ensure chapter nodes appear before their first section.
+
+        For academic texts where chapter titles may be found after their sections,
+        or not found at all, this ensures chapters are positioned correctly.
+        """
+        chapter_entries = {
+            entry["number"]: entry
+            for entry in toc_entries
+            if entry["level"] == "chapter"
+        }
+
+        # Find existing chapter nodes and their positions
+        chapter_nodes = {
+            node["number"]: node for node in nodes if node["level"] == "chapter"
+        }
+
+        for chapter_num, chapter_entry in chapter_entries.items():
+            # Find first section of this chapter
+            section_prefix = f"{chapter_num}."
+            first_section = None
+            first_section_pos = float("inf")
+
+            for node in nodes:
+                if node["number"].startswith(section_prefix) and "." in node["number"]:
+                    if node["position"] < first_section_pos:
+                        first_section = node
+                        first_section_pos = node["position"]
+
+            if first_section:
+                if chapter_num in chapter_nodes:
+                    # Chapter exists but may be in wrong position
+                    chapter_node = chapter_nodes[chapter_num]
+                    if chapter_node["position"] > first_section["position"]:
+                        # Reposition chapter before first section
+                        chapter_node["position"] = first_section["position"] - 1
+                else:
+                    # Chapter not found, add it before first section
+                    nodes.append(
+                        {
+                            "level": "chapter",
+                            "number": chapter_num,
+                            "title": chapter_entry["title"],
+                            "position": first_section["position"] - 1,
+                        }
+                    )
+
+        return nodes
+
+    def _parse_toc_markdown(self, toc_content: str) -> List[Dict]:
+        """
+        Parse markdown-formatted TOC into structured entries.
+
+        Expected format:
+        - ## N. Title — page  (chapter)
+        - - N.N. Title — page  (section)
+        -   - N.N.N. Title — page  (subsection)
+
+        Returns:
+            List of dicts with keys: level, number, title
+        """
+        entries = []
+        lines = toc_content.split("\n")
+
+        for line in lines:
+            # Skip empty lines, horizontal rules, and header line
+            if not line.strip() or line.strip() == "---" or line.startswith("# "):
+                continue
+
+            # Chapter: ## N. Title — page
+            chapter_match = re.match(r"^##\s+(\d+)\.\s+(.+?)\s+—\s+\d+$", line)
+            if chapter_match:
+                number = chapter_match.group(1)
+                title = chapter_match.group(2).strip()
+                entries.append({"level": "chapter", "number": number, "title": title})
+                continue
+
+            # Chapter without number: ## Title — page (e.g., Introduction)
+            chapter_no_num_match = re.match(r"^##\s+([A-Z][^—]+?)\s+—\s+\d+$", line)
+            if chapter_no_num_match:
+                title = chapter_no_num_match.group(1).strip()
+                # Generate a number for unnumbered chapters
+                entries.append({"level": "chapter", "number": "0", "title": title})
+                continue
+
+            # Unnumbered standalone heading (e.g., Introduction without ##)
+            standalone_match = re.match(r"^([A-Z][^—\-]+?)\s+—\s+\d+$", line)
+            if (
+                standalone_match
+                and not line.startswith("-")
+                and not line.startswith(" ")
+            ):
+                title = standalone_match.group(1).strip()
+                entries.append({"level": "chapter", "number": "0", "title": title})
+                continue
+
+            # Section: - N.N. Title — page (with bullet, no extra indent)
+            section_match = re.match(r"^-\s+(\d+\.\d+)\.\s+(.+?)\s+—\s+\d+$", line)
+            if section_match:
+                number = section_match.group(1)
+                title = section_match.group(2).strip()
+                entries.append({"level": "section", "number": number, "title": title})
+                continue
+
+            # Subsection: - N.N.N. Title — page (with indent + bullet)
+            subsection_match = re.match(
+                r"^\s+-\s+(\d+\.\d+\.\d+)\.\s+(.+?)\s+—\s+\d+$", line
+            )
+            if subsection_match:
+                number = subsection_match.group(1)
+                title = subsection_match.group(2).strip()
+                entries.append(
+                    {"level": "subsection", "number": number, "title": title}
+                )
+                continue
+
+        return entries
+
+    def _find_heading_in_text(self, title: str, text: str) -> Optional[int]:
+        """
+        Find the position of a heading title in the source text.
+
+        Uses fuzzy matching to handle minor variations in punctuation,
+        spacing, and case. Skips the first 10% of the document to avoid
+        matching TOC entries.
+
+        Args:
+            title: The heading title to find
+            text: The source document text
+
+        Returns:
+            Character position in text, or None if not found
+        """
+        # Normalize the search title
+        title_normalized = self._normalize_heading(title)
+
+        # Skip first 5% of document to avoid matching TOC entries
+        toc_skip_threshold = int(len(text) * 0.05)
+
+        # First try exact case-insensitive match
+        text_lower = text.lower()
+        title_lower = title.lower()
+
+        # Pattern 1: Try to find as a standalone line (skip TOC region)
+        pattern = re.compile(
+            rf"^{re.escape(title_lower)}$", re.MULTILINE | re.IGNORECASE
+        )
+        for match in pattern.finditer(text):
+            if match.start() >= toc_skip_threshold:
+                return match.start()
+
+        # Pattern 2: Try with section number prefix (e.g., "1.2. Title")
+        # Extract number from title if present
+        num_match = re.match(r"^(\d+(?:\.\d+)*)\.\s+(.+)$", title)
+        if num_match:
+            number = num_match.group(1)
+            title_part = num_match.group(2)
+            # Try to find "N.N. Title" or "N.N.Title" patterns
+            pattern = re.compile(
+                rf"^{re.escape(number)}\.\s*{re.escape(title_part.lower())}",
+                re.MULTILINE | re.IGNORECASE,
+            )
+            for match in pattern.finditer(text):
+                if match.start() >= toc_skip_threshold:
+                    return match.start()
+
+        # Pattern 3: Just find the title text (without number)
+        # This is more lenient for cases where numbering differs
+        if title_normalized:
+            pattern = re.compile(rf"\b{re.escape(title_normalized)}\b", re.IGNORECASE)
+            for match in pattern.finditer(text_lower):
+                if match.start() >= toc_skip_threshold:
+                    return match.start()
+
+        # Not found
+        return None
+
+    def _normalize_heading(self, heading: str) -> str:
+        """
+        Normalize a heading for fuzzy matching.
+
+        Removes section numbers, excess whitespace, and standardizes punctuation.
+        """
+        # Remove section numbers at start (e.g., "1.2. Title" -> "Title")
+        heading = re.sub(r"^\d+(?:\.\d+)*\.\s*", "", heading)
+
+        # Remove page numbers (e.g., "Title — 42" -> "Title")
+        heading = re.sub(r"\s+—\s+\d+$", "", heading)
+
+        # Normalize whitespace
+        heading = " ".join(heading.split())
+
+        # Remove certain punctuation for better matching
+        heading = heading.replace("'", "'")  # Normalize quotes
+        heading = heading.replace(""", '"').replace(""", '"')
+
+        return heading.strip()
 
     def _filter_toc_entries(self, nodes: List[Dict], text: str) -> List[Dict]:
         """

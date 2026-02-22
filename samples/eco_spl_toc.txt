@@ -1,0 +1,161 @@
+# Contents
+
+Introduction — 1
+
+---
+
+## 1. Signs — 14
+
+- 1.1. Crisis of a concept — 14
+- 1.2. The signs of an obstinacy — 15
+- 1.3. Intension and extension — 18
+- 1.4. Elusive solutions — 18
+- 1.5. The deconstruction of the linguistic sign — 20
+  - 1.5.1. Sign vs. figura — 20
+  - 1.5.2. Signs vs. sentences — 21
+  - 1.5.3. The sign as difference — 23
+  - 1.5.4. The predominance of the signifier — 24
+  - 1.5.5. Sign vs. text — 24
+  - 1.5.6. The sign as identity — 25
+- 1.6. Signs vs. words — 26
+- 1.7. The Stoics — 29
+- 1.8. Unification of the theories and the predominance of linguistics — 33
+- 1.9. The 'instructional' model — 34
+- 1.10. Strong codes and weak codes — 36
+- 1.11. Abduction and inferential nature of signs — 39
+- 1.12. The criterion of interpretability — 43
+- 1.13. Sign and subject — 45
+
+---
+
+## 2. Dictionary vs. Encyclopedia — 46
+
+- 2.1. Porphyry strikes back — 46
+  - 2.1.1. Is a definition an interpretation? — 46
+  - 2.1.2. The idea of a dictionary — 47
+  - 2.1.3. The interpretation of the markers — 54
+- 2.2. Critique of the Porphyrian tree — 57
+  - 2.2.1. Aristotle on definition — 57
+  - 2.2.2. The Porphyrian tree — 58
+  - 2.2.3. A tree which is not a tree — 61
+  - 2.2.4. The tree is entirely made up with differentiae — 64
+  - 2.2.5. Differentiae as accidents and signs — 67
+- 2.3. Encyclopedias — 68
+  - 2.3.1. Some attempts: registering contexts and topics — 68
+  - 2.3.2. Some attempts: registering frames and scripts — 70
+  - 2.3.3. Some attempts: stereotypes and commonsense knowledge — 73
+  - 2.3.4. Clusters — 78
+  - 2.3.5. The encyclopedia as labyrinth — 80
+  - 2.3.6. The dictionary as a tool — 84
+
+---
+
+## 3. Metaphor — 87
+
+- 3.1. The metaphoric nexus — 87
+- 3.2. Traditional definitions — 89
+- 3.3. Aristotle: synecdoche and Porphyrian tree — 91
+- 3.4. Aristotle: metaphors of three terms — 92
+- 3.5. Aristotle: the proportional scheme — 94
+- 3.6. Proportion and condensation — 96
+- 3.7. Dictionary and encyclopedia — 97
+- 3.8. The cognitive function — 99
+- 3.9. The semiosic background: the system of content — 103
+  - 3.9.1. The medieval encyclopedia and *analogia entis* — 103
+  - 3.9.2. Tesauro's categorical index — 105
+  - 3.9.3. Vico and the cultural conditions of invention — 107
+- 3.10. The limits of formalization — 109
+- 3.11. Componential representation and the pragmatics of the text — 112
+  - 3.11.1. A model by 'cases' — 112
+  - 3.11.2. Metonymy — 114
+  - 3.11.3. 'Topic', 'frames', isotopies — 117
+  - 3.11.4. Trivial metaphors and 'open' metaphors — 118
+  - 3.11.5. Five rules — 123
+  - 3.11.6. From metaphors to symbolic interpretation — 124
+- 3.12. Conclusions — 127
+
+---
+
+## 4. Symbol — 130
+
+- 4.1. Genus and species — 134
+- 4.2. Expressions by *ratio facilis* — 136
+  - 4.2.1. Symbols as conventional expressions — 136
+  - 4.2.2. Symbols as expressions conveying an indirect meaning — 136
+- 4.3. Expressions produced by *ratio difficilis* — 137
+  - 4.3.1. Symbols as diagrams — 137
+  - 4.3.2. Symbols as tropes — 139
+  - 4.3.3. The Romantic symbol as an aesthetic text — 141
+- 4.4. The symbolic mode — 143
+  - 4.4.1. The Hegelian symbol — 143
+  - 4.4.2. Archetypes and the Sacred — 144
+  - 4.4.3. The symbolic interpretation of the Holy Scriptures — 147
+  - 4.4.4. The Kabalistic drift — 153
+- 4.5. Semiotics of the symbolic mode — 156
+- 4.6. Conclusions — 162
+
+---
+
+## 5. Code — 164
+
+- 5.1. The rise of a new category — 164
+  - 5.1.1. A metaphor? — 164
+  - 5.1.2. Dictionaries — 165
+- 5.2. The landslide effect — 166
+- 5.3. Codes and communication — 167
+- 5.4. Codes as s-codes — 169
+  - 5.4.1. Codes and information — 169
+  - 5.4.2. Phonological code — 169
+  - 5.4.3. Semantics-codes — 171
+- 5.5. Cryptography and natural languages — 172
+  - 5.5.1. Codes, ciphers, cloaks — 172
+  - 5.5.2. From correlation to inference — 173
+  - 5.5.3. Codes and grammars — 175
+- 5.6. S-codes and signification — 177
+  - 5.6.1. S-codes cannot lie — 177
+  - 5.6.2. S-codes and institutional codes — 179
+- 5.7. The genetic code — 182
+- 5.8. Toward a provisional conclusion — 185
+
+---
+
+## 6. Isotopy — 189
+
+- 6.1. Discursive isotopies within sentences with paradigmatic disjunction — 193
+- 6.2. Discursive isotopies within sentences with syntagmatic disjunction — 194
+- 6.3. Discursive isotopies between sentences with paradigmatic disjunction — 195
+- 6.4. Discursive isotopies between sentences with syntagmatic disjunction — 195
+- 6.5. Narrative isotopies connected with isotopic discursive disjunctions generating mutually exclusive stories — 196
+- 6.6. Narrative isotopies connected with isotopic discursive disjunctions that generate complementary stories — 198
+- 6.7. Narrative isotopies connected with discursive isotopic disjunctions that generate complementary stories in each case — 199
+- 6.8. Extensional isotopies — 200
+- 6.9. Provisional conclusions — 201
+
+---
+
+## 7. Mirrors — 202
+
+- 7.1. Is the mirror image a sign? — 202
+- 7.2. The imaginary and the symbolic — 203
+- 7.3. Getting in through the Mirror — 204
+- 7.4. A phenomenology of the mirror: the mirror does not invert — 204
+- 7.5. A pragmatics of the mirror — 207
+- 7.6. The mirror as a prosthesis and a channel — 208
+- 7.7. Absolute icons — 210
+- 7.8. Mirrors as rigid designators — 211
+- 7.9. On signs — 213
+- 7.10. Why mirrors do not produce signs — 216
+- 7.11. Freaks: distorting mirrors — 217
+- 7.12. Procatoptric staging — 219
+- 7.13. Rainbows and Fata Morganas — 221
+- 7.14. Catoptric theaters — 221
+- 7.15. Mirrors that 'freeze' images — 222
+- 7.16. The *experimentum crucis* — 226
+
+---
+
+*References* — 227
+
+*Index of authors* — 237
+
+*Index of subjects* — 239
