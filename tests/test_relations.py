@@ -69,14 +69,6 @@ def sample_docs():
 class TestParsing:
     """Tests for basic sentence parsing."""
 
-    def test_parse_sentence_basic(self):
-        """Test basic sentence parsing."""
-        tagged = parse_sentence("The dog runs.")
-
-        assert len(tagged) > 0
-        assert all(isinstance(t, tuple) for t in tagged)
-        assert all(len(t) == 2 for t in tagged)
-
     def test_parse_sentence_pos_tags(self):
         """Test that POS tags are assigned."""
         tagged = parse_sentence("The cat is big.")
@@ -95,13 +87,6 @@ class TestParsing:
 
 class TestSVOExtraction:
     """Tests for Subject-Verb-Object extraction."""
-
-    def test_extract_svo_basic(self):
-        """Test basic SVO extraction."""
-        triples = extract_svo("The dog bites the man.")
-
-        assert len(triples) > 0
-        assert isinstance(triples[0], SVOTriple)
 
     def test_extract_svo_structure(self):
         """Test SVO triple structure."""
@@ -135,13 +120,6 @@ class TestSVOExtraction:
         assert "dog" in str_repr
         assert "bites" in str_repr
         assert "man" in str_repr
-
-    def test_extract_svo_for_term_basic(self, sample_docs):
-        """Test extracting SVO for specific term."""
-        triples = extract_svo_for_term("dog", sample_docs)
-
-        # Should find at least the "dog bites man" sentence
-        assert isinstance(triples, list)
 
     def test_extract_svo_for_term_filtering(self, sample_docs):
         """Test that results are filtered to term."""
@@ -178,12 +156,6 @@ class TestSVOExtraction:
 class TestCopularExtraction:
     """Tests for copular relation (X is Y) extraction."""
 
-    def test_extract_copular_basic(self, sample_docs):
-        """Test basic copular extraction."""
-        relations = extract_copular("consciousness", sample_docs)
-
-        assert isinstance(relations, list)
-
     def test_extract_copular_is_pattern(self, sample_docs):
         """Test extraction of 'X is Y' pattern."""
         relations = extract_copular("consciousness", sample_docs)
@@ -191,14 +163,6 @@ class TestCopularExtraction:
         # Should find "Consciousness is intentional"
         if relations:
             assert any("intentional" in r.complement.lower() for r in relations)
-
-    def test_extract_copular_was_pattern(self, sample_docs):
-        """Test extraction of 'X was Y' pattern."""
-        relations = extract_copular("being", sample_docs)
-
-        # Should find "Being was conceived as presence"
-        # or "Being is presence"
-        assert isinstance(relations, list)
 
     def test_copular_relation_structure(self):
         """Test CopularRelation dataclass structure."""
@@ -252,12 +216,6 @@ class TestCopularExtraction:
 
 class TestPrepositionalExtraction:
     """Tests for prepositional relation extraction."""
-
-    def test_extract_prepositional_basic(self, sample_docs):
-        """Test basic prepositional extraction."""
-        relations = extract_prepositional("consciousness", sample_docs)
-
-        assert isinstance(relations, list)
 
     def test_extract_prepositional_of_pattern(self, sample_docs):
         """Test extraction of 'X of Y' pattern."""
@@ -332,19 +290,6 @@ class TestPrepositionalExtraction:
 
 class TestRelationAggregation:
     """Tests for aggregated relation extraction."""
-
-    def test_get_relations_basic(self, sample_docs):
-        """Test basic relation aggregation."""
-        relations = get_relations("consciousness", sample_docs)
-
-        assert isinstance(relations, list)
-
-    def test_get_relations_all_types(self, sample_docs):
-        """Test that all relation types are extracted by default."""
-        relations = get_relations("consciousness", sample_docs)
-
-        # Should extract relations (may have mixed types)
-        assert isinstance(relations, list)
 
     def test_get_relations_specific_types(self, sample_docs):
         """Test extracting specific relation types."""

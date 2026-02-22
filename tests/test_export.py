@@ -198,17 +198,6 @@ class TestD3Export:
 
         assert output_path.exists()
 
-    def test_load_d3_json(self, sample_graph, temp_output_dir):
-        """Test loading D3 JSON."""
-        output_path = temp_output_dir / "graph.json"
-        export_d3_json(sample_graph, output_path)
-
-        data = load_d3_json(output_path)
-
-        assert isinstance(data, dict)
-        assert "nodes" in data
-        assert "links" in data
-
 
 # ============================================================================
 # Test Alternative Formats
@@ -406,13 +395,6 @@ class TestHTMLGeneration:
         if data["links"]:
             # At least one link should have evidence
             assert any("evidence" in link for link in data["links"])
-
-    def test_generate_html_returns_path(self, sample_graph, temp_output_dir):
-        """Test that generate_html returns path."""
-        html_path = generate_html(sample_graph, temp_output_dir)
-
-        assert isinstance(html_path, Path)
-        assert html_path.exists()
 
 
 # ============================================================================

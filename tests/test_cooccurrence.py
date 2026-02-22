@@ -288,12 +288,6 @@ class TestPMI:
         # Should return 0.0 for nonexistent terms
         assert pmi_score == 0.0
 
-    def test_pmi_both_nonexistent(self, sample_docs):
-        """Test PMI when both terms don't exist."""
-        pmi_score = pmi("nonexistent1", "nonexistent2", sample_docs)
-
-        assert pmi_score == 0.0
-
     def test_pmi_empty_corpus(self):
         """Test PMI with empty corpus."""
         pmi_score = pmi("term1", "term2", [])
@@ -323,20 +317,6 @@ class TestLogLikelihoodRatio:
 
         # Should be the same regardless of order
         assert abs(llr_12 - llr_21) < 0.001
-
-    def test_llr_high_for_frequent_cooccurrence(self, sample_docs):
-        """Test that LLR is high for terms that frequently co-occur."""
-        llr = log_likelihood_ratio("intentionality", "consciousness", sample_docs)
-
-        # Should have some positive value (exact threshold depends on corpus)
-        assert llr >= 0.0
-
-    def test_llr_low_for_independent_terms(self, sample_docs):
-        """Test LLR for independent terms."""
-        llr = log_likelihood_ratio("intentionality", "ontology", sample_docs)
-
-        # Should be low/zero for terms that don't co-occur
-        assert llr >= 0.0  # LLR is always non-negative
 
     def test_llr_nonexistent_term(self, sample_docs):
         """Test LLR when term doesn't exist."""

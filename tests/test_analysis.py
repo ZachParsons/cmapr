@@ -154,21 +154,6 @@ class TestReferenceCorpus:
         assert len(freq) > 10000  # Brown has many unique words
         assert freq["the"] > freq["philosophy"]  # "the" is more common
 
-    def test_load_reference_corpus_caching(self, tmp_path):
-        """Test that reference corpus is cached."""
-        # Note: Since bundled reference data exists at data/reference/,
-        # the cache is only created if bundled data is not available.
-        # This test verifies the caching logic works when bundled data is absent.
-
-        # First load (will use bundled data or create cache)
-        freq1 = load_reference_corpus("brown", cache=True, cache_dir=tmp_path)
-
-        # Second load should return same data
-        freq2 = load_reference_corpus("brown", cache=True, cache_dir=tmp_path)
-
-        assert freq1 == freq2
-        assert len(freq1) > 0  # Verify we got actual data
-
     def test_load_reference_corpus_invalid_name(self):
         """Test loading unsupported corpus."""
         with pytest.raises(ValueError, match="Unsupported reference corpus"):

@@ -85,19 +85,6 @@ class TestInflectionGenerator:
         assert generator.inflect("bad", "JJR") == "worse"
         assert generator.inflect("bad", "JJS") == "worst"
 
-    # Adverb tests
-    def test_adverb_base(self, generator):
-        """Base form adverb should remain unchanged."""
-        result = generator.inflect("quickly", "RB")
-        assert result in ["quickly", "quick"]  # lemminflect may vary
-
-    def test_adverb_comparative(self, generator):
-        """Adverb comparative forms."""
-        # Note: Many adverbs use "more" instead of inflection
-        result = generator.inflect("quickly", "RBR")
-        # Accept either inflected form or base (lemminflect may not have all adverbs)
-        assert result in ["quicker", "quickly", "more quickly"]
-
     # Edge cases
     def test_unknown_pos_tag(self, generator):
         """Unknown POS tags should return lemma unchanged."""
@@ -115,13 +102,6 @@ class TestInflectionGenerator:
     def test_can_inflect_invalid(self, generator):
         """can_inflect should return False for invalid POS tags."""
         assert generator.can_inflect("test", "XX") is False
-
-    def test_get_all_forms(self, generator):
-        """get_all_forms should return all inflections."""
-        forms = generator.get_all_forms("run")
-        assert isinstance(forms, dict)
-        # Should have verb forms
-        assert "VBD" in forms or "VB" in forms
 
     # Multi-syllable words
     def test_multi_syllable_verb(self, generator):

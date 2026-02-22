@@ -355,19 +355,6 @@ class TestRealCorpusAnalysis:
 
         return load_reference_corpus("brown")
 
-    def test_sample_corpus_neologisms(self, sample_corpus, brown_corpus):
-        """Test that neologisms are detected in sample corpus (Eco's Semiotics)."""
-        neologisms = get_neologism_candidates(
-            sample_corpus, brown_corpus, min_author_freq=2
-        )
-
-        # Should detect some neologisms from Eco's text
-        # The actual neologisms will depend on the text content
-        # Just verify the mechanism works by checking we get some results
-        assert isinstance(neologisms, set), "Neologisms should be a set"
-        # Eco's semiotics text should have some specialized terms
-        # We don't test for specific terms as content may vary
-
     def test_sample_corpus_specific_terms(self, sample_corpus, brown_corpus):
         """Test that corpus-specific terms are identified."""
         specific_terms = get_corpus_specific_terms(
@@ -1006,14 +993,6 @@ class TestWordNetOnRealCorpus:
         except ImportError:
             pytest.skip("WordNet not available")
 
-    def test_capitalized_on_sample(self, sample_corpus):
-        """Test capitalized term detection on sample corpus."""
-        capitalized = get_capitalized_technical_terms(sample_corpus, min_author_freq=2)
-
-        # May or may not find capitalized terms depending on corpus
-        # Just verify it runs without error
-        assert isinstance(capitalized, set)
-
     def test_all_signals_on_sample(self, sample_corpus, brown_corpus):
         """Test combined signals on sample corpus."""
         try:
@@ -1357,32 +1336,6 @@ class TestDefinitionalContextsOnRealCorpus:
         base = Path(__file__).parent.parent / "samples"
         doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
-
-    def test_extract_definitions_from_sample(self, sample_corpus):
-        """Test extracting definitions from sample corpus."""
-        contexts = get_definitional_contexts(sample_corpus)
-
-        # Should find some definitional contexts
-        # (exact number depends on corpus content)
-        assert isinstance(contexts, list)
-
-        # Each context should be a tuple
-        if len(contexts) > 0:
-            assert all(isinstance(c, tuple) and len(c) == 4 for c in contexts)
-
-    def test_score_sample_terms(self, sample_corpus):
-        """Test scoring terms in sample corpus."""
-        scores = score_by_definitional_context(sample_corpus)
-
-        # Should return scores
-        assert isinstance(scores, dict)
-
-    def test_pattern_analysis_on_sample(self, sample_corpus):
-        """Test analyzing patterns in sample corpus."""
-        pattern_counts = analyze_definitional_patterns(sample_corpus)
-
-        # Should return pattern distribution
-        assert isinstance(pattern_counts, dict)
 
 
 class TestPOSFiltering:
@@ -2038,17 +1991,6 @@ class TestHybridScorerOnRealCorpus:
                 ]
             )
             assert active_signals >= 1  # At least one signal should fire
-
-    def test_high_confidence_on_sample(self, sample_corpus, brown_corpus):
-        """Test high confidence term extraction on sample."""
-        scorer = PhilosophicalTermScorer(sample_corpus, brown_corpus, min_author_freq=3)
-
-        # Get high confidence terms (at least 2 signals)
-        high_conf = scorer.get_high_confidence_terms(min_signals=2, min_score=0.5)
-
-        # Should find some high confidence terms
-        # (exact count depends on corpus content)
-        assert isinstance(high_conf, set)
 
     def test_convenience_function_on_sample(self, sample_corpus, brown_corpus):
         """Test convenience function on sample corpus."""

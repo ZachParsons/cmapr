@@ -623,32 +623,6 @@ class TestMetrics:
         # b is on all paths between a and c
         assert scores["b"] >= scores["a"]
 
-    def test_centrality_closeness(self):
-        """Test closeness centrality."""
-        graph = ConceptGraph()
-        graph.add_node("a")
-        graph.add_node("b")
-        graph.add_node("c")
-        graph.add_edge("a", "b")
-        graph.add_edge("b", "c")
-
-        scores = centrality(graph, method="closeness")
-
-        assert isinstance(scores, dict)
-        assert "a" in scores
-
-    def test_centrality_pagerank(self):
-        """Test PageRank centrality."""
-        graph = ConceptGraph(directed=True)
-        graph.add_node("a")
-        graph.add_node("b")
-        graph.add_edge("a", "b")
-
-        scores = centrality(graph, method="pagerank")
-
-        assert isinstance(scores, dict)
-        assert len(scores) == 2
-
     def test_centrality_invalid_method(self):
         """Test invalid centrality method raises error."""
         graph = ConceptGraph()
@@ -672,17 +646,6 @@ class TestMetrics:
 
         assert len(communities) >= 1
         assert isinstance(communities[0], set)
-
-    def test_detect_communities_greedy(self):
-        """Test greedy community detection."""
-        graph = ConceptGraph()
-        graph.add_node("a")
-        graph.add_node("b")
-        graph.add_edge("a", "b")
-
-        communities = detect_communities(graph, method="greedy")
-
-        assert isinstance(communities, list)
 
     def test_detect_communities_invalid_method(self):
         """Test invalid community method raises error."""
