@@ -36,7 +36,7 @@ Data collection details.
         assert len(locations) == len(sentences)
 
         # Check chapter nodes
-        chapters = [n for n in nodes if n.level == "chapter"]
+        chapters = [n for n in nodes if n.level == "level_0"]
         assert len(chapters) >= 2
 
         # Check first chapter
@@ -91,9 +91,9 @@ Details.
         assert len(nodes) > 0
 
         # Check levels
-        chapters = [n for n in nodes if n.level == "chapter"]
-        sections = [n for n in nodes if n.level == "section"]
-        subsections = [n for n in nodes if n.level == "subsection"]
+        chapters = [n for n in nodes if n.level == "level_0"]
+        sections = [n for n in nodes if n.level == "level_1"]
+        subsections = [n for n in nodes if n.level == "level_2"]
 
         assert len(chapters) >= 1
         assert len(sections) >= 2
@@ -121,7 +121,7 @@ Analysis content.
         assert len(nodes) > 0
 
         # Check that chapters were detected
-        chapters = [n for n in nodes if n.level == "chapter"]
+        chapters = [n for n in nodes if n.level == "level_0"]
         assert len(chapters) >= 2
 
     def test_no_structure_fallback(self):
@@ -212,7 +212,7 @@ Methods text.
     def test_structure_node_serialization(self):
         """Test that StructureNode can be serialized and deserialized."""
         node = StructureNode(
-            level="chapter",
+            level="level_0",
             number="1",
             title="Introduction",
             start_index=0,
@@ -223,7 +223,7 @@ Methods text.
 
         # Serialize
         data = node.to_dict()
-        assert data["level"] == "chapter"
+        assert data["level"] == "level_0"
         assert data["number"] == "1"
         assert data["title"] == "Introduction"
 

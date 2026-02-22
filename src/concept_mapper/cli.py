@@ -954,68 +954,68 @@ def _build_hierarchical_path(loc, level, structure_nodes=None):
 
     parts = []
 
-    if level == "chapter":
-        # Just chapter
+    if level == "level_0":
+        # Just top level
         if loc.chapter:
-            title = loc.chapter_title or f"Chapter {loc.chapter}"
+            title = loc.chapter_title or f"Level 0 {loc.chapter}"
             parts.append(f"{loc.chapter}. {title}" if loc.chapter_title else title)
 
-    elif level == "section":
-        # Chapter / Section
+    elif level == "level_1":
+        # Level 0 / Level 1
         if loc.section:
-            # Extract chapter number from section (e.g., "1.5" -> "1")
-            chapter_num = (
+            # Extract parent number from section (e.g., "1.5" -> "1")
+            parent_num = (
                 loc.section.split(".")[0] if "." in loc.section else loc.section
             )
 
-            # Add chapter
-            if chapter_num in node_map:
-                chapter_title = node_map[chapter_num].title
-                parts.append(f"{chapter_num}. {chapter_title}")
-            elif loc.chapter == chapter_num and loc.chapter_title:
-                parts.append(f"{chapter_num}. {loc.chapter_title}")
+            # Add parent level
+            if parent_num in node_map:
+                parent_title = node_map[parent_num].title
+                parts.append(f"{parent_num}. {parent_title}")
+            elif loc.chapter == parent_num and loc.chapter_title:
+                parts.append(f"{parent_num}. {loc.chapter_title}")
             else:
-                parts.append(f"Chapter {chapter_num}")
+                parts.append(f"Level 0 {parent_num}")
 
-            # Add section
-            section_title = loc.section_title or f"Section {loc.section}"
+            # Add current level
+            section_title = loc.section_title or f"Level 1 {loc.section}"
             parts.append(
                 f"{loc.section}. {section_title}"
                 if loc.section_title
                 else section_title
             )
 
-    elif level == "subsection":
-        # Chapter / Section / Subsection
+    elif level == "level_2":
+        # Level 0 / Level 1 / Level 2
         if loc.subsection:
-            # Extract chapter and section from subsection (e.g., "1.5.1" -> "1", "1.5")
+            # Extract parent numbers from subsection (e.g., "1.5.1" -> "1", "1.5")
             parts_nums = loc.subsection.split(".")
             if len(parts_nums) >= 3:
-                chapter_num = parts_nums[0]
-                section_num = f"{parts_nums[0]}.{parts_nums[1]}"
+                level0_num = parts_nums[0]
+                level1_num = f"{parts_nums[0]}.{parts_nums[1]}"
 
-                # Add chapter
-                if chapter_num in node_map:
-                    chapter_title = node_map[chapter_num].title
-                    parts.append(f"{chapter_num}. {chapter_title}")
+                # Add level 0
+                if level0_num in node_map:
+                    level0_title = node_map[level0_num].title
+                    parts.append(f"{level0_num}. {level0_title}")
                 else:
-                    parts.append(f"Chapter {chapter_num}")
+                    parts.append(f"Level 0 {level0_num}")
 
-                # Add section
-                if section_num in node_map:
-                    section_title = node_map[section_num].title
-                    parts.append(f"{section_num}. {section_title}")
+                # Add level 1
+                if level1_num in node_map:
+                    level1_title = node_map[level1_num].title
+                    parts.append(f"{level1_num}. {level1_title}")
                 else:
-                    parts.append(f"Section {section_num}")
+                    parts.append(f"Level 1 {level1_num}")
 
-                # Add subsection
-                subsection_title = (
-                    loc.subsection_title or f"Subsection {loc.subsection}"
+                # Add level 2
+                level2_title = (
+                    loc.subsection_title or f"Level 2 {loc.subsection}"
                 )
                 parts.append(
-                    f"{loc.subsection}. {subsection_title}"
+                    f"{loc.subsection}. {level2_title}"
                     if loc.subsection_title
-                    else subsection_title
+                    else level2_title
                 )
 
     return " / ".join(parts) if parts else "Unstructured Content"
@@ -1053,16 +1053,19 @@ def _get_location_field(loc, level_name):
 
     Args:
         loc: SentenceLocation object
-        level_name: Structure level name (e.g., "chapter", "section", "subsection")
+        level_name: Generic level name (e.g., "level_0", "level_1", "level_2")
 
     Returns:
         Tuple of (number, title) or (None, None) if not found
     """
+    # Map generic level names to SentenceLocation fields
+    # Note: SentenceLocation fields are named chapter/section/subsection for legacy reasons,
+    # but they represent arbitrary depth levels (0, 1, 2, 3)
     level_mapping = {
-        "chapter": (loc.chapter, loc.chapter_title),
-        "section": (loc.section, loc.section_title),
-        "subsection": (loc.subsection, loc.subsection_title),
-        "paragraph": (loc.paragraph, None),
+        "level_0": (loc.chapter, loc.chapter_title),
+        "level_1": (loc.section, loc.section_title),
+        "level_2": (loc.subsection, loc.subsection_title),
+        "level_3": (loc.paragraph, None),
     }
 
     return level_mapping.get(level_name, (None, None))

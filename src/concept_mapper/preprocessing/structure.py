@@ -92,14 +92,9 @@ class DocumentStructureDetector:
             # Normalize number: remove spaces (e.g., "1. 7" -> "1.7")
             number = number.replace(" ", "")
 
-            # Determine level from number of dots
+            # Determine level from number of dots (generic depth-based naming)
             level_depth = number.count(".")
-            if level_depth == 0:
-                level = "chapter"
-            elif level_depth == 1:
-                level = "section"
-            else:
-                level = "subsection"
+            level = f"level_{level_depth}"
 
             nodes.append(
                 {
@@ -146,13 +141,11 @@ class DocumentStructureDetector:
 
             position = match.start()
 
-            # Determine level from prefix
-            if prefix.lower() == "part":
-                level = "chapter"
-            elif prefix.lower() == "chapter":
-                level = "chapter"
+            # Determine level from prefix (treat "Part" and "Chapter" as top level)
+            if prefix.lower() in ("part", "chapter"):
+                level = "level_0"
             else:
-                level = "section"
+                level = "level_1"
 
             nodes.append(
                 {
@@ -184,15 +177,16 @@ class DocumentStructureDetector:
             position = match.start()
             depth = len(hashes)
 
-            # Map hash count to level
+            # Map hash count to level (generic depth-based)
+            level_depth = depth - 1  # # = depth 0, ## = depth 1, ### = depth 2
+            level = f"level_{level_depth}"
+
             if depth == 1:
-                level = "chapter"
                 chapter_count += 1
                 section_count = 0
                 subsection_count = 0
                 number = str(chapter_count)
             elif depth == 2:
-                level = "section"
                 section_count += 1
                 subsection_count = 0
                 number = (
@@ -201,7 +195,6 @@ class DocumentStructureDetector:
                     else str(section_count)
                 )
             else:
-                level = "subsection"
                 subsection_count += 1
                 number = (
                     f"{chapter_count}.{section_count}.{subsection_count}"
@@ -246,7 +239,7 @@ class DocumentStructureDetector:
 
             nodes.append(
                 {
-                    "level": "chapter",
+                    "level": "level_0",
                     "number": str(idx),
                     "title": title.title(),  # Convert to title case
                     "position": position,
@@ -315,12 +308,12 @@ class DocumentStructureDetector:
         chapter_entries = {
             entry["number"]: entry
             for entry in toc_entries
-            if entry["level"] == "chapter"
+            if entry["level"] == "level_0"
         }
 
         # Find existing chapter nodes and their positions
         chapter_nodes = {
-            node["number"]: node for node in nodes if node["level"] == "chapter"
+            node["number"]: node for node in nodes if node["level"] == "level_0"
         }
 
         for chapter_num, chapter_entry in chapter_entries.items():
@@ -346,7 +339,7 @@ class DocumentStructureDetector:
                     # Chapter not found, add it before first section
                     nodes.append(
                         {
-                            "level": "chapter",
+                            "level": "level_0",
                             "number": chapter_num,
                             "title": chapter_entry["title"],
                             "position": first_section["position"] - 1,
@@ -380,7 +373,7 @@ class DocumentStructureDetector:
             if chapter_match:
                 number = chapter_match.group(1)
                 title = chapter_match.group(2).strip()
-                entries.append({"level": "chapter", "number": number, "title": title})
+                entries.append({"level": "level_0", "number": number, "title": title})
                 continue
 
             # Chapter without number: ## Title — page (e.g., Introduction)
@@ -388,7 +381,7 @@ class DocumentStructureDetector:
             if chapter_no_num_match:
                 title = chapter_no_num_match.group(1).strip()
                 # Generate a number for unnumbered chapters
-                entries.append({"level": "chapter", "number": "0", "title": title})
+                entries.append({"level": "level_0", "number": "0", "title": title})
                 continue
 
             # Unnumbered standalone heading (e.g., Introduction without ##)
@@ -399,7 +392,7 @@ class DocumentStructureDetector:
                 and not line.startswith(" ")
             ):
                 title = standalone_match.group(1).strip()
-                entries.append({"level": "chapter", "number": "0", "title": title})
+                entries.append({"level": "level_0", "number": "0", "title": title})
                 continue
 
             # Section: - N.N. Title — page (with bullet, no extra indent)
@@ -407,7 +400,7 @@ class DocumentStructureDetector:
             if section_match:
                 number = section_match.group(1)
                 title = section_match.group(2).strip()
-                entries.append({"level": "section", "number": number, "title": title})
+                entries.append({"level": "level_1", "number": number, "title": title})
                 continue
 
             # Subsection: - N.N.N. Title — page (with indent + bullet)
@@ -418,7 +411,7 @@ class DocumentStructureDetector:
                 number = subsection_match.group(1)
                 title = subsection_match.group(2).strip()
                 entries.append(
-                    {"level": "subsection", "number": number, "title": title}
+                    {"level": "level_2", "number": number, "title": title}
                 )
                 continue
 
@@ -758,13 +751,13 @@ class DocumentStructureDetector:
 
             # Process from most specific to least specific
             for node in containing_nodes:
-                if node.level == "subsection":
+                if node.level == "level_2":
                     subsection = node.number
                     subsection_title = node.title
                     # Get parent section and chapter
                     if node.parent_number and node.parent_number in node_dict:
                         parent = node_dict[node.parent_number]
-                        if parent.level == "section":
+                        if parent.level == "level_1":
                             section = parent.number
                             section_title = parent.title
                             if (
@@ -774,16 +767,16 @@ class DocumentStructureDetector:
                                 grandparent = node_dict[parent.parent_number]
                                 chapter = grandparent.number
                                 chapter_title = grandparent.title
-                elif node.level == "section":
+                elif node.level == "level_1":
                     section = node.number
                     section_title = node.title
                     # Get parent chapter
                     if node.parent_number and node.parent_number in node_dict:
                         parent = node_dict[node.parent_number]
-                        if parent.level == "chapter":
+                        if parent.level == "level_0":
                             chapter = parent.number
                             chapter_title = parent.title
-                elif node.level == "chapter":
+                elif node.level == "level_0":
                     chapter = node.number
                     chapter_title = node.title
 

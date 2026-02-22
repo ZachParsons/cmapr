@@ -67,7 +67,9 @@
       "Bash(cmapr rarities:*)",
       "Bash(python -m src.concept_mapper.cli ingest:*)",
       "Bash(python -m src.concept_mapper.cli:*)",
-      "Bash(jq:*)"
+      "Bash(jq:*)",
+      "Bash(make coverage:*)",
+      "Bash(tail:*)"
     ]
   }
 }
