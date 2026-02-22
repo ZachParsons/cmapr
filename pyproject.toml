@@ -20,6 +20,7 @@ dependencies = [
 dev = [
     # Essential dev tools
     "pytest>=8.3",        # Tests ⭐
+    "pytest-cov>=5.0",    # Test coverage ⭐
     "ruff>=0.6",          # Linter + formatter ⭐
     "ipython>=8.27",      # REPL w/ autoreload ⭐
     "reportlab>=4.0",     # PDF generation for tests

@@ -345,7 +345,7 @@ class TestRealCorpusAnalysis:
         from src.concept_mapper.corpus.loader import load_file
 
         base = Path(__file__).parent.parent / "samples"
-        doc = load_file(base / "eco_spl.txt")
+        doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
 
     @pytest.fixture
@@ -659,7 +659,7 @@ class TestTFIDFOnRealCorpus:
         from src.concept_mapper.corpus.loader import load_file
 
         base = Path(__file__).parent.parent / "samples"
-        doc = load_file(base / "eco_spl.txt")
+        doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
 
     @pytest.fixture
@@ -981,7 +981,7 @@ class TestWordNetOnRealCorpus:
         from src.concept_mapper.corpus.loader import load_file
 
         base = Path(__file__).parent.parent / "samples"
-        doc = load_file(base / "eco_spl.txt")
+        doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
 
     @pytest.fixture
@@ -1355,7 +1355,7 @@ class TestDefinitionalContextsOnRealCorpus:
         from src.concept_mapper.corpus.loader import load_file
 
         base = Path(__file__).parent.parent / "samples"
-        doc = load_file(base / "eco_spl.txt")
+        doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
 
     def test_extract_definitions_from_sample(self, sample_corpus):
@@ -1621,7 +1621,7 @@ class TestPOSFilteringOnRealCorpus:
         from src.concept_mapper.corpus.loader import load_file
 
         base = Path(__file__).parent.parent / "samples"
-        doc = load_file(base / "eco_spl.txt")
+        doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
 
     @pytest.fixture
@@ -1995,7 +1995,7 @@ class TestHybridScorerOnRealCorpus:
         from src.concept_mapper.corpus.loader import load_file
 
         base = Path(__file__).parent.parent / "samples"
-        doc = load_file(base / "eco_spl.txt")
+        doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
 
     @pytest.fixture

@@ -487,6 +487,7 @@ src/concept_mapper/
 - Web interface
 - Database backend for large-scale corpora
 - **Investigate pdfplumber for source text ingestion** — determine whether pdfplumber can replace the current two-file workflow (raw OCR text + manually cleaned table of contents) by extracting structured text and TOC directly from the source PDF.
+- **Test suite cleanup** — use `pytest-cov` to identify undercovered code paths (add tests) and overcovered ones (redundant tests testing the same path with different labels); target reducing test count from ~693 to ~510-540 (~25% reduction) while improving branch coverage; delete redundant tests rather than merging them to keep intent legible.
 
 ---
 

@@ -1,4 +1,4 @@
-.PHONY: install format lint test check shell help
+.PHONY: install format lint test coverage check shell help
 
 help:
 	@echo "Available commands:"
@@ -6,6 +6,7 @@ help:
 	@echo "  make format    - Format code with Ruff"
 	@echo "  make lint      - Lint code with Ruff (auto-fix)"
 	@echo "  make test      - Run tests with pytest"
+	@echo "  make coverage  - Run tests with coverage report"
 	@echo "  make check     - Run all checks (format + lint + test)"
 	@echo "  make shell     - Start IPython interactive shell"
 
@@ -24,6 +25,11 @@ lint:
 test:
 	@echo "🧪 Running tests..."
 	@uv run pytest tests/ -v
+
+coverage:
+	@echo "📊 Running tests with coverage..."
+	@uv run pytest --cov=concept_mapper --cov-report=term-missing --cov-report=html tests/
+	@echo "✅ Coverage report generated: htmlcov/index.html"
 
 check: format lint test
 	@echo "✅ All checks passed! Ready to commit."
