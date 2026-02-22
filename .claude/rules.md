@@ -84,6 +84,7 @@ Verify documentation is current:
 - Clear, descriptive commit messages
 - Focus commits on single logical changes
 - Never commit generated files, cache, or virtualenvs
+- **NEVER commit without explicit user approval** — always show the diff and wait for the user to confirm they've manually tested and approved before running `git commit`
 
 ### AI Assistant Guidelines
 
