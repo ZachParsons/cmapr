@@ -1021,13 +1021,60 @@ def _build_hierarchical_path(loc, level, structure_nodes=None):
     return " / ".join(parts) if parts else "Unstructured Content"
 
 
-def _group_relations_by_structure(relations, level="chapter", structure_nodes=None):
+def _get_structure_depth_mapping(structure_nodes):
     """
-    Group relations by document structure.
+    Build a mapping from tree depth to structure level names.
+
+    Args:
+        structure_nodes: List of StructureNode objects
+
+    Returns:
+        Dict mapping depth (0, 1, 2...) to level names (e.g., "chapter", "section")
+        Returns None if no structure
+    """
+    if not structure_nodes:
+        return None
+
+    # Determine hierarchy by analyzing number patterns
+    # e.g., "1" is depth 0, "1.2" is depth 1, "1.2.3" is depth 2
+    levels_by_depth = {}
+
+    for node in structure_nodes:
+        depth = node.number.count(".")  # "1" = 0, "1.2" = 1, "1.2.3" = 2
+        if depth not in levels_by_depth:
+            levels_by_depth[depth] = node.level
+
+    return levels_by_depth
+
+
+def _get_location_field(loc, level_name):
+    """
+    Get the appropriate number and title from a location based on level name.
+
+    Args:
+        loc: SentenceLocation object
+        level_name: Structure level name (e.g., "chapter", "section", "subsection")
+
+    Returns:
+        Tuple of (number, title) or (None, None) if not found
+    """
+    level_mapping = {
+        "chapter": (loc.chapter, loc.chapter_title),
+        "section": (loc.section, loc.section_title),
+        "subsection": (loc.subsection, loc.subsection_title),
+        "paragraph": (loc.paragraph, None),
+    }
+
+    return level_mapping.get(level_name, (None, None))
+
+
+def _group_relations_by_structure(relations, level=1, structure_nodes=None):
+    """
+    Group relations by document structure using tree depth levels.
 
     Args:
         relations: List of ContextualRelation objects
-        level: Grouping level (chapter, section, subsection)
+        level: Integer tree depth (0=no grouping, 1=top level, 2=second level, etc.)
         structure_nodes: Optional list of StructureNode objects for hierarchical path lookup
 
     Returns:
@@ -1038,6 +1085,36 @@ def _group_relations_by_structure(relations, level="chapter", structure_nodes=No
     grouped = defaultdict(
         lambda: {"relations": [], "title": "", "path": "", "parent": None}
     )
+
+    # Level 0 means no grouping - put everything together
+    if level == 0:
+        for rel in relations:
+            grouped["all"]["relations"].append(rel)
+            grouped["all"]["title"] = "All Content"
+            grouped["all"]["path"] = "All Content"
+        return grouped
+
+    # Build depth mapping from structure nodes
+    depth_mapping = _get_structure_depth_mapping(structure_nodes)
+
+    if not depth_mapping:
+        # No structure available - put everything in unstructured
+        for rel in relations:
+            grouped["unstructured"]["relations"].append(rel)
+            grouped["unstructured"]["title"] = "Unstructured Content"
+            grouped["unstructured"]["path"] = "Unstructured Content"
+        return grouped
+
+    # Map requested level to actual structure level name
+    # Level 1 = depth 0 (top level), Level 2 = depth 1, etc.
+    target_depth = level - 1
+    target_level_name = depth_mapping.get(target_depth)
+
+    if not target_level_name:
+        # Requested level doesn't exist - use deepest available level
+        max_depth = max(depth_mapping.keys())
+        target_depth = max_depth
+        target_level_name = depth_mapping[max_depth]
 
     for rel in relations:
         if not rel.evidence_locations:
@@ -1050,31 +1127,16 @@ def _group_relations_by_structure(relations, level="chapter", structure_nodes=No
         # Use first location for grouping
         loc = rel.evidence_locations[0]
 
-        if level == "chapter" and loc.chapter:
-            key = f"{loc.chapter}"
+        # Get the appropriate field from location based on target level
+        number, title = _get_location_field(loc, target_level_name)
+
+        if number:
+            key = f"{number}"
             grouped[key]["relations"].append(rel)
-            grouped[key]["title"] = loc.chapter_title or f"Chapter {loc.chapter}"
+            grouped[key]["title"] = title or f"{target_level_name.title()} {number}"
             grouped[key]["path"] = _build_hierarchical_path(
-                loc, "chapter", structure_nodes
+                loc, target_level_name, structure_nodes
             )
-        elif level == "section" and loc.section:
-            key = f"{loc.section}"
-            grouped[key]["relations"].append(rel)
-            grouped[key]["title"] = loc.section_title or f"Section {loc.section}"
-            grouped[key]["path"] = _build_hierarchical_path(
-                loc, "section", structure_nodes
-            )
-            grouped[key]["parent"] = loc.chapter_title if loc.chapter else None
-        elif level == "subsection" and loc.subsection:
-            key = f"{loc.subsection}"
-            grouped[key]["relations"].append(rel)
-            grouped[key]["title"] = (
-                loc.subsection_title or f"Subsection {loc.subsection}"
-            )
-            grouped[key]["path"] = _build_hierarchical_path(
-                loc, "subsection", structure_nodes
-            )
-            grouped[key]["parent"] = loc.section_title if loc.section else None
         else:
             # Fallback to unstructured
             key = "unstructured"
@@ -1275,9 +1337,9 @@ def _get_structure_summary(docs):
 @click.option("--output", "-o", type=click.Path(), help="Output file")
 @click.option(
     "--group-by",
-    type=click.Choice(["none", "chapter", "section", "subsection"]),
-    default="chapter",
-    help="Group results by document structure (default: chapter)",
+    type=click.IntRange(min=0),
+    default=1,
+    help="Group by structure tree level: 0=none, 1=top level, 2=second level, etc. (default: 1)",
 )
 @click.option(
     "--show-structure",
@@ -1367,7 +1429,7 @@ def analyze(
         # Check if we have structure and should group
         has_structure = any(rel.evidence_locations for rel in relations)
 
-        if has_structure and group_by != "none":
+        if has_structure and group_by > 0:
             # Use structured display
             # Extract structure nodes from first doc (assuming single doc corpus)
             structure_nodes = (
