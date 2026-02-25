@@ -33,7 +33,7 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 | 10 | CLI interface (Click, unified command-line access) | 23 |
 | 11 | Documentation & polish | — |
 
-**665 tests passing, 2 skipped** (pydot-dependent DOT export tests).
+**698 tests passing, 2 skipped** (pydot-dependent DOT export tests).
 
 ### Post-completion additions (February 2026)
 
@@ -45,10 +45,12 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 - [x] **Remove legacy pos_tagger.py** — Deleted 490 lines of legacy code. Updated Makefile.
 - [x] **Documentation consolidation** — README reduced 68% (764→241 lines). Created `docs/tutorial.md`.
 - [x] **Infrastructure cleanup** — Removed 77MB of old venv, cache files, and unused directories.
+- [x] **Analyze window option** — `--window/-w` flag for `analyze`: shows significant terms in a sentence or paragraph window around each occurrence of the search term (e.g. `-w s0`, `-w s1`, `-w p0`). New `extract_terms_from_sentence_set()` in `search/extract.py`. 33 tests.
+- [x] **Analyze `-g` shorthand** — `-g` shorthand for `--group-by` on the `analyze` command.
 
 ### Project summary
 
-11/11 phases complete (Jan 14–25, 2026, 12 days); 8,788 lines across 35 modules; 665 tests; ~107KB documentation across 5 guides; dual CLI/Python API covering the full pipeline from text loading through interactive D3 visualization — production-ready for digital humanities research.
+11/11 phases complete (Jan 14–25, 2026, 12 days); 8,788 lines across 35 modules; 698 tests; ~107KB documentation across 5 guides; dual CLI/Python API covering the full pipeline from text loading through interactive D3 visualization — production-ready for digital humanities research.
 
 ---
 
@@ -479,15 +481,15 @@ src/concept_mapper/
 
 ## Future Work
 
-- SpaCy integration when Python 3.14 compatible (richer dependency parsing)
-- Multi-language support
-- Usage-based definition generation (aggregate co-occurrences and relations into empirical definitions)
-- Automatic document structure discovery (chapter/section segmentation for large texts)
-- Temporal analysis across an author's career
-- Web interface
-- Database backend for large-scale corpora
-- **Investigate pdfplumber for source text ingestion** — determine whether pdfplumber can replace the current two-file workflow (raw OCR text + manually cleaned table of contents) by extracting structured text and TOC directly from the source PDF.
-- **Test suite cleanup** — use `pytest-cov` to identify undercovered code paths (add tests) and overcovered ones (redundant tests testing the same path with different labels); target reducing test count from ~693 to ~510-540 (~25% reduction) while improving branch coverage; delete redundant tests rather than merging them to keep intent legible.
+- [ ] Automatic document structure discovery (chapter/section segmentation for large texts)
+- [ ] Usage-based definition generation (aggregate co-occurrences and relations into empirical definitions)
+- [ ] **Investigate pdfplumber for source text ingestion** — determine whether pdfplumber can replace the current two-file workflow (raw OCR text + manually cleaned table of contents) by extracting structured text and TOC directly from the source PDF.
+- [ ] **Test suite cleanup** — use `pytest-cov` to identify undercovered code paths (add tests) and overcovered ones (redundant tests testing the same path with different labels); target reducing test count from ~698 to ~510-540 (~25% reduction) while improving branch coverage; delete redundant tests rather than merging them to keep intent legible.
+- [ ] Database backend for large-scale corpora
+- [ ] Temporal analysis across an author's career
+- [ ] Web interface
+- [ ] Multi-language support
+- [ ] SpaCy integration when Python 3.14 compatible (richer dependency parsing)
 
 ---
 
