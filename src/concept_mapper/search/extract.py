@@ -554,13 +554,67 @@ def aggregate_across_sentences(
     return aggregated
 
 
+def build_corpus_term_freqs(
+    docs: List[ProcessedDocument],
+    pos_types: List[str] = None,
+) -> tuple:
+    """
+    Build a corpus-wide term frequency map using precomputed pos_tags/lemmas.
+
+    This is the fast path: reads already-computed data from ProcessedDocument
+    rather than re-running tokenization, POS tagging, and lemmatization.
+
+    Args:
+        docs: Preprocessed documents (must have pos_tags and lemmas populated)
+        pos_types: POS types to include (default: nouns and verbs)
+
+    Returns:
+        (term_freqs, max_freq) tuple for use with extract_terms_from_sentence_set
+    """
+    from collections import Counter
+
+    if pos_types is None:
+        pos_types = ["nouns", "verbs"]
+
+    pos_tags_to_extract = set()
+    for pos_type in pos_types:
+        if pos_type in POS_TAG_GROUPS:
+            pos_tags_to_extract.update(POS_TAG_GROUPS[pos_type])
+
+    all_terms = []
+    for doc in docs:
+        if doc.pos_tags and doc.lemmas:
+            # Fast path: use precomputed annotations
+            for (token, pos), lemma in zip(doc.pos_tags, doc.lemmas):
+                lemma_lower = lemma.lower()
+                if pos in pos_tags_to_extract and lemma_lower not in STOPWORDS:
+                    all_terms.append(lemma_lower)
+        else:
+            # Fallback: reprocess from raw sentences
+            for sent in doc.sentences:
+                tokens = tokenize_words(sent)
+                if tokens:
+                    tagged = tag_tokens(tokens)
+                    lemmas_list = lemmatize_tagged(tagged)
+                    for (token, pos), lemma in zip(tagged, lemmas_list):
+                        lemma_lower = lemma.lower()
+                        if pos in pos_tags_to_extract and lemma_lower not in STOPWORDS:
+                            all_terms.append(lemma_lower)
+
+    term_freqs = Counter(all_terms)
+    max_freq = max(term_freqs.values()) if term_freqs else 1
+    return term_freqs, max_freq
+
+
 def extract_terms_from_sentence_set(
     sentences: List[str],
-    docs: List[ProcessedDocument],
+    docs: List[ProcessedDocument] = None,
     pos_types: List[str] = None,
     threshold: float = 0.1,
     top_n: int = None,
     exclude_term: str = None,
+    term_freqs=None,
+    max_freq: int = None,
 ) -> List[tuple]:
     """
     Extract significant terms from a specific set of sentences.
@@ -602,23 +656,11 @@ def extract_terms_from_sentence_set(
         "\u00b7",
     }
 
-    # Build corpus frequency map from all docs
-    from collections import Counter
-
-    all_terms = []
-    for doc in docs:
-        for sent in doc.sentences:
-            tokens = tokenize_words(sent)
-            if tokens:
-                tagged = tag_tokens(tokens)
-                lemmas_list = lemmatize_tagged(tagged)
-                for (token, pos), lemma in zip(tagged, lemmas_list):
-                    lemma_lower = lemma.lower()
-                    if pos in pos_tags_to_extract and lemma_lower not in STOPWORDS:
-                        all_terms.append(lemma_lower)
-
-    term_freqs = Counter(all_terms)
-    max_freq = max(term_freqs.values()) if term_freqs else 1
+    # Use precomputed frequency map if provided; otherwise build it from docs
+    if term_freqs is None:
+        term_freqs, max_freq = build_corpus_term_freqs(docs or [], pos_types)
+    elif max_freq is None:
+        max_freq = max(term_freqs.values()) if term_freqs else 1
 
     def score_term(term):
         freq = term_freqs.get(term, 0)

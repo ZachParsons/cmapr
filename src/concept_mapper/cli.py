@@ -1500,7 +1500,10 @@ def _display_window_analysis(
 ):
     """Display per-occurrence window analysis for a search term."""
     from concept_mapper.search.find import find_sentences
-    from concept_mapper.search.extract import extract_terms_from_sentence_set
+    from concept_mapper.search.extract import (
+        extract_terms_from_sentence_set,
+        build_corpus_term_freqs,
+    )
 
     matches = find_sentences(term, docs, match_lemma=lemma)
     matches = _filter_sentence_matches(matches, start_section, exclude_sections)
@@ -1509,6 +1512,9 @@ def _display_window_analysis(
         return
 
     pos_types_list = list(pos_types) if pos_types else None
+
+    # Build corpus frequency map once — reused for every window call
+    term_freqs, max_freq = build_corpus_term_freqs(docs, pos_types_list)
     structure_nodes = (
         docs[0].structure_nodes if docs and docs[0].structure_nodes else None
     )
@@ -1522,10 +1528,15 @@ def _display_window_analysis(
     # Build a doc_id → doc map for fast lookup
     doc_map = {d.metadata.get("source_path", f"doc_{i}"): d for i, d in enumerate(docs)}
 
+    last_path = None
     for match in matches:
-        click.echo("\n" + "=" * 80)
         path = _build_sentence_path(match.location, structure_nodes)
-        click.echo(f"path: {path}")
+        if path != last_path:
+            click.echo("\n" + "=" * 80)
+            click.echo(f"path: {path}")
+            last_path = path
+        else:
+            click.echo("\n" + "-" * 40)
         click.echo(f'found: "{match.sentence.strip()}"')
         click.echo("\nsignificant terms:")
 
@@ -1543,11 +1554,12 @@ def _display_window_analysis(
 
             terms = extract_terms_from_sentence_set(
                 sentences,
-                docs,
                 pos_types=pos_types_list,
                 threshold=threshold,
                 top_n=top_n,
                 exclude_term=term,
+                term_freqs=term_freqs,
+                max_freq=max_freq,
             )
 
             if not terms:
