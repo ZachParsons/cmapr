@@ -304,7 +304,7 @@ JSON-backed `StorageBackend` ABC with `JSONBackend` as default, designed for fut
 
 ## Phase 7: Relation Extraction ✅ COMPLETE
 
-Note: Pattern-based implementation using NLTK POS tagging. spaCy dependency parsing deferred due to Python 3.14 compatibility.
+Note: Pattern-based implementation using NLTK POS tagging. spaCy dependency parsing deferred; spaCy 3.8 now supports Python 3.14.
 
 - [x] **7.1 Parsing setup** (`src/concept_mapper/analysis/relations.py`)
   - [x] `parse_sentence(sentence: str) -> list[tuple[str, str]]`
@@ -474,7 +474,7 @@ src/concept_mapper/
 ## Known Limitations
 
 1. **English only** — NLTK resources are English-centric.
-2. **Pattern-based relations** — spaCy dependency parsing deferred (Python 3.14 incompatibility); NLTK pattern-matching works well for philosophical texts.
+2. **Pattern-based relations** — spaCy dependency parsing deferred; spaCy 3.8 now supports Python 3.14 so this is unblocked.
 3. **Scale** — optimized for academic texts (10–100 documents), not massive corpora.
 4. **Graph layout** — force-directed only.
 
@@ -490,7 +490,9 @@ src/concept_mapper/
 - [ ] Temporal analysis across an author's career
 - [ ] Web interface
 - [ ] Multi-language support
-- [ ] SpaCy integration when Python 3.14 compatible (richer dependency parsing)
+- [ ] **SpaCy integration** (spaCy 3.8 supports Python 3.14 — no longer blocked)
+  - *Upsides:* dependency parsing gives correct SVO assignments in complex sentences (passives, relative clauses, unusual word order — common in translated philosophical texts); neural POS models generalize better to out-of-vocabulary philosophical neologisms (*Dasein*, *différance*, *sublation*); noun-chunk spans handle multi-word terms as units rather than fragmenting them; NER distinguishes technical concept usage from proper-noun references
+  - *Downsides:* heavy dependency with separately downloaded models (`python -m spacy download en_core_web_sm`); slower processing; requires refactoring the `tokenize → tag → lemmatize` pipeline that threads through most of the codebase — not a drop-in swap; highest-value target is relation extraction, which would benefit most from the dependency tree
 
 ---
 
