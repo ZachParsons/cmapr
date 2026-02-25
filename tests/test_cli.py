@@ -1174,6 +1174,298 @@ class TestAnalyzeWindowCommand:
         assert "paragraph" in result.output
 
 
+class TestSectionFilters:
+    """Unit tests for _location_passes_filters and integration tests for --start-from-section / --exclude-sections."""
+
+    # ------------------------------------------------------------------ #
+    # _location_passes_filters unit tests                                 #
+    # ------------------------------------------------------------------ #
+
+    def test_none_location_passes(self):
+        """A None location always passes (no data to filter on)."""
+        from concept_mapper.cli import _location_passes_filters
+
+        assert _location_passes_filters(None, start_section="1") is True
+
+    def test_no_filters_always_passes(self):
+        """With no filters, any location passes."""
+        from concept_mapper.cli import _location_passes_filters
+        from concept_mapper.corpus.models import SentenceLocation
+
+        loc = SentenceLocation(sent_index=0, chapter="0")
+        assert _location_passes_filters(loc) is True
+
+    def test_start_section_excludes_low_chapter(self):
+        """A chapter below start_section is excluded."""
+        from concept_mapper.cli import _location_passes_filters
+        from concept_mapper.corpus.models import SentenceLocation
+
+        loc = SentenceLocation(sent_index=0, chapter="0")
+        assert _location_passes_filters(loc, start_section="1") is False
+
+    def test_start_section_allows_equal_chapter(self):
+        """A chapter equal to start_section passes."""
+        from concept_mapper.cli import _location_passes_filters
+        from concept_mapper.corpus.models import SentenceLocation
+
+        loc = SentenceLocation(sent_index=0, chapter="1")
+        assert _location_passes_filters(loc, start_section="1") is True
+
+    def test_start_section_allows_higher_chapter(self):
+        """A chapter above start_section passes."""
+        from concept_mapper.cli import _location_passes_filters
+        from concept_mapper.corpus.models import SentenceLocation
+
+        loc = SentenceLocation(sent_index=0, chapter="3")
+        assert _location_passes_filters(loc, start_section="1") is True
+
+    def test_start_section_none_chapter_passes(self):
+        """A location with no chapter number always passes start_section filter."""
+        from concept_mapper.cli import _location_passes_filters
+        from concept_mapper.corpus.models import SentenceLocation
+
+        loc = SentenceLocation(sent_index=0, chapter=None)
+        assert _location_passes_filters(loc, start_section="1") is True
+
+    def test_start_section_decimal_comparison(self):
+        """Decimal chapter numbers are compared as floats."""
+        from concept_mapper.cli import _location_passes_filters
+        from concept_mapper.corpus.models import SentenceLocation
+
+        loc_low = SentenceLocation(sent_index=0, chapter="0.5")
+        loc_high = SentenceLocation(sent_index=1, chapter="1.5")
+        assert _location_passes_filters(loc_low, start_section="1") is False
+        assert _location_passes_filters(loc_high, start_section="1") is True
+
+    def test_exclude_pattern_matches_chapter_title(self):
+        """exclude_pattern matches against chapter_title."""
+        from concept_mapper.cli import _location_passes_filters
+        from concept_mapper.corpus.models import SentenceLocation
+
+        loc = SentenceLocation(sent_index=0, chapter="10", chapter_title="Index")
+        assert _location_passes_filters(loc, exclude_pattern="index") is False
+
+    def test_exclude_pattern_matches_section_title(self):
+        """exclude_pattern matches against section_title."""
+        from concept_mapper.cli import _location_passes_filters
+        from concept_mapper.corpus.models import SentenceLocation
+
+        loc = SentenceLocation(sent_index=0, chapter="10", section_title="Bibliography")
+        assert _location_passes_filters(loc, exclude_pattern="bibliography") is False
+
+    def test_exclude_pattern_case_insensitive(self):
+        """exclude_pattern matching is case-insensitive."""
+        from concept_mapper.cli import _location_passes_filters
+        from concept_mapper.corpus.models import SentenceLocation
+
+        loc = SentenceLocation(sent_index=0, chapter="10", chapter_title="APPENDIX A")
+        assert _location_passes_filters(loc, exclude_pattern="appendix") is False
+
+    def test_exclude_pattern_no_match_passes(self):
+        """A location whose titles don't match exclude_pattern passes."""
+        from concept_mapper.cli import _location_passes_filters
+        from concept_mapper.corpus.models import SentenceLocation
+
+        loc = SentenceLocation(sent_index=0, chapter="2", chapter_title="Semantics")
+        assert _location_passes_filters(loc, exclude_pattern="bibliography") is True
+
+    def test_both_filters_applied(self):
+        """Both start_section and exclude_pattern are applied together."""
+        from concept_mapper.cli import _location_passes_filters
+        from concept_mapper.corpus.models import SentenceLocation
+
+        # Fails start_section
+        loc_front = SentenceLocation(sent_index=0, chapter="0", chapter_title="TOC")
+        assert (
+            _location_passes_filters(
+                loc_front, start_section="1", exclude_pattern="bibliography"
+            )
+            is False
+        )
+        # Passes start_section but fails exclude_pattern
+        loc_back = SentenceLocation(
+            sent_index=99, chapter="12", chapter_title="Bibliography"
+        )
+        assert (
+            _location_passes_filters(
+                loc_back, start_section="1", exclude_pattern="bibliography"
+            )
+            is False
+        )
+        # Passes both
+        loc_main = SentenceLocation(
+            sent_index=50, chapter="3", chapter_title="Semantics"
+        )
+        assert (
+            _location_passes_filters(
+                loc_main, start_section="1", exclude_pattern="bibliography"
+            )
+            is True
+        )
+
+    # ------------------------------------------------------------------ #
+    # _filter_sentence_matches / _filter_relations helpers                #
+    # ------------------------------------------------------------------ #
+
+    def test_filter_sentence_matches_no_filters(self):
+        """_filter_sentence_matches returns all matches when no filters set."""
+        from concept_mapper.cli import _filter_sentence_matches
+        from concept_mapper.corpus.models import SentenceLocation
+        from concept_mapper.search.find import SentenceMatch
+
+        loc = SentenceLocation(sent_index=0, chapter="0")
+        match = SentenceMatch(
+            sentence="hello world",
+            doc_id="d1",
+            sent_index=0,
+            term_positions=[0],
+            term="hello",
+            location=loc,
+        )
+        assert _filter_sentence_matches([match]) == [match]
+
+    def test_filter_sentence_matches_excludes(self):
+        """_filter_sentence_matches removes matches below start_section."""
+        from concept_mapper.cli import _filter_sentence_matches
+        from concept_mapper.corpus.models import SentenceLocation
+        from concept_mapper.search.find import SentenceMatch
+
+        loc_low = SentenceLocation(sent_index=0, chapter="0")
+        loc_high = SentenceLocation(sent_index=1, chapter="2")
+        m_low = SentenceMatch(
+            sentence="front",
+            doc_id="d1",
+            sent_index=0,
+            term_positions=[0],
+            term="x",
+            location=loc_low,
+        )
+        m_high = SentenceMatch(
+            sentence="body",
+            doc_id="d1",
+            sent_index=1,
+            term_positions=[0],
+            term="x",
+            location=loc_high,
+        )
+        result = _filter_sentence_matches([m_low, m_high], start_section="1")
+        assert result == [m_high]
+
+    # ------------------------------------------------------------------ #
+    # CLI integration: --start-from-section and --exclude-sections        #
+    # ------------------------------------------------------------------ #
+
+    def test_analyze_start_from_section_accepts_option(
+        self, runner, sample_corpus_json
+    ):
+        """analyze --start-from-section should not error out."""
+        result = runner.invoke(
+            cli,
+            [
+                "analyze",
+                str(sample_corpus_json),
+                "dialectic",
+                "--start-from-section",
+                "1",
+            ],
+        )
+        assert result.exit_code == 0
+
+    def test_analyze_exclude_sections_accepts_option(self, runner, sample_corpus_json):
+        """analyze --exclude-sections should not error out."""
+        result = runner.invoke(
+            cli,
+            [
+                "analyze",
+                str(sample_corpus_json),
+                "dialectic",
+                "--exclude-sections",
+                "bibliography",
+            ],
+        )
+        assert result.exit_code == 0
+
+    def test_analyze_exclude_sections_removes_matched_content(self, runner, tmp_path):
+        """Terms in excluded sections should not appear in output."""
+        import json as _json
+        from concept_mapper.corpus.loader import load_file
+        from concept_mapper.preprocessing.pipeline import preprocess
+        from concept_mapper.corpus.models import SentenceLocation
+
+        # Build corpus with two sentences in different chapters
+        text_file = tmp_path / "two_chapters.txt"
+        text_file.write_text(
+            "Dialectical method is essential. The index covers all entries."
+        )
+        doc = load_file(text_file)
+        processed = preprocess(doc)
+        # Manually assign locations: first sentence chapter 1, second chapter "Index"
+        processed.sentence_locations = [
+            SentenceLocation(sent_index=0, chapter="1", chapter_title="Main"),
+            SentenceLocation(sent_index=1, chapter="2", chapter_title="Index"),
+        ]
+        corpus_file = tmp_path / "corpus.json"
+        with open(corpus_file, "w") as f:
+            _json.dump([processed.to_dict()], f)
+
+        result = runner.invoke(
+            cli,
+            [
+                "search",
+                str(corpus_file),
+                "index",
+                "--exclude-sections",
+                "^Index$",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "No matches found" in result.output
+
+    def test_search_start_from_section_accepts_option(self, runner, sample_corpus_json):
+        """search --start-from-section should not error out."""
+        result = runner.invoke(
+            cli,
+            [
+                "search",
+                str(sample_corpus_json),
+                "dialectic",
+                "--start-from-section",
+                "1",
+            ],
+        )
+        assert result.exit_code == 0
+
+    def test_search_exclude_sections_accepts_option(self, runner, sample_corpus_json):
+        """search --exclude-sections should not error out."""
+        result = runner.invoke(
+            cli,
+            [
+                "search",
+                str(sample_corpus_json),
+                "dialectic",
+                "--exclude-sections",
+                "bibliography",
+            ],
+        )
+        assert result.exit_code == 0
+
+    def test_window_with_start_from_section(self, runner, sample_corpus_json):
+        """analyze --window with --start-from-section should not error out."""
+        result = runner.invoke(
+            cli,
+            [
+                "analyze",
+                str(sample_corpus_json),
+                "dialectic",
+                "-w",
+                "s0",
+                "--start-from-section",
+                "1",
+            ],
+        )
+        assert result.exit_code == 0
+
+
 class TestReplaceCommand:
     """Tests for replace command."""
 

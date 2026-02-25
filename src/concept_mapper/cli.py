@@ -349,6 +349,24 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
     help="Scoring method: corpus_frequency (default, main content words) or hybrid (rare/distinctive terms)",
 )
 @click.option("--output", "-o", type=click.Path(), help="Output file")
+@click.option(
+    "--start-from-section",
+    type=str,
+    default=None,
+    help=(
+        "Skip content before this section number. "
+        "E.g. '1' excludes front-matter before chapter 1."
+    ),
+)
+@click.option(
+    "--exclude-sections",
+    type=str,
+    default=None,
+    help=(
+        "Exclude sections whose title matches this regex (case-insensitive). "
+        "E.g. 'index|bibliography' to skip back-matter."
+    ),
+)
 @click.pass_context
 def search(
     ctx,
@@ -366,6 +384,8 @@ def search(
     detailed,
     scoring_mode,
     output,
+    start_from_section,
+    exclude_sections,
 ):
     """
     Search for term occurrences in corpus.
@@ -388,7 +408,7 @@ def search(
     with open(corpus, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    docs = [ProcessedDocument(**doc_data) for doc_data in data]
+    docs = [ProcessedDocument.from_dict(doc_data) for doc_data in data]
 
     if verbose:
         search_type = "lemma-based" if lemma else "exact"
@@ -420,6 +440,9 @@ def search(
             top_n=top_n,
             match_lemma=lemma,
             scoring_mode=scoring_mode,
+        )
+        results = _filter_significant_results(
+            results, start_from_section, exclude_sections
         )
 
         if not results:
@@ -473,6 +496,7 @@ def search(
 
     # Search
     matches = find_sentences(term, docs, match_lemma=lemma)
+    matches = _filter_sentence_matches(matches, start_from_section, exclude_sections)
 
     if not matches:
         click.echo(f"No matches found for '{term}'")
@@ -1294,6 +1318,78 @@ def _get_structure_summary(docs):
     }
 
 
+def _location_passes_filters(location, start_section=None, exclude_pattern=None):
+    """
+    Return True if a sentence location passes the section filters.
+
+    Args:
+        location: SentenceLocation or None
+        start_section: Chapter number string; exclude sentence if chapter < this value
+        exclude_pattern: Regex string; exclude if any title field matches (case-insensitive)
+    """
+    import re
+
+    if location is None:
+        return True
+
+    if start_section is not None:
+        chapter = location.chapter
+        if chapter is not None:
+            try:
+                if float(chapter) < float(start_section):
+                    return False
+            except ValueError:
+                pass  # Non-numeric chapter numbers pass through
+
+    if exclude_pattern is not None:
+        titles = [
+            location.chapter_title,
+            location.section_title,
+            location.subsection_title,
+        ]
+        for title in titles:
+            if title and re.search(exclude_pattern, title, re.IGNORECASE):
+                return False
+
+    return True
+
+
+def _filter_sentence_matches(matches, start_section=None, exclude_pattern=None):
+    """Filter a list of SentenceMatch objects by section filters."""
+    if start_section is None and exclude_pattern is None:
+        return matches
+    return [
+        m
+        for m in matches
+        if _location_passes_filters(m.location, start_section, exclude_pattern)
+    ]
+
+
+def _filter_relations(relations, start_section=None, exclude_pattern=None):
+    """Filter a list of ContextualRelation objects by section filters."""
+    if start_section is None and exclude_pattern is None:
+        return relations
+    filtered = []
+    for rel in relations:
+        loc = rel.evidence_locations[0] if rel.evidence_locations else None
+        if _location_passes_filters(loc, start_section, exclude_pattern):
+            filtered.append(rel)
+    return filtered
+
+
+def _filter_significant_results(results, start_section=None, exclude_pattern=None):
+    """Filter a list of SignificantTermsResult objects by section filters."""
+    if start_section is None and exclude_pattern is None:
+        return results
+    return [
+        r
+        for r in results
+        if _location_passes_filters(
+            r.sentence_match.location, start_section, exclude_pattern
+        )
+    ]
+
+
 def _parse_window(window_str):
     """Parse window string like 's0', 's1', 'p1' into (entity_type, radius)."""
     if not window_str or len(window_str) < 2:
@@ -1389,13 +1485,23 @@ def _compute_window_slots(match, doc, entity_type, radius):
 
 
 def _display_window_analysis(
-    term, docs, entity_type, radius, pos_types, threshold, top_n, lemma
+    term,
+    docs,
+    entity_type,
+    radius,
+    pos_types,
+    threshold,
+    top_n,
+    lemma,
+    start_section=None,
+    exclude_sections=None,
 ):
     """Display per-occurrence window analysis for a search term."""
     from concept_mapper.search.find import find_sentences
     from concept_mapper.search.extract import extract_terms_from_sentence_set
 
     matches = find_sentences(term, docs, match_lemma=lemma)
+    matches = _filter_sentence_matches(matches, start_section, exclude_sections)
     if not matches:
         click.echo(f"No occurrences of '{term}' found")
         return
@@ -1521,6 +1627,24 @@ def _display_window_analysis(
         "E.g. 's0' (same sentence only), 's1' (±1 sentence), 'p0' (same paragraph), 'p1' (±1 paragraph)."
     ),
 )
+@click.option(
+    "--start-from-section",
+    type=str,
+    default=None,
+    help=(
+        "Skip content before this section number. "
+        "E.g. '1' excludes front-matter before chapter 1; '0' includes the introduction."
+    ),
+)
+@click.option(
+    "--exclude-sections",
+    type=str,
+    default=None,
+    help=(
+        "Exclude sections whose title matches this regex (case-insensitive). "
+        "E.g. 'index|bibliography' to skip back-matter."
+    ),
+)
 @click.pass_context
 def analyze(
     ctx,
@@ -1537,6 +1661,8 @@ def analyze(
     show_structure,
     show_details,
     window,
+    start_from_section,
+    exclude_sections,
 ):
     """
     Analyze contextual relations for a search term.
@@ -1570,7 +1696,16 @@ def analyze(
     if window is not None:
         entity_type, radius = _parse_window(window)
         _display_window_analysis(
-            term, docs, entity_type, radius, pos, threshold, top_n, lemma
+            term,
+            docs,
+            entity_type,
+            radius,
+            pos,
+            threshold,
+            top_n,
+            lemma,
+            start_section=start_from_section,
+            exclude_sections=exclude_sections,
         )
         return
 
@@ -1590,6 +1725,8 @@ def analyze(
         extract_relations=not no_relations,
         top_n=top_n,
     )
+
+    relations = _filter_relations(relations, start_from_section, exclude_sections)
 
     if not relations:
         click.echo(f"No significant contextual relations found for '{term}'")

@@ -33,7 +33,7 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 | 10 | CLI interface (Click, unified command-line access) | 23 |
 | 11 | Documentation & polish | — |
 
-**698 tests passing, 2 skipped** (pydot-dependent DOT export tests).
+**718 tests passing, 2 skipped** (pydot-dependent DOT export tests).
 
 ### Post-completion additions (February 2026)
 
@@ -47,10 +47,11 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 - [x] **Infrastructure cleanup** — Removed 77MB of old venv, cache files, and unused directories.
 - [x] **Analyze window option** — `--window/-w` flag for `analyze`: shows significant terms in a sentence or paragraph window around each occurrence of the search term (e.g. `-w s0`, `-w s1`, `-w p0`). New `extract_terms_from_sentence_set()` in `search/extract.py`. 33 tests.
 - [x] **Analyze `-g` shorthand** — `-g` shorthand for `--group-by` on the `analyze` command.
+- [x] **Front/back-matter filters** — `--start-from-section N` (skip content before chapter N) and `--exclude-sections PATTERN` (regex exclusion by section title) on both `analyze` and `search`. Fixed `search` command to use `ProcessedDocument.from_dict()` for correct nested deserialization. 20 tests.
 
 ### Project summary
 
-11/11 phases complete (Jan 14–25, 2026, 12 days); 8,788 lines across 35 modules; 698 tests; ~107KB documentation across 5 guides; dual CLI/Python API covering the full pipeline from text loading through interactive D3 visualization — production-ready for digital humanities research.
+11/11 phases complete (Jan 14–25, 2026, 12 days); 8,788 lines across 35 modules; 718 tests; ~107KB documentation across 5 guides; dual CLI/Python API covering the full pipeline from text loading through interactive D3 visualization — production-ready for digital humanities research.
 
 ---
 
@@ -484,7 +485,7 @@ src/concept_mapper/
 - [ ] Automatic document structure discovery (chapter/section segmentation for large texts)
 - [ ] Usage-based definition generation (aggregate co-occurrences and relations into empirical definitions)
 - [ ] **Investigate pdfplumber for source text ingestion** — determine whether pdfplumber can replace the current two-file workflow (raw OCR text + manually cleaned table of contents) by extracting structured text and TOC directly from the source PDF.
-- [ ] **Test suite cleanup** — use `pytest-cov` to identify undercovered code paths (add tests) and overcovered ones (redundant tests testing the same path with different labels); target reducing test count from ~698 to ~510-540 (~25% reduction) while improving branch coverage; delete redundant tests rather than merging them to keep intent legible.
+- [ ] **Test suite cleanup** — use `pytest-cov` to identify undercovered code paths (add tests) and overcovered ones (redundant tests testing the same path with different labels); target reducing test count from ~718 to ~510-540 (~25% reduction) while improving branch coverage; delete redundant tests rather than merging them to keep intent legible.
 - [ ] Database backend for large-scale corpora
 - [ ] Temporal analysis across an author's career
 - [ ] Web interface
