@@ -920,6 +920,260 @@ class TestSourceDerivedFilenames:
         assert viz_file.exists()
 
 
+class TestWindowHelpers:
+    """Unit tests for window parsing and slot helpers."""
+
+    def test_parse_window_sentence_zero(self):
+        from concept_mapper.cli import _parse_window
+
+        assert _parse_window("s0") == ("s", 0)
+
+    def test_parse_window_sentence_one(self):
+        from concept_mapper.cli import _parse_window
+
+        assert _parse_window("s1") == ("s", 1)
+
+    def test_parse_window_paragraph(self):
+        from concept_mapper.cli import _parse_window
+
+        assert _parse_window("p0") == ("p", 0)
+        assert _parse_window("p2") == ("p", 2)
+
+    def test_parse_window_uppercase_entity(self):
+        from concept_mapper.cli import _parse_window
+
+        assert _parse_window("S1") == ("s", 1)
+        assert _parse_window("P1") == ("p", 1)
+
+    def test_parse_window_invalid_entity(self):
+        import click
+        from concept_mapper.cli import _parse_window
+
+        with pytest.raises(click.BadParameter):
+            _parse_window("x1")
+
+    def test_parse_window_non_integer_radius(self):
+        import click
+        from concept_mapper.cli import _parse_window
+
+        with pytest.raises(click.BadParameter):
+            _parse_window("sabc")
+
+    def test_parse_window_too_short(self):
+        import click
+        from concept_mapper.cli import _parse_window
+
+        with pytest.raises(click.BadParameter):
+            _parse_window("s")
+
+    def test_parse_window_negative_radius(self):
+        import click
+        from concept_mapper.cli import _parse_window
+
+        with pytest.raises(click.BadParameter):
+            _parse_window("s-1")
+
+    def test_offset_label_zero(self):
+        from concept_mapper.cli import _offset_label
+
+        assert _offset_label(0, 1) == "current:"
+
+    def test_offset_label_prev_radius_one(self):
+        from concept_mapper.cli import _offset_label
+
+        assert _offset_label(-1, 1) == "previous:"
+
+    def test_offset_label_next_radius_one(self):
+        from concept_mapper.cli import _offset_label
+
+        assert _offset_label(1, 1) == "next:"
+
+    def test_offset_label_large_radius(self):
+        from concept_mapper.cli import _offset_label
+
+        assert _offset_label(-2, 2) == "prev 2:"
+        assert _offset_label(2, 2) == "next 2:"
+        assert _offset_label(-1, 2) == "previous:"
+        assert _offset_label(1, 2) == "next:"
+
+    def test_compute_window_slots_sentence_radius_zero(self):
+        from concept_mapper.corpus.models import ProcessedDocument
+        from concept_mapper.search.find import SentenceMatch
+        from concept_mapper.cli import _compute_window_slots
+
+        doc = ProcessedDocument(
+            raw_text="A. B. C.",
+            sentences=["A.", "B.", "C."],
+            tokens=[],
+            lemmas=[],
+            pos_tags=[],
+            metadata={},
+        )
+        match = SentenceMatch(
+            sentence="B.", doc_id="d", sent_index=1, term_positions=[0], term="b"
+        )
+        slots = _compute_window_slots(match, doc, "s", 0)
+        assert len(slots) == 1
+        assert slots[0] == (0, ["B."])
+
+    def test_compute_window_slots_sentence_radius_one(self):
+        from concept_mapper.corpus.models import ProcessedDocument
+        from concept_mapper.search.find import SentenceMatch
+        from concept_mapper.cli import _compute_window_slots
+
+        doc = ProcessedDocument(
+            raw_text="A. B. C.",
+            sentences=["A.", "B.", "C."],
+            tokens=[],
+            lemmas=[],
+            pos_tags=[],
+            metadata={},
+        )
+        match = SentenceMatch(
+            sentence="B.", doc_id="d", sent_index=1, term_positions=[0], term="b"
+        )
+        slots = _compute_window_slots(match, doc, "s", 1)
+        assert len(slots) == 3
+        offsets = [o for o, _ in slots]
+        assert offsets == [-1, 0, 1]
+        assert slots[0][1] == ["A."]
+        assert slots[1][1] == ["B."]
+        assert slots[2][1] == ["C."]
+
+    def test_compute_window_slots_boundary_no_prev(self):
+        from concept_mapper.corpus.models import ProcessedDocument
+        from concept_mapper.search.find import SentenceMatch
+        from concept_mapper.cli import _compute_window_slots
+
+        doc = ProcessedDocument(
+            raw_text="A. B.",
+            sentences=["A.", "B."],
+            tokens=[],
+            lemmas=[],
+            pos_tags=[],
+            metadata={},
+        )
+        # Match is at index 0, so prev slot should be empty
+        match = SentenceMatch(
+            sentence="A.", doc_id="d", sent_index=0, term_positions=[0], term="a"
+        )
+        slots = _compute_window_slots(match, doc, "s", 1)
+        prev_slot = next(s for o, s in slots if o == -1)
+        assert prev_slot == []
+
+    def test_compute_window_slots_paragraph_mode(self):
+        from concept_mapper.corpus.models import ProcessedDocument
+        from concept_mapper.search.find import SentenceMatch
+        from concept_mapper.cli import _compute_window_slots
+
+        # Two paragraphs: sentences 0-1 in para 0, sentences 2-3 in para 1
+        doc = ProcessedDocument(
+            raw_text="A. B. C. D.",
+            sentences=["A.", "B.", "C.", "D."],
+            tokens=[],
+            lemmas=[],
+            pos_tags=[],
+            metadata={},
+            paragraph_indices=[0, 0, 1, 1],
+        )
+        # Match is in paragraph 1 (sent_index=2)
+        match = SentenceMatch(
+            sentence="C.", doc_id="d", sent_index=2, term_positions=[0], term="c"
+        )
+        slots = _compute_window_slots(match, doc, "p", 0)
+        assert len(slots) == 1
+        _, sentences = slots[0]
+        assert set(sentences) == {"C.", "D."}
+
+
+class TestAnalyzeWindowCommand:
+    """Tests for analyze --window option."""
+
+    def test_window_s0_runs(self, runner, sample_corpus_json):
+        """analyze -w s0 should succeed and print window analysis."""
+        result = runner.invoke(
+            cli, ["analyze", str(sample_corpus_json), "dialectic", "-w", "s0"]
+        )
+        assert result.exit_code == 0
+        assert "Window analysis" in result.output
+        assert "current:" in result.output
+
+    def test_window_s1_shows_slots(self, runner, sample_corpus_json):
+        """analyze -w s1 should show previous/current/next slots."""
+        result = runner.invoke(
+            cli, ["analyze", str(sample_corpus_json), "dialectic", "-w", "s1"]
+        )
+        assert result.exit_code == 0
+        assert "previous:" in result.output
+        assert "current:" in result.output
+        assert "next:" in result.output
+
+    def test_window_long_form(self, runner, sample_corpus_json):
+        """--window should be equivalent to -w."""
+        result = runner.invoke(
+            cli,
+            ["analyze", str(sample_corpus_json), "dialectic", "--window", "s0"],
+        )
+        assert result.exit_code == 0
+        assert "Window analysis" in result.output
+
+    def test_window_no_matches(self, runner, sample_corpus_json):
+        """analyze -w s0 with unknown term should report no occurrences."""
+        result = runner.invoke(
+            cli,
+            ["analyze", str(sample_corpus_json), "xyznonexistentterm", "-w", "s0"],
+        )
+        assert result.exit_code == 0
+        assert "No occurrences" in result.output
+
+    def test_window_invalid_format(self, runner, sample_corpus_json):
+        """analyze with a malformed -w value should exit with an error."""
+        result = runner.invoke(
+            cli, ["analyze", str(sample_corpus_json), "dialectic", "-w", "x99"]
+        )
+        assert result.exit_code != 0
+
+    def test_window_shows_path(self, runner, sample_corpus_json):
+        """Output should include a 'path:' line for each occurrence."""
+        result = runner.invoke(
+            cli, ["analyze", str(sample_corpus_json), "dialectic", "-w", "s0"]
+        )
+        assert result.exit_code == 0
+        assert "path:" in result.output
+
+    def test_window_shows_found_sentence(self, runner, sample_corpus_json):
+        """Output should include a 'found:' line for each occurrence."""
+        result = runner.invoke(
+            cli, ["analyze", str(sample_corpus_json), "dialectic", "-w", "s0"]
+        )
+        assert result.exit_code == 0
+        assert "found:" in result.output
+
+    def test_window_top_n(self, runner, sample_corpus_json):
+        """--top-n should limit terms per slot."""
+        result = runner.invoke(
+            cli,
+            [
+                "analyze",
+                str(sample_corpus_json),
+                "dialectic",
+                "-w",
+                "s0",
+                "--top-n",
+                "2",
+            ],
+        )
+        assert result.exit_code == 0
+
+    def test_window_p0(self, runner, sample_corpus_json):
+        """analyze -w p0 (paragraph mode) should succeed."""
+        result = runner.invoke(
+            cli, ["analyze", str(sample_corpus_json), "dialectic", "-w", "p0"]
+        )
+        assert result.exit_code == 0
+        assert "paragraph" in result.output
+
+
 class TestReplaceCommand:
     """Tests for replace command."""
 

@@ -1009,9 +1009,7 @@ def _build_hierarchical_path(loc, level, structure_nodes=None):
                     parts.append(f"Level 1 {level1_num}")
 
                 # Add level 2
-                level2_title = (
-                    loc.subsection_title or f"Level 2 {loc.subsection}"
-                )
+                level2_title = loc.subsection_title or f"Level 2 {loc.subsection}"
                 parts.append(
                     f"{loc.subsection}. {level2_title}"
                     if loc.subsection_title
@@ -1296,6 +1294,161 @@ def _get_structure_summary(docs):
     }
 
 
+def _parse_window(window_str):
+    """Parse window string like 's0', 's1', 'p1' into (entity_type, radius)."""
+    if not window_str or len(window_str) < 2:
+        raise click.BadParameter(
+            "Window format: entity type + radius number (e.g. 's0', 's1', 'p0')"
+        )
+    entity = window_str[0].lower()
+    if entity not in ("s", "p"):
+        raise click.BadParameter(
+            f"Entity type must be 's' (sentence) or 'p' (paragraph), got '{entity}'"
+        )
+    try:
+        radius = int(window_str[1:])
+    except ValueError:
+        raise click.BadParameter(
+            f"Radius must be an integer, e.g. 's0' or 's1'. Got: '{window_str[1:]}'"
+        )
+    if radius < 0:
+        raise click.BadParameter("Radius must be >= 0")
+    return entity, radius
+
+
+def _build_sentence_path(location, structure_nodes=None):
+    """Build full hierarchical path for a sentence location."""
+    if location is None:
+        return "unstructured"
+    if location.subsection:
+        return _build_hierarchical_path(location, "level_2", structure_nodes)
+    elif location.section:
+        return _build_hierarchical_path(location, "level_1", structure_nodes)
+    elif location.chapter:
+        return _build_hierarchical_path(location, "level_0", structure_nodes)
+    return "unstructured"
+
+
+def _offset_label(offset, radius):
+    """Generate slot label for a window offset."""
+    if offset == 0:
+        return "current:"
+    elif offset < 0:
+        return (
+            "previous:" if radius <= 1 or abs(offset) == 1 else f"prev {abs(offset)}:"
+        )
+    else:
+        return "next:" if radius <= 1 or offset == 1 else f"next {offset}:"
+
+
+def _compute_window_slots(match, doc, entity_type, radius):
+    """
+    Compute window slots as list of (offset, [sentences]) pairs.
+
+    For entity_type='s': each slot is a single sentence.
+    For entity_type='p': each slot is an entire paragraph.
+    """
+    total = len(doc.sentences)
+
+    if entity_type == "s":
+        slots = []
+        for offset in range(-radius, radius + 1):
+            idx = match.sent_index + offset
+            sentences = [doc.sentences[idx]] if 0 <= idx < total else []
+            slots.append((offset, sentences))
+        return slots
+
+    # Paragraph mode
+    if not doc.paragraph_indices or match.sent_index >= len(doc.paragraph_indices):
+        # Fall back to sentence mode
+        return _compute_window_slots(match, doc, "s", radius)
+
+    match_para = doc.paragraph_indices[match.sent_index]
+    unique_paras = sorted(set(doc.paragraph_indices[:total]))
+
+    try:
+        match_pos = unique_paras.index(match_para)
+    except ValueError:
+        return [(0, [doc.sentences[match.sent_index]])]
+
+    slots = []
+    for offset in range(-radius, radius + 1):
+        target_pos = match_pos + offset
+        if 0 <= target_pos < len(unique_paras):
+            target_para = unique_paras[target_pos]
+            sentences = [
+                doc.sentences[i]
+                for i in range(total)
+                if i < len(doc.paragraph_indices)
+                and doc.paragraph_indices[i] == target_para
+            ]
+        else:
+            sentences = []
+        slots.append((offset, sentences))
+    return slots
+
+
+def _display_window_analysis(
+    term, docs, entity_type, radius, pos_types, threshold, top_n, lemma
+):
+    """Display per-occurrence window analysis for a search term."""
+    from concept_mapper.search.find import find_sentences
+    from concept_mapper.search.extract import extract_terms_from_sentence_set
+
+    matches = find_sentences(term, docs, match_lemma=lemma)
+    if not matches:
+        click.echo(f"No occurrences of '{term}' found")
+        return
+
+    pos_types_list = list(pos_types) if pos_types else None
+    structure_nodes = (
+        docs[0].structure_nodes if docs and docs[0].structure_nodes else None
+    )
+
+    entity_name = "sentence" if entity_type == "s" else "paragraph"
+    click.echo(
+        f"\nWindow analysis for '{term}' "
+        f"({entity_name} ±{radius}, {len(matches)} occurrence(s)):"
+    )
+
+    # Build a doc_id → doc map for fast lookup
+    doc_map = {d.metadata.get("source_path", f"doc_{i}"): d for i, d in enumerate(docs)}
+
+    for match in matches:
+        click.echo("\n" + "=" * 80)
+        path = _build_sentence_path(match.location, structure_nodes)
+        click.echo(f"path: {path}")
+        click.echo(f'found: "{match.sentence.strip()}"')
+        click.echo("\nsignificant terms:")
+
+        doc = doc_map.get(match.doc_id, docs[0] if docs else None)
+        if not doc:
+            continue
+
+        slots = _compute_window_slots(match, doc, entity_type, radius)
+
+        for offset, sentences in slots:
+            label = _offset_label(offset, radius)
+            click.echo(f"\n{label}")
+            if not sentences:
+                continue
+
+            terms = extract_terms_from_sentence_set(
+                sentences,
+                docs,
+                pos_types=pos_types_list,
+                threshold=threshold,
+                top_n=top_n,
+                exclude_term=term,
+            )
+
+            if not terms:
+                click.echo("  (no significant terms)")
+            else:
+                for t, pos_label in terms:
+                    click.echo(f'"{t}" {pos_label}')
+
+
 @cli.command(name="analyze")
 @click.argument("corpus", type=click.Path(exists=True))
 @click.argument("term")
@@ -1340,6 +1493,7 @@ def _get_structure_summary(docs):
 @click.option("--output", "-o", type=click.Path(), help="Output file")
 @click.option(
     "--group-by",
+    "-g",
     type=click.IntRange(min=0),
     default=1,
     help="Group by structure tree level: 0=none, 1=top level, 2=second level, etc. (default: 1)",
@@ -1356,6 +1510,17 @@ def _get_structure_summary(docs):
     is_flag=True,
     help="Show detailed output with scores, evidence sentences, and occurrence counts",
 )
+@click.option(
+    "--window",
+    "-w",
+    type=str,
+    default=None,
+    help=(
+        "Show significant terms in a window around each occurrence. "
+        "Format: entity type (s=sentence, p=paragraph) + radius. "
+        "E.g. 's0' (same sentence only), 's1' (±1 sentence), 'p0' (same paragraph), 'p1' (±1 paragraph)."
+    ),
+)
 @click.pass_context
 def analyze(
     ctx,
@@ -1371,6 +1536,7 @@ def analyze(
     group_by,
     show_structure,
     show_details,
+    window,
 ):
     """
     Analyze contextual relations for a search term.
@@ -1383,6 +1549,9 @@ def analyze(
         cmapr analyze corpus.json "being" --top-n 10
         cmapr analyze corpus.json "intentionality" --lemma -p nouns -p verbs
         cmapr analyze corpus.json "dialectic" --format json -o relations.json
+        cmapr analyze corpus.json "semiotic" -w s0
+        cmapr analyze corpus.json "semiotic" -w s1
+        cmapr analyze corpus.json "semiotic" -w p0 --top-n 5
     """
     from concept_mapper.analysis.contextual_relations import analyze_context
     import json
@@ -1396,6 +1565,14 @@ def analyze(
         data = json.load(f)
 
     docs = [ProcessedDocument.from_dict(doc_data) for doc_data in data]
+
+    # Handle window mode
+    if window is not None:
+        entity_type, radius = _parse_window(window)
+        _display_window_analysis(
+            term, docs, entity_type, radius, pos, threshold, top_n, lemma
+        )
+        return
 
     if verbose:
         click.echo(f"Analyzing contextual relations for '{term}'...")

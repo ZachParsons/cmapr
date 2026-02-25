@@ -552,3 +552,122 @@ def aggregate_across_sentences(
         aggregated = aggregated[:top_n]
 
     return aggregated
+
+
+def extract_terms_from_sentence_set(
+    sentences: List[str],
+    docs: List[ProcessedDocument],
+    pos_types: List[str] = None,
+    threshold: float = 0.1,
+    top_n: int = None,
+    exclude_term: str = None,
+) -> List[tuple]:
+    """
+    Extract significant terms from a specific set of sentences.
+
+    Uses corpus-frequency scoring against all docs, extracting only terms
+    that appear in the given sentences.
+
+    Args:
+        sentences: Sentence strings to extract terms from
+        docs: All documents (used to build corpus frequency scorer)
+        pos_types: POS types to extract (default: nouns and verbs)
+        threshold: Minimum significance score (default: 0.1)
+        top_n: Maximum number of terms to return
+        exclude_term: Lemma to exclude (typically the search term)
+
+    Returns:
+        List of (term, pos_label) tuples sorted by score descending
+    """
+    import math
+    import string
+
+    if pos_types is None:
+        pos_types = ["nouns", "verbs"]
+
+    pos_tags_to_extract = set()
+    for pos_type in pos_types:
+        if pos_type in POS_TAG_GROUPS:
+            pos_tags_to_extract.update(POS_TAG_GROUPS[pos_type])
+
+    exclude_lemma = exclude_term.lower() if exclude_term else None
+    punctuation = set(string.punctuation) | {
+        "\u201c",
+        "\u201d",
+        "\u201e",
+        "\u201f",
+        "\u2013",
+        "\u2014",
+        "\u2026",
+        "\u00b7",
+    }
+
+    # Build corpus frequency map from all docs
+    from collections import Counter
+
+    all_terms = []
+    for doc in docs:
+        for sent in doc.sentences:
+            tokens = tokenize_words(sent)
+            if tokens:
+                tagged = tag_tokens(tokens)
+                lemmas_list = lemmatize_tagged(tagged)
+                for (token, pos), lemma in zip(tagged, lemmas_list):
+                    lemma_lower = lemma.lower()
+                    if pos in pos_tags_to_extract and lemma_lower not in STOPWORDS:
+                        all_terms.append(lemma_lower)
+
+    term_freqs = Counter(all_terms)
+    max_freq = max(term_freqs.values()) if term_freqs else 1
+
+    def score_term(term):
+        freq = term_freqs.get(term, 0)
+        if freq == 0:
+            return 0.0
+        return 10.0 * math.log(1 + freq) / math.log(1 + max_freq)
+
+    # Extract terms from the provided sentences, keeping first-seen POS
+    term_to_pos_score: Dict[str, tuple] = {}
+
+    for sentence in sentences:
+        tokens = tokenize_words(sentence)
+        if not tokens:
+            continue
+
+        tagged = tag_tokens(tokens)
+        lemmas = lemmatize_tagged(tagged)
+
+        for (token, pos), lemma in zip(tagged, lemmas):
+            if pos in pos_tags_to_extract:
+                lemma_lower = lemma.lower()
+                if (
+                    lemma_lower != exclude_lemma
+                    and lemma_lower not in STOPWORDS
+                    and lemma_lower not in punctuation
+                    and not (len(lemma_lower) == 1 and not lemma_lower.isalnum())
+                    and lemma_lower not in term_to_pos_score
+                ):
+                    score = score_term(lemma_lower)
+                    if score >= threshold:
+                        if pos.startswith("NN"):
+                            pos_label = "noun"
+                        elif pos.startswith("VB"):
+                            pos_label = "verb"
+                        elif pos.startswith("JJ"):
+                            pos_label = "adj"
+                        elif pos.startswith("RB"):
+                            pos_label = "adv"
+                        else:
+                            pos_label = "other"
+                        term_to_pos_score[lemma_lower] = (pos_label, score)
+
+    sorted_terms = sorted(
+        term_to_pos_score.items(),
+        key=lambda x: x[1][1],
+        reverse=True,
+    )
+
+    if top_n is not None:
+        sorted_terms = sorted_terms[:top_n]
+
+    return [(term, pos_label) for term, (pos_label, _) in sorted_terms]
