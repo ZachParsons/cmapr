@@ -1334,12 +1334,14 @@ def _location_passes_filters(location, start_section=None, exclude_pattern=None)
 
     if start_section is not None:
         chapter = location.chapter
-        if chapter is not None:
-            try:
-                if float(chapter) < float(start_section):
-                    return False
-            except ValueError:
-                pass  # Non-numeric chapter numbers pass through
+        if chapter is None:
+            # No chapter label means pre-chapter content (front matter); exclude it
+            return False
+        try:
+            if float(chapter) < float(start_section):
+                return False
+        except ValueError:
+            pass  # Non-numeric chapter numbers pass through
 
     if exclude_pattern is not None:
         titles = [

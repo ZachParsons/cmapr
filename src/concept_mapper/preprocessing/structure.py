@@ -53,24 +53,24 @@ class DocumentStructureDetector:
         if toc_file:
             nodes = self._detect_from_toc(toc_file, text, sentences)
             if nodes:
-                return self._build_structure(nodes, sentences)
+                return self._build_structure(nodes, sentences, text)
 
         # Try automatic detection methods in priority order
         nodes = self._detect_numbered_headings(text, sentences)
         if nodes:
-            return self._build_structure(nodes, sentences)
+            return self._build_structure(nodes, sentences, text)
 
         nodes = self._detect_named_chapters(text, sentences)
         if nodes:
-            return self._build_structure(nodes, sentences)
+            return self._build_structure(nodes, sentences, text)
 
         nodes = self._detect_markdown_headings(text, sentences)
         if nodes:
-            return self._build_structure(nodes, sentences)
+            return self._build_structure(nodes, sentences, text)
 
         nodes = self._detect_allcaps_headings(text, sentences)
         if nodes:
-            return self._build_structure(nodes, sentences)
+            return self._build_structure(nodes, sentences, text)
 
         # Fallback: paragraph boundaries
         return self._detect_paragraphs(text, sentences)
@@ -410,9 +410,7 @@ class DocumentStructureDetector:
             if subsection_match:
                 number = subsection_match.group(1)
                 title = subsection_match.group(2).strip()
-                entries.append(
-                    {"level": "level_2", "number": number, "title": title}
-                )
+                entries.append({"level": "level_2", "number": number, "title": title})
                 continue
 
         return entries
@@ -627,7 +625,7 @@ class DocumentStructureDetector:
         return nodes, locations
 
     def _build_structure(
-        self, node_dicts: List[Dict], sentences: List[str]
+        self, node_dicts: List[Dict], sentences: List[str], text: str = None
     ) -> Tuple[List[StructureNode], List[SentenceLocation]]:
         """
         Build hierarchical structure and assign sentences to nodes.
@@ -635,6 +633,7 @@ class DocumentStructureDetector:
         Args:
             node_dicts: List of detected heading dictionaries
             sentences: List of sentence strings
+            text: Full document text (used to scale sentence positions accurately)
 
         Returns:
             Tuple of (structure_nodes, sentence_locations)
@@ -642,9 +641,19 @@ class DocumentStructureDetector:
         # Sort nodes by position in text
         node_dicts = sorted(node_dicts, key=lambda x: x["position"])
 
-        # Map sentences to nodes by finding which heading precedes each sentence
+        # Map sentences to nodes by finding which heading precedes each sentence.
+        # Sentence positions are approximate (sum of lengths) but heading positions
+        # are real character offsets in the full text.  Scale sentence positions up
+        # to the same coordinate space so the comparison is meaningful.
         sentence_to_node: Dict[int, int] = {}
         text_positions = self._get_sentence_positions(sentences)
+
+        if text and text_positions:
+            text_len = len(text)
+            # Total approx length = position of last sentence + its length
+            total_approx = text_positions[-1] + len(sentences[-1]) if sentences else 1
+            scale = text_len / total_approx if total_approx > 0 else 1.0
+            text_positions = [pos * scale for pos in text_positions]
 
         for sent_idx, sent_pos in enumerate(text_positions):
             # Find the last heading before this sentence
@@ -655,14 +664,14 @@ class DocumentStructureDetector:
         # Build structure nodes with start/end indices
         structure_nodes = []
         for idx, node_dict in enumerate(node_dicts):
-            # Find sentences in this section
+            # Find first sentence in this section (None if no sentences map here)
             start_idx = min(
                 (
                     sent_idx
                     for sent_idx, node_idx in sentence_to_node.items()
                     if node_idx == idx
                 ),
-                default=0,
+                default=None,
             )
             # End is the start of next section or end of document
             if idx + 1 < len(node_dicts):
@@ -676,6 +685,11 @@ class DocumentStructureDetector:
                 )
             else:
                 end_idx = len(sentences)
+
+            # If no sentences mapped to this node, place it as an empty range at
+            # the boundary (start == end) so it doesn't steal sentences from others
+            if start_idx is None:
+                start_idx = end_idx
 
             structure_nodes.append(
                 StructureNode(

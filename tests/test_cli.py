@@ -1219,13 +1219,13 @@ class TestSectionFilters:
         loc = SentenceLocation(sent_index=0, chapter="3")
         assert _location_passes_filters(loc, start_section="1") is True
 
-    def test_start_section_none_chapter_passes(self):
-        """A location with no chapter number always passes start_section filter."""
+    def test_start_section_none_chapter_excluded(self):
+        """A location with no chapter label is treated as front-matter and excluded."""
         from concept_mapper.cli import _location_passes_filters
         from concept_mapper.corpus.models import SentenceLocation
 
         loc = SentenceLocation(sent_index=0, chapter=None)
-        assert _location_passes_filters(loc, start_section="1") is True
+        assert _location_passes_filters(loc, start_section="1") is False
 
     def test_start_section_decimal_comparison(self):
         """Decimal chapter numbers are compared as floats."""
