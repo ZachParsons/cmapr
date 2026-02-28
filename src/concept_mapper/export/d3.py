@@ -114,12 +114,13 @@ def to_d3_dict(
 
         metadata = edge_attrs.get("metadata", {})
         verb = (
-            metadata.get("verb")
+            edge_attrs.get("verb")           # preserved from a prior D3 JSON load
+            or metadata.get("verb")
             or metadata.get("copula")
             or metadata.get("preposition")
+            or _relation_type_to_text(edge_attrs.get("relation_type", ""))
         )
-        if verb:
-            link_data["verb"] = verb
+        link_data["verb"] = verb
 
         if include_evidence and "evidence" in edge_attrs:
             evidence = edge_attrs["evidence"]
@@ -206,6 +207,19 @@ def export_d3_json(
 
     with open(path, "w", encoding="utf-8") as f:
         json.dump(d3_data, f, indent=2, ensure_ascii=False)
+
+
+_RELATION_TYPE_TEXT = {
+    "cooccurrence": "co-occurs with",
+    "svo": "relates to",
+    "copular": "is",
+    "prep": "relates to",
+}
+
+
+def _relation_type_to_text(relation_type: str) -> str:
+    """Return a human-readable verb phrase for a relation type."""
+    return _RELATION_TYPE_TEXT.get(relation_type, "relates to")
 
 
 def _compute_node_sizes(

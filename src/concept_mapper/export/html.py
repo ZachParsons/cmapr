@@ -234,6 +234,21 @@ def _generate_html_template(
 
         // Create SVG
         const svg = d3.select("#graph");
+
+        // Arrowhead marker
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 10)
+            .attr("refY", 0)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#999")
+            .attr("fill-opacity", 0.6);
+
         const g = svg.append("g");
 
         // Add zoom behavior
@@ -267,12 +282,16 @@ def _generate_html_template(
                 .force("center", d3.forceCenter(width / 2, height / 2))
                 .force("collision", d3.forceCollide().radius(d => d.size * 5));
 
+            // Node radius lookup (matches circle r attr below)
+            const nodeRadius = d => Math.sqrt(d.size || 1) * 3 + 5;
+
             // Create links
             const link = g.append("g")
                 .selectAll("line")
                 .data(data.links)
                 .join("line")
                 .attr("class", "link")
+                .attr("marker-end", "url(#arrowhead)")
                 .attr("stroke-width", d => Math.sqrt(d.weight || 1) * 2)
                 .on("mouseover", (event, d) => {{
                     let html = `<strong>${{d.source.id}} → ${{d.target.id}}</strong><br>`;
@@ -319,7 +338,7 @@ def _generate_html_template(
                 .data(data.links)
                 .join("text")
                 .attr("class", "link-label")
-                .text(d => d.verb ? d.verb : (d.label ? d.label : d.weight.toFixed(1)));
+                .text(d => d.verb || d.label || "relates to");
 
             // Create node labels
             const label = g.append("g")
@@ -335,8 +354,20 @@ def _generate_html_template(
                 link
                     .attr("x1", d => d.source.x)
                     .attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x)
-                    .attr("y2", d => d.target.y);
+                    .attr("x2", d => {{
+                        const dx = d.target.x - d.source.x;
+                        const dy = d.target.y - d.source.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const r = nodeRadius(d.target) + 8; // +8 for arrowhead
+                        return d.target.x - (dx / dist) * r;
+                    }})
+                    .attr("y2", d => {{
+                        const dx = d.target.x - d.source.x;
+                        const dy = d.target.y - d.source.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const r = nodeRadius(d.target) + 8;
+                        return d.target.y - (dy / dist) * r;
+                    }});
 
                 node
                     .attr("cx", d => d.x)

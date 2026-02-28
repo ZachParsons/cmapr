@@ -113,6 +113,20 @@ Verify documentation is current:
 
 ---
 
+## Graph Diagram Constraints
+
+These rules apply to all graph construction and visualization code (`graph/`, `export/`, `cli.py` graph/export commands):
+
+1. **No duplicate nodes** — nodes with identical labels must be consolidated into one. All edges from duplicates are re-wired to the canonical node (weights summed, evidence concatenated). Log a `WARNING` for each consolidation so the upstream source can be investigated and fixed. Enforced in `consolidate_duplicate_labels()` (`graph/operations.py`), called automatically in `to_d3_dict()`.
+
+2. **No unconnected nodes** — every node must have at least one edge. Truly isolated nodes (degree 0) trigger a co-occurrence fallback (`connect_isolated_nodes()`); if no co-occurrence partner exists, log an `ERROR`. Any node still isolated at export time is logged as an `ERROR` and dropped from the diagram. Enforced in `find_isolated_nodes()` / `connect_isolated_nodes()` (`graph/operations.py`) and `to_d3_dict()`.
+
+3. **Edge labels must always be text derived from the source text** — never raw numbers. Priority order: verb from SVO metadata → copula → preposition → relation-type fallback string (e.g. `"co-occurs with"`). The numeric weight must never appear as a visible label. Enforced in `to_d3_dict()` (`export/d3.py`) and the HTML template (`export/html.py`).
+
+4. **All edges are directed** — every edge renders as an arrow from source to target, with the arrowhead landing on the target node boundary (not its centre). The edge label reflects the directional relationship as it appears in the source text (subject → verb → object). Enforced in the HTML template arrowhead marker and tick-handler offset logic (`export/html.py`).
+
+---
+
 ## Project-Specific Rules
 
 ### NLP Processing
