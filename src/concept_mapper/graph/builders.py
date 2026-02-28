@@ -75,6 +75,7 @@ def graph_from_cooccurrence(
 def graph_from_relations(
     relations: List[Relation],
     include_evidence: bool = True,
+    term_filter: Optional[set] = None,
 ) -> ConceptGraph:
     """
     Build a directed graph from extracted relations.
@@ -85,6 +86,9 @@ def graph_from_relations(
     Args:
         relations: List of Relation objects from relation extraction
         include_evidence: Whether to include evidence sentences in edge attributes
+        term_filter: If provided, only include edges where both source and target
+                     are in this set (lowercased). Prevents non-term SVO endpoints
+                     from inflating node count with unconnectable leaf nodes.
 
     Returns:
         Directed ConceptGraph with labeled edges
@@ -103,10 +107,17 @@ def graph_from_relations(
     """
     graph = ConceptGraph(directed=True)
 
+    # Normalise filter set once
+    _filter = {t.lower() for t in term_filter} if term_filter else None
+
     # Process each relation
     for relation in relations:
         source = relation.source.lower()
         target = relation.target.lower()
+
+        # Skip if either endpoint is outside the allowed term set
+        if _filter is not None and (source not in _filter or target not in _filter):
+            continue
 
         # Add nodes if they don't exist
         if not graph.has_node(source):

@@ -490,6 +490,7 @@ src/concept_mapper/
 - [ ] Usage-based definition generation (aggregate co-occurrences and relations into empirical definitions)
 - [ ] **Investigate pdfplumber for source text ingestion** — determine whether pdfplumber can replace the current two-file workflow (raw OCR text + manually cleaned table of contents) by extracting structured text and TOC directly from the source PDF.
 - [ ] **Test suite cleanup** — use `pytest-cov` to identify undercovered code paths (add tests) and overcovered ones (redundant tests testing the same path with different labels); target reducing test count from ~718 to ~510-540 (~25% reduction) while improving branch coverage; delete redundant tests rather than merging them to keep intent legible.
+- [ ] **Connect disconnected subgraphs** — the relations graph produces many small isolated subgraphs (degree-1 leaf pairs) that are not connected to the main component. Need to bridge them: find the largest connected component, then for each disconnected subgraph find its strongest co-occurrence link to any node in the main component and add that edge.
 - [ ] Database backend for large-scale corpora
 - [ ] Temporal analysis across an author's career
 - [ ] Web interface

@@ -21,6 +21,11 @@ from concept_mapper.graph import (
     graph_density,
     get_shortest_path,
 )
+from concept_mapper.graph.operations import (
+    consolidate_duplicate_labels,
+    find_isolated_nodes,
+    connect_isolated_nodes,
+)
 from concept_mapper.analysis.relations import Relation
 
 # ============================================================================
@@ -584,6 +589,84 @@ class TestOperations:
 
         assert filtered.node_count() == 2
         assert filtered.edge_count() == 0
+
+
+    def test_consolidate_no_duplicates(self):
+        """No-op when all labels are unique."""
+        g = ConceptGraph()
+        g.add_node("a", label="alpha")
+        g.add_node("b", label="beta")
+        g.add_edge("a", "b", weight=1)
+        assert consolidate_duplicate_labels(g) == 0
+        assert g.node_count() == 2
+
+    def test_consolidate_merges_duplicate_nodes(self):
+        """Nodes with identical labels are merged into one."""
+        g = ConceptGraph()
+        g.add_node("sign_1", label="sign")
+        g.add_node("sign_2", label="sign")
+        g.add_node("symbol", label="symbol")
+        g.add_edge("sign_1", "symbol", weight=2)
+        g.add_edge("sign_2", "symbol", weight=3)
+        count = consolidate_duplicate_labels(g)
+        assert count == 1
+        assert g.node_count() == 2
+        assert not g.has_node("sign_2")
+        # Weights from both edges should be summed
+        assert g.get_edge("sign_1", "symbol")["weight"] == 5
+
+    def test_consolidate_logs_warning(self, caplog):
+        """A warning is emitted for each consolidated label group."""
+        import logging
+        g = ConceptGraph()
+        g.add_node("x1", label="dup")
+        g.add_node("x2", label="dup")
+        with caplog.at_level(logging.WARNING):
+            consolidate_duplicate_labels(g)
+        assert any("dup" in r.message for r in caplog.records)
+
+    def test_find_isolated_nodes(self):
+        """find_isolated_nodes returns only nodes with degree zero."""
+        g = ConceptGraph()
+        g.add_node("alone")
+        g.add_node("a")
+        g.add_node("b")
+        g.add_edge("a", "b", weight=1)
+        assert find_isolated_nodes(g) == ["alone"]
+
+    def test_find_isolated_nodes_none(self):
+        """Returns empty list when all nodes are connected."""
+        g = ConceptGraph()
+        g.add_node("a")
+        g.add_node("b")
+        g.add_edge("a", "b", weight=1)
+        assert find_isolated_nodes(g) == []
+
+    def test_connect_isolated_nodes(self):
+        """Isolated node is connected to its top co-occurrence partner."""
+        g = ConceptGraph()
+        g.add_node("sign")
+        g.add_node("code")
+        g.add_node("alone")
+        g.add_edge("sign", "code", weight=3)
+        matrix = {"alone": {"sign": 2.5, "code": 1.0}}
+        connected = connect_isolated_nodes(g, matrix)
+        assert connected == 1
+        assert g.has_edge("alone", "sign")
+        assert g.get_edge("alone", "sign")["weight"] == 2.5
+
+    def test_connect_isolated_nodes_logs_error_when_no_data(self, caplog):
+        """An error is logged when an isolated node has no co-occurrence with connected nodes."""
+        import logging
+        g = ConceptGraph()
+        g.add_node("a")
+        g.add_node("b")
+        g.add_edge("a", "b", weight=1)
+        g.add_node("orphan")
+        with caplog.at_level(logging.ERROR):
+            connected = connect_isolated_nodes(g, {})
+        assert connected == 0
+        assert any("orphan" in r.message for r in caplog.records)
 
 
 # ============================================================================

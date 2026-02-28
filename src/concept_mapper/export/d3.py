@@ -14,6 +14,7 @@ from concept_mapper.graph.metrics import (
     detect_communities,
     assign_communities,
 )
+from concept_mapper.graph.operations import consolidate_duplicate_labels, find_isolated_nodes
 from concept_mapper.validation import validate_concept_graph
 
 
@@ -42,6 +43,22 @@ def to_d3_dict(
     """
     # Validate graph is not empty
     validate_concept_graph(graph, require_edges=False)
+
+    import logging
+    _log = logging.getLogger(__name__)
+
+    # Work on a copy so the caller's graph is not mutated
+    graph = graph.copy()
+    consolidate_duplicate_labels(graph)
+
+    for node_id in find_isolated_nodes(graph):
+        _log.error(
+            "Isolated node %r has no edges and will be excluded from the diagram. "
+            "Fix upstream: ensure every term has at least one extracted relation or "
+            "co-occurrence, or run connect_isolated_nodes() before export.",
+            node_id,
+        )
+        graph.remove_node(node_id)
 
     # Compute communities if requested and not already assigned
     if compute_communities:

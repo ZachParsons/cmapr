@@ -4,8 +4,147 @@ Graph manipulation operations.
 This module provides functions for modifying and extracting from ConceptGraphs.
 """
 
-from typing import Set
+import logging
+from collections import defaultdict
+from typing import Dict, List, Set
 from concept_mapper.graph.model import ConceptGraph
+
+logger = logging.getLogger(__name__)
+
+
+def find_isolated_nodes(graph: ConceptGraph) -> List[str]:
+    """Return node IDs that have no edges (degree == 0)."""
+    return [n for n in graph.nodes() if graph._graph.degree(n) == 0]
+
+
+def connect_isolated_nodes(
+    graph: ConceptGraph,
+    cooccurrence_matrix: Dict[str, Dict[str, float]],
+    min_degree: int = 1,
+) -> int:
+    """
+    Connect sparse nodes by finding their strongest co-occurrence partner
+    among already-sufficiently-connected nodes in the graph.
+
+    Processes all nodes with degree < min_degree.  Use min_degree=1 to
+    connect only truly isolated nodes (degree 0); use min_degree=2 for a
+    hybrid approach that also connects leaf nodes (degree 1).
+
+    Logs a warning for each connection made and an error for any node that
+    cannot be connected (no co-occurrence data with connected nodes).
+
+    Args:
+        graph: ConceptGraph to modify in-place
+        cooccurrence_matrix: Nested dict of term -> term -> score
+        min_degree: Nodes with degree < min_degree are candidates (default: 1)
+
+    Returns:
+        Number of sparse nodes that were successfully connected
+    """
+    sparse = [n for n in graph.nodes() if graph._graph.degree(n) < min_degree]
+    if not sparse:
+        return 0
+
+    # Anchor set: nodes already meeting the degree threshold
+    anchors = {n for n in graph.nodes() if graph._graph.degree(n) >= min_degree}
+    connected = 0
+
+    for node_id in sparse:
+        scores = cooccurrence_matrix.get(node_id, {})
+        best = max(
+            ((partner, score) for partner, score in scores.items()
+             if partner in anchors and partner != node_id),
+            key=lambda x: x[1],
+            default=None,
+        )
+        if best is None:
+            logger.error(
+                "Sparse node %r (degree<%d) has no co-occurrence data with any "
+                "anchor node — cannot connect. Fix upstream graph building.",
+                node_id,
+                min_degree,
+            )
+            continue
+
+        partner, score = best
+        logger.warning(
+            "Sparse node %r connected to %r via co-occurrence fallback (score=%.3f)",
+            node_id,
+            partner,
+            score,
+        )
+        graph.add_edge(node_id, partner, weight=score, relation_type="cooccurrence")
+        anchors.add(node_id)
+        connected += 1
+
+    return connected
+
+
+def consolidate_duplicate_labels(graph: ConceptGraph) -> int:
+    """
+    Merge nodes that share the same label into a single canonical node.
+
+    Logs a warning for each set of duplicates so the upstream cause can be
+    investigated and fixed.  All edges attached to duplicate nodes are
+    re-wired to the canonical node; weights are summed and evidence lists
+    are concatenated when edges already exist between the same pair.
+
+    Args:
+        graph: ConceptGraph to consolidate (mutated in-place)
+
+    Returns:
+        Number of label groups that were consolidated (0 means no duplicates)
+    """
+    label_to_ids: dict = defaultdict(list)
+    for node_id in graph.nodes():
+        label = graph.get_node(node_id).get("label", node_id)
+        label_to_ids[label].append(node_id)
+
+    consolidations = 0
+    for label, node_ids in label_to_ids.items():
+        if len(node_ids) <= 1:
+            continue
+
+        logger.warning(
+            "Consolidating %d nodes with duplicate label %r: %s",
+            len(node_ids),
+            label,
+            node_ids,
+        )
+        consolidations += 1
+        canonical = node_ids[0]
+        nx_graph = graph._graph
+
+        for dup in node_ids[1:]:
+            edges_to_add = []
+
+            # Outgoing (and undirected) edges from dup
+            for u, v, data in list(nx_graph.edges(dup, data=True)):
+                other = v if u == dup else u
+                if other != canonical:
+                    edges_to_add.append((canonical, other, dict(data)))
+
+            # Incoming edges (directed graphs only)
+            if graph.directed:
+                for u, v, data in list(nx_graph.in_edges(dup, data=True)):
+                    if u != canonical:
+                        edges_to_add.append((u, canonical, dict(data)))
+
+            for u, v, data in edges_to_add:
+                if graph.has_edge(u, v):
+                    existing = graph.get_edge(u, v)
+                    merged = {**existing, **data}
+                    merged["weight"] = existing.get("weight", 1) + data.get("weight", 1)
+                    combined_evidence = existing.get("evidence", []) + data.get("evidence", [])
+                    if combined_evidence:
+                        merged["evidence"] = combined_evidence
+                    graph.add_edge(u, v, **merged)
+                else:
+                    graph.add_edge(u, v, **data)
+
+            graph.remove_node(dup)
+
+    return consolidations
 
 
 def merge_graphs(g1: ConceptGraph, g2: ConceptGraph) -> ConceptGraph:
