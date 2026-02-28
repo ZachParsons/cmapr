@@ -1142,12 +1142,12 @@ class TestAnalyzeWindowCommand:
         assert "path:" in result.output
 
     def test_window_shows_found_sentence(self, runner, sample_corpus_json):
-        """Output should include a 'found:' line for each occurrence."""
+        """Output should include a dependency tree for each occurrence."""
         result = runner.invoke(
             cli, ["analyze", str(sample_corpus_json), "dialectic", "-w", "s0"]
         )
         assert result.exit_code == 0
-        assert "found:" in result.output
+        assert "(root)" in result.output
 
     def test_window_top_n(self, runner, sample_corpus_json):
         """--top-n should limit terms per slot."""

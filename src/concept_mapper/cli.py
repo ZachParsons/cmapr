@@ -1,7 +1,16 @@
 """
 Command-line interface for Concept Mapper.
 
-Provides unified command-line access to all functionality.
+Commands:
+  ingest      Parse raw text files into a processed corpus JSON.
+  rarities    Score and rank terms by rarity/significance across a corpus.
+  search      Find sentences containing a term, with optional context.
+  concordance Show a term in its surrounding text context (KWIC view).
+  graph       Build a co-occurrence or relation graph from a corpus.
+  export      Convert a graph file to D3, GraphML, CSV, GEXF, or HTML.
+  diagram     Render a dependency parse tree for a sentence.
+  analyze     Analyse a term's contextual terms across a windowed neighborhood.
+  replace     Replace one term with another throughout a corpus.
 """
 
 import click
@@ -1537,7 +1546,11 @@ def _display_window_analysis(
             last_path = path
         else:
             click.echo("\n" + "-" * 40)
-        click.echo(f'found: "{match.sentence.strip()}"')
+        from concept_mapper.syntax.diagram import parse_sentence, format_as_tree
+
+        doc = parse_sentence(match.sentence.strip())
+        for sent in doc.sentences:
+            click.echo(format_as_tree(sent))
         click.echo("\nsignificant terms:")
 
         doc = doc_map.get(match.doc_id, docs[0] if docs else None)
