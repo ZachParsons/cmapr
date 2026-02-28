@@ -48,6 +48,10 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 - [x] **Analyze window option** — `--window/-w` flag for `analyze`: shows significant terms in a sentence or paragraph window around each occurrence of the search term (e.g. `-w s0`, `-w s1`, `-w p0`). New `extract_terms_from_sentence_set()` in `search/extract.py`. 33 tests.
 - [x] **Analyze `-g` shorthand** — `-g` shorthand for `--group-by` on the `analyze` command.
 - [x] **Front/back-matter filters** — `--start-from-section N` (skip content before chapter N) and `--exclude-sections PATTERN` (regex exclusion by section title) on both `analyze` and `search`. Fixed `search` command to use `ProcessedDocument.from_dict()` for correct nested deserialization. 20 tests.
+- [x] **Structure detection bug fix** — scaled sentence positions to match text coordinates; previously, structure nodes were not found for sentences mid-document.
+- [x] **Analyze window performance** — reduced redundant path output; path header now only printed when it changes between matches.
+- [x] **Dependency parse tree in analyze window** — `analyze --window` now renders a Stanza dependency parse tree for each matched sentence instead of printing the raw sentence text.
+- [x] **CLI module command index** — module docstring in `cli.py` lists all nine commands with a one-line description each.
 
 ### Project summary
 
@@ -489,10 +493,10 @@ src/concept_mapper/
 - [ ] Database backend for large-scale corpora
 - [ ] Temporal analysis across an author's career
 - [ ] Web interface
-- [ ] Multi-language support
 - [ ] **SpaCy integration** (spaCy 3.8 supports Python 3.14 — no longer blocked)
   - *Upsides:* dependency parsing gives correct SVO assignments in complex sentences (passives, relative clauses, unusual word order — common in translated philosophical texts); neural POS models generalize better to out-of-vocabulary philosophical neologisms (*Dasein*, *différance*, *sublation*); noun-chunk spans handle multi-word terms as units rather than fragmenting them; NER distinguishes technical concept usage from proper-noun references
   - *Downsides:* heavy dependency with separately downloaded models (`python -m spacy download en_core_web_sm`); slower processing; requires refactoring the `tokenize → tag → lemmatize` pipeline that threads through most of the codebase — not a drop-in swap; highest-value target is relation extraction, which would benefit most from the dependency tree
+- [ ] Multi-language support
 
 ---
 
