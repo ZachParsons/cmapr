@@ -50,7 +50,7 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 - [x] **Front/back-matter filters** — `--start-from-section N` (skip content before chapter N) and `--exclude-sections PATTERN` (regex exclusion by section title) on both `analyze` and `search`. Fixed `search` command to use `ProcessedDocument.from_dict()` for correct nested deserialization. 20 tests.
 - [x] **Structure detection bug fix** — scaled sentence positions to match text coordinates; previously, structure nodes were not found for sentences mid-document.
 - [x] **Analyze window performance** — reduced redundant path output; path header now only printed when it changes between matches.
-- [x] **Dependency parse tree in analyze window** — `analyze --window` now renders a Stanza dependency parse tree for each matched sentence instead of printing the raw sentence text.
+- [x] **Dependency parse tree in analyze window** — `analyze --window` prints the matched sentence then renders its Stanza dependency parse tree below it.
 - [x] **CLI module command index** — module docstring in `cli.py` lists all nine commands with a one-line description each.
 
 ### Project summary
