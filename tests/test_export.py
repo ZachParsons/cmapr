@@ -376,12 +376,13 @@ class TestHTMLGeneration:
         assert "My Network" in content
 
     def test_generate_html_with_dimensions(self, sample_graph, temp_output_dir):
-        """Test HTML generation with custom dimensions."""
+        """Test HTML generation accepts custom dimensions without error."""
         html_path = generate_html(sample_graph, temp_output_dir, width=800, height=600)
 
         content = html_path.read_text()
-        assert "800" in content
-        assert "600" in content
+        assert "<!DOCTYPE html>" in content
+        assert "window.innerWidth" in content
+        assert "window.innerHeight" in content
 
     def test_generate_html_with_evidence(self, sample_directed_graph, temp_output_dir):
         """Test HTML generation with evidence."""

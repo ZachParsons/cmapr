@@ -98,29 +98,21 @@ def _generate_html_template(
     <title>{title}</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        body {{
+        html, body {{
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f5f5f5;
         }}
 
-        #container {{
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }}
-
-        h1 {{
-            margin: 0 0 20px 0;
-            color: #333;
-        }}
-
         #graph {{
+            display: block;
+            width: 100vw;
+            height: 100vh;
             background: white;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }}
 
         .node {{
@@ -141,8 +133,15 @@ def _generate_html_template(
             fill: #333;
         }}
 
+        .link-label {{
+            font-size: 9px;
+            pointer-events: none;
+            text-anchor: middle;
+            fill: #888;
+        }}
+
         .tooltip {{
-            position: absolute;
+            position: fixed;
             padding: 8px 12px;
             background: rgba(0, 0, 0, 0.8);
             color: white;
@@ -154,57 +153,81 @@ def _generate_html_template(
             max-width: 300px;
         }}
 
-        .controls {{
-            margin-top: 20px;
+        #overlay {{
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+        }}
+
+        .controls {{
+            display: flex;
+            gap: 8px;
         }}
 
         button {{
-            padding: 8px 16px;
-            background: #4CAF50;
+            padding: 6px 14px;
+            background: rgba(0,0,0,0.6);
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
         }}
 
         button:hover {{
-            background: #45a049;
+            background: rgba(0,0,0,0.8);
         }}
 
         .info {{
-            margin-top: 20px;
-            padding: 12px;
-            background: white;
+            padding: 6px 10px;
+            background: rgba(0,0,0,0.5);
             border-radius: 4px;
-            border: 1px solid #ddd;
-            font-size: 14px;
-            color: #666;
+            font-size: 12px;
+            color: #eee;
+        }}
+
+        h1 {{
+            position: fixed;
+            top: 12px;
+            left: 16px;
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+            pointer-events: none;
         }}
     </style>
 </head>
 <body>
-    <div id="container">
-        <h1>{title}</h1>
-        <svg id="graph" width="{width}" height="{height}"></svg>
+    <h1>{title}</h1>
+    <svg id="graph"></svg>
+
+    <div id="overlay">
+        <div class="info" id="info">Loading graph...</div>
         <div class="controls">
             <button onclick="resetZoom()">Reset Zoom</button>
-            <button onclick="toggleLabels()">Toggle Labels</button>
             <button onclick="restartSimulation()">Restart Layout</button>
-        </div>
-        <div class="info" id="info">
-            Loading graph...
         </div>
     </div>
 
     <div class="tooltip" id="tooltip"></div>
 
     <script>
-        const width = {width};
-        const height = {height};
-        let showLabels = true;
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+
+        window.addEventListener("resize", () => {{
+            width = window.innerWidth;
+            height = window.innerHeight;
+            svg.attr("width", width).attr("height", height);
+            if (window.simulation) {{
+                window.simulation.force("center", d3.forceCenter(width / 2, height / 2));
+                window.simulation.alpha(0.3).restart();
+            }}
+        }});
 
         // Color scale for communities
         const color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -290,7 +313,15 @@ def _generate_html_template(
                     tooltip.style("opacity", 0);
                 }});
 
-            // Create labels
+            // Create edge labels
+            const linkLabel = g.append("g")
+                .selectAll("text")
+                .data(data.links)
+                .join("text")
+                .attr("class", "link-label")
+                .text(d => d.verb ? d.verb : (d.label ? d.label : d.weight.toFixed(1)));
+
+            // Create node labels
             const label = g.append("g")
                 .selectAll("text")
                 .data(data.nodes)
@@ -310,6 +341,10 @@ def _generate_html_template(
                 node
                     .attr("cx", d => d.x)
                     .attr("cy", d => d.y);
+
+                linkLabel
+                    .attr("x", d => (d.source.x + d.target.x) / 2)
+                    .attr("y", d => (d.source.y + d.target.y) / 2);
 
                 label
                     .attr("x", d => d.x)
@@ -351,11 +386,6 @@ def _generate_html_template(
             svg.transition()
                 .duration(750)
                 .call(zoom.transform, d3.zoomIdentity);
-        }}
-
-        function toggleLabels() {{
-            showLabels = !showLabels;
-            window.label.style("opacity", showLabels ? 1 : 0);
         }}
 
         function restartSimulation() {{

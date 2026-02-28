@@ -95,6 +95,15 @@ def to_d3_dict(
         if "relation_type" in edge_attrs:
             link_data["label"] = edge_attrs["relation_type"]
 
+        metadata = edge_attrs.get("metadata", {})
+        verb = (
+            metadata.get("verb")
+            or metadata.get("copula")
+            or metadata.get("preposition")
+        )
+        if verb:
+            link_data["verb"] = verb
+
         if include_evidence and "evidence" in edge_attrs:
             evidence = edge_attrs["evidence"]
             # Limit evidence to max_evidence sentences
