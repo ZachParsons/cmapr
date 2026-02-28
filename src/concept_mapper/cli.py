@@ -1545,12 +1545,13 @@ def _display_window_analysis(
             click.echo(f"path: {path}")
             last_path = path
         else:
-            click.echo("\n" + "-" * 40)
+            click.echo("\n" + "-" * 80)
+        click.echo(f'sentence: "{match.sentence.strip()}"')
         from concept_mapper.syntax.diagram import parse_sentence, format_as_tree
 
         doc = parse_sentence(match.sentence.strip())
         for sent in doc.sentences:
-            click.echo(format_as_tree(sent))
+            click.echo("\nsentence diagram: " + format_as_tree(sent))
         click.echo("\nsignificant terms:")
 
         doc = doc_map.get(match.doc_id, docs[0] if docs else None)
