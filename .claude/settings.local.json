@@ -69,7 +69,10 @@
       "Bash(python -m src.concept_mapper.cli:*)",
       "Bash(jq:*)",
       "Bash(make coverage:*)",
-      "Bash(tail:*)"
+      "Bash(tail:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(.venv/bin/pytest:*)",
+      "WebSearch"
     ]
   }
 }
