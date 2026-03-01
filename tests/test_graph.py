@@ -590,7 +590,6 @@ class TestOperations:
         assert filtered.node_count() == 2
         assert filtered.edge_count() == 0
 
-
     def test_consolidate_no_duplicates(self):
         """No-op when all labels are unique."""
         g = ConceptGraph()
@@ -618,6 +617,7 @@ class TestOperations:
     def test_consolidate_logs_warning(self, caplog):
         """A warning is emitted for each consolidated label group."""
         import logging
+
         g = ConceptGraph()
         g.add_node("x1", label="dup")
         g.add_node("x2", label="dup")
@@ -658,6 +658,7 @@ class TestOperations:
     def test_connect_isolated_nodes_logs_error_when_no_data(self, caplog):
         """An error is logged when an isolated node has no co-occurrence with connected nodes."""
         import logging
+
         g = ConceptGraph()
         g.add_node("a")
         g.add_node("b")

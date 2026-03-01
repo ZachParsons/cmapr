@@ -14,7 +14,10 @@ from concept_mapper.graph.metrics import (
     detect_communities,
     assign_communities,
 )
-from concept_mapper.graph.operations import consolidate_duplicate_labels, find_isolated_nodes
+from concept_mapper.graph.operations import (
+    consolidate_duplicate_labels,
+    find_isolated_nodes,
+)
 from concept_mapper.validation import validate_concept_graph
 
 
@@ -45,6 +48,7 @@ def to_d3_dict(
     validate_concept_graph(graph, require_edges=False)
 
     import logging
+
     _log = logging.getLogger(__name__)
 
     # Work on a copy so the caller's graph is not mutated
@@ -114,7 +118,7 @@ def to_d3_dict(
 
         metadata = edge_attrs.get("metadata", {})
         verb = (
-            edge_attrs.get("verb")           # preserved from a prior D3 JSON load
+            edge_attrs.get("verb")  # preserved from a prior D3 JSON load
             or metadata.get("verb")
             or metadata.get("copula")
             or metadata.get("preposition")

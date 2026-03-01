@@ -52,8 +52,11 @@ def connect_isolated_nodes(
     for node_id in sparse:
         scores = cooccurrence_matrix.get(node_id, {})
         best = max(
-            ((partner, score) for partner, score in scores.items()
-             if partner in anchors and partner != node_id),
+            (
+                (partner, score)
+                for partner, score in scores.items()
+                if partner in anchors and partner != node_id
+            ),
             key=lambda x: x[1],
             default=None,
         )
@@ -135,7 +138,9 @@ def consolidate_duplicate_labels(graph: ConceptGraph) -> int:
                     existing = graph.get_edge(u, v)
                     merged = {**existing, **data}
                     merged["weight"] = existing.get("weight", 1) + data.get("weight", 1)
-                    combined_evidence = existing.get("evidence", []) + data.get("evidence", [])
+                    combined_evidence = existing.get("evidence", []) + data.get(
+                        "evidence", []
+                    )
                     if combined_evidence:
                         merged["evidence"] = combined_evidence
                     graph.add_edge(u, v, **merged)

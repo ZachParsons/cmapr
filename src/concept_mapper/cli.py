@@ -737,11 +737,17 @@ def graph(ctx, corpus, terms, method, threshold, output):
         concept_graph = graph_from_relations(all_relations)
 
         # Connect any isolated nodes via co-occurrence fallback
-        from concept_mapper.graph.operations import find_isolated_nodes, connect_isolated_nodes
+        from concept_mapper.graph.operations import (
+            find_isolated_nodes,
+            connect_isolated_nodes,
+        )
+
         isolated = find_isolated_nodes(concept_graph)
         if isolated:
             if verbose:
-                click.echo(f"Found {len(isolated)} isolated node(s), building co-occurrence fallback...")
+                click.echo(
+                    f"Found {len(isolated)} isolated node(s), building co-occurrence fallback..."
+                )
             fallback_matrix = build_cooccurrence_matrix(
                 term_list, docs, method="pmi", window="sentence"
             )

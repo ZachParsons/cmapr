@@ -72,7 +72,8 @@
       "Bash(tail:*)",
       "Bash(.venv/bin/python:*)",
       "Bash(.venv/bin/pytest:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(open:*)"
     ]
   }
 }
