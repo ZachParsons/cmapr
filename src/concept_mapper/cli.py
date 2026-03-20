@@ -5,7 +5,7 @@ Commands:
   # main workflow.
   ingest      Parse raw text files into a processed corpus JSON.
   rarities    Score and rank terms by rarity/significance across a corpus.
-  analyze     Analyse a term's contextual terms across a windowed neighborhood.
+  graph       Build a co-occurrence or relation graph from a corpus.
   export      Convert a graph file to D3, GraphML, CSV, GEXF, or HTML.
 
   # experiments.
@@ -14,7 +14,7 @@ Commands:
   # utils.
   diagram     Render a dependency parse tree for a given sentence.
   search      Find sentences containing a term, with optional context.
-  graph       Build a co-occurrence or relation graph from a corpus.
+  analyze     Analyse a term's contextual terms across a windowed neighborhood.
 """
 
 import click
@@ -104,10 +104,9 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc):
     detection when automatic detection fails or is unreliable.
 
     Examples:
-        cmapr ingest document.txt -o corpus.json
-        cmapr ingest corpus/ -r -p "*.txt" -o corpus.json
-        cmapr ingest scanned.txt --clean-ocr -o corpus.json
-        cmapr ingest eco_spl.txt --toc eco_spl_toc.txt -o corpus.json
+        cmapr ingest eco_spl.txt
+        cmapr ingest eco_spl.txt --clean-ocr
+        cmapr ingest eco_spl.txt --toc eco_spl_toc.txt
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -238,9 +237,10 @@ def rarities(
     statistical rarity analysis.
 
     Examples:
-        cmapr rarities output/corpus/eco_spl_w_toc.json --method hybrid --top-n 30
-        cmapr rarities output/corpus/eco_spl_w_toc.json -o terms.json
+        cmapr rarities output/corpus/eco_spl_w_toc.json
+        cmapr rarities output/corpus/eco_spl_w_toc.json --top-n 30
         cmapr rarities output/corpus/eco_spl_w_toc.json --no-lemmatize
+        cmapr rarities output/corpus/eco_spl_w_toc.json --no-filter-names
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -810,9 +810,9 @@ def graph(
     the results into a graph suitable for export.
 
     Examples:
-        cmapr graph corpus.json -t rarities.json
-        cmapr graph corpus.json -t rarities.json --no-relations
-        cmapr graph corpus.json -t rarities.json --start-from-section 1
+        cmapr graph output/corpus/eco_spl_w_toc.json -t output/rarities/eco_spl_w_toc.json
+        cmapr graph output/corpus/eco_spl_w_toc.json -t output/rarities/eco_spl_w_toc.json --no-relations
+        cmapr graph output/corpus/eco_spl_w_toc.json -t output/rarities/eco_spl_w_toc.json --start-from-section 1
     """
     from concept_mapper.analysis.contextual_relations import analyze_context
     from concept_mapper.graph.builders import graph_from_contextual_relations
@@ -906,9 +906,9 @@ def export(ctx, graph_file, format, output, title):
     Export graph to various formats.
 
     Examples:
-        cmapr export graph.json --format html -o viz/
-        cmapr export graph.json --format graphml -o graph.graphml
-        cmapr export graph.json --format csv -o output/
+        cmapr export output/graphs/eco_spl.json --format html
+        cmapr export output/graphs/eco_spl.json --format graphml -o output/exports/eco_spl.graphml
+        cmapr export output/graphs/eco_spl.json --format csv -o output/exports/eco_spl/csv/
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -2084,16 +2084,16 @@ def replace(ctx, corpus, source, target, output, preview):
 
     Examples:
         # Single word replacement
-        cmapr replace corpus.json "run" "sprint" -o output.txt
+        cmapr replace output/corpus/eco_spl_w_toc.json "run" "sprint" -o output.txt
 
         # Phrase to single word
-        cmapr replace corpus.json "body,without,organs" "medium" -o output.txt
+        cmapr replace output/corpus/eco_spl_w_toc.json "body,without,organs" "medium" -o output.txt
 
         # Phrase to phrase
-        cmapr replace corpus.json "body,without,organs" "blank,resistant,field" -o output.txt
+        cmapr replace output/corpus/eco_spl_w_toc.json "body,without,organs" "blank,resistant,field" -o output.txt
 
         # Preview changes
-        cmapr replace corpus.json "run" "sprint" --preview
+        cmapr replace output/corpus/eco_spl_w_toc.json "run" "sprint" --preview
     """
     from .transformations.replacement import ReplacementSpec, SynonymReplacer
 
