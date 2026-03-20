@@ -745,8 +745,6 @@ def search(
 )
 @click.option(
     "--threshold",
-    "-t2",
-    "threshold",
     type=float,
     default=0.1,
     help="Minimum significance score for relations (default: 0.1)",
@@ -2169,6 +2167,213 @@ def replace(ctx, corpus, source, target, output, preview):
     else:
         # Print to stdout
         click.echo(combined_text)
+
+
+# ============================================================================
+# Run Command (full workflow)
+# ============================================================================
+
+
+@cli.command()
+@click.argument("text_file", type=click.Path(exists=True))
+@click.option("--toc", type=click.Path(exists=True), help="Table of contents file")
+@click.option("--clean-ocr", is_flag=True, help="Clean OCR/PDF artifacts during ingest")
+@click.option("--top-n", "-n", type=int, default=50, help="Number of rare terms (default: 50)")
+@click.option("--no-lemmatize", is_flag=True, help="Disable term lemmatization")
+@click.option("--no-filter-names", is_flag=True, help="Disable proper name filtering")
+@click.option("--no-filter-fragments", is_flag=True, help="Disable word fragment filtering")
+@click.option("--no-relations", is_flag=True, help="Skip grammatical relation extraction")
+@click.option(
+    "--start-from-section",
+    type=str,
+    default=None,
+    help="Skip content before this section number",
+)
+@click.option(
+    "--exclude-sections",
+    type=str,
+    default=None,
+    help="Exclude sections matching this regex (e.g. 'index|bibliography')",
+)
+@click.option(
+    "--format", "-f",
+    type=click.Choice(["html", "graphml", "csv", "gexf", "d3"]),
+    default="html",
+    help="Export format (default: html)",
+)
+@click.option("--title", type=str, default=None, help="Visualization title")
+@click.pass_context
+def run(
+    ctx,
+    text_file,
+    toc,
+    clean_ocr,
+    top_n,
+    no_lemmatize,
+    no_filter_names,
+    no_filter_fragments,
+    no_relations,
+    start_from_section,
+    exclude_sections,
+    format,
+    title,
+):
+    """
+    Run the full workflow: ingest → rarities → graph → export.
+
+    Examples:
+        cmapr run eco_spl.txt
+        cmapr run eco_spl.txt --toc eco_spl_toc.txt --top-n 30
+        cmapr run eco_spl.txt --no-relations --format graphml
+        cmapr run eco_spl.txt --start-from-section 1 --exclude-sections 'index|bibliography'
+    """
+    from concept_mapper.analysis.contextual_relations import analyze_context
+    from concept_mapper.graph.builders import graph_from_contextual_relations
+
+    verbose = ctx.obj["verbose"]
+    output_dir = ctx.obj["output_dir"]
+    text_path = Path(text_file)
+
+    # ── Step 1: Ingest ────────────────────────────────────────────────────────
+    click.echo(f"[1/4] Ingesting {text_path.name}...")
+
+    toc_file = Path(toc) if toc else None
+    raw_doc = load_file(text_path)
+    docs = [preprocess(raw_doc, clean_ocr=clean_ocr, toc_file=toc_file)]
+
+    corpus_path = infer_output_path(text_path, output_dir, "corpus")
+    corpus_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(corpus_path, "w", encoding="utf-8") as f:
+        json.dump([d.to_dict() for d in docs], f, ensure_ascii=False, indent=2)
+
+    click.echo(f"    ✓ Corpus → {corpus_path}")
+
+    # ── Step 2: Rarities ─────────────────────────────────────────────────────
+    click.echo(f"[2/4] Finding rare terms (top {top_n})...")
+
+    reference = load_reference_corpus()
+    scorer = PhilosophicalTermScorer(docs, reference, use_lemmas=True)
+    candidates = scorer.score_all(min_score=0.5, top_n=None if not no_lemmatize else top_n)
+
+    # Quote stripping
+    _QUOTES = "'\u2018\u2019\u201a\u201b"
+    candidates = [(t.strip(_QUOTES), s, c) for t, s, c in candidates if t.strip(_QUOTES)]
+
+    if not no_filter_names:
+        from concept_mapper.analysis.rarity import proper_noun_ratios
+        pn_ratios = proper_noun_ratios(docs)
+        ref_total = sum(reference.values())
+        def _is_proper(term):
+            if pn_ratios.get(term, 0) < 0.3:
+                return False
+            return reference.get(term, 0) / ref_total * 1_000_000 < 25
+        candidates = [(t, s, c) for t, s, c in candidates if not _is_proper(t)]
+
+    if not no_lemmatize:
+        from concept_mapper.preprocessing.lemmatize import lemmatize
+        from nltk.corpus import wordnet as wn
+        lemma_best: dict = {}
+        for term, score, components in candidates:
+            base = lemmatize(term, wn.NOUN)
+            if base not in lemma_best or score > lemma_best[base][1]:
+                lemma_best[base] = (base, score, components)
+        _DERIV = ("ual", "ial", "ical", "ic", "ive", "ous", "ity", "ism", "ist", "ness", "ary", "ory", "al")
+        merged: dict = {}
+        for base_form, entry in lemma_best.items():
+            canonical = base_form
+            for suffix in _DERIV:
+                if base_form.endswith(suffix) and len(base_form) - len(suffix) >= 3:
+                    shorter = base_form[: -len(suffix)]
+                    if shorter in lemma_best:
+                        canonical = shorter
+                        break
+            _, score, components = entry
+            if canonical not in merged or score > merged[canonical][1]:
+                merged[canonical] = (canonical, score, components)
+        candidates = sorted(merged.values(), key=lambda x: x[1], reverse=True)[:top_n]
+
+    if not no_filter_fragments:
+        from nltk.corpus import wordnet as wn
+        _WN = set(wn.words())
+        _COMP = ("s", "y", "es", "ed", "er", "al", "ic", "is", "sis")
+        def _is_frag(term):
+            if len(term) < 4:
+                return True
+            if term in _WN:
+                return False
+            return any((term + s) in _WN for s in _COMP)
+        candidates = [(t, s, c) for t, s, c in candidates if not _is_frag(t)]
+
+    if not candidates:
+        click.echo("  No rare terms found. Try lowering --threshold or checking input.")
+        return
+
+    # Save rarities
+    from concept_mapper.terms.models import TermList
+    from concept_mapper.validation import validate_term_list
+    term_data = [{"term": t, "metadata": {"score": s}} for t, s, _ in candidates]
+    validate_term_list(term_data)
+    term_list_obj = TermList.from_dict({"terms": term_data})
+    rarities_path = infer_output_path(text_path, output_dir, "rarities")
+    rarities_path.parent.mkdir(parents=True, exist_ok=True)
+    TermManager(term_list_obj).export_to_json(rarities_path)
+
+    click.echo(f"    ✓ {len(candidates)} terms → {rarities_path}")
+
+    # ── Step 3: Graph ─────────────────────────────────────────────────────────
+    click.echo("[3/4] Building concept graph...")
+
+    all_relations = []
+    with click.progressbar(term_list_obj, label="    Analyzing") as bar:
+        for entry in bar:
+            rels = analyze_context(
+                search_term=entry.term,
+                docs=docs,
+                significance_threshold=0.1,
+                extract_relations=not no_relations,
+            )
+            rels = _filter_relations(rels, start_from_section, exclude_sections)
+            all_relations.extend(rels)
+
+    concept_graph = graph_from_contextual_relations(all_relations)
+    validate_concept_graph(concept_graph)
+
+    graph_path = infer_output_path(text_path, output_dir, "graphs")
+    graph_path.parent.mkdir(parents=True, exist_ok=True)
+    export_d3_json(concept_graph, graph_path)
+
+    click.echo(f"    ✓ {concept_graph.node_count()} nodes, {concept_graph.edge_count()} edges → {graph_path}")
+
+    # ── Step 4: Export ────────────────────────────────────────────────────────
+    click.echo(f"[4/4] Exporting ({format})...")
+
+    viz_title = title or text_path.stem.replace("_", " ").title()
+    export_path = infer_output_path(text_path, output_dir, "exports")
+
+    if format == "html":
+        from concept_mapper.export.html import export_html
+        export_path.mkdir(parents=True, exist_ok=True)
+        export_html(concept_graph, export_path, title=viz_title)
+        result_path = export_path / "index.html"
+    elif format == "graphml":
+        from concept_mapper.export.formats import export_graphml
+        result_path = export_path.with_suffix(".graphml")
+        export_graphml(concept_graph, result_path)
+    elif format == "csv":
+        from concept_mapper.export.formats import export_csv
+        export_path.mkdir(parents=True, exist_ok=True)
+        export_csv(concept_graph, export_path)
+        result_path = export_path
+    elif format == "gexf":
+        from concept_mapper.export.formats import export_gexf
+        result_path = export_path.with_suffix(".gexf")
+        export_gexf(concept_graph, result_path)
+    else:  # d3
+        result_path = export_path.with_suffix(".json")
+        export_d3_json(concept_graph, result_path)
+
+    click.echo(f"    ✓ {result_path}")
+    click.echo(f"\n✓ Done.  open {result_path}")
 
 
 # ============================================================================
