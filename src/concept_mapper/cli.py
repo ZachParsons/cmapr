@@ -193,14 +193,42 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc):
     help="Detection method",
 )
 @click.option(
-    "--threshold", "-t", type=float, default=2.0, help="Minimum score threshold"
+    "--threshold", "-t", type=float, default=0.5, help="Minimum score threshold"
 )
 @click.option(
     "--top-n", "-n", type=int, default=50, help="Number of top terms to output"
 )
 @click.option("--output", "-o", type=click.Path(), help="Output terms file (JSON)")
+@click.option(
+    "--no-lemmatize",
+    is_flag=True,
+    default=False,
+    help="Disable lemmatization of output terms (by default, inflected forms like 'semiotics' are merged with their base form 'semiotic')",
+)
+@click.option(
+    "--no-filter-names",
+    is_flag=True,
+    default=False,
+    help="Disable automatic filtering of proper names (people, places). By default, terms that appear as proper nouns (NNP) in ≥50%% of their occurrences are removed.",
+)
+@click.option(
+    "--no-filter-fragments",
+    is_flag=True,
+    default=False,
+    help="Disable filtering of word fragments from dirty input (e.g. 'ust' from 'j ust', 'prosthesi' from 'prosthesis'). By default, terms shorter than 4 chars or that are a prefix of a real word are removed.",
+)
 @click.pass_context
-def rarities(ctx, corpus, method, threshold, top_n, output):
+def rarities(
+    ctx,
+    corpus,
+    method,
+    threshold,
+    top_n,
+    output,
+    no_lemmatize,
+    no_filter_names,
+    no_filter_fragments,
+):
     """
     Detect rare/philosophical terms in corpus.
 
@@ -208,8 +236,9 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
     statistical rarity analysis.
 
     Examples:
-        cmapr rarities corpus.json --method hybrid --top-n 30
-        cmapr rarities corpus.json -o terms.json
+        cmapr rarities output/corpus/eco_spl_w_toc.json --method hybrid --top-n 30
+        cmapr rarities output/corpus/eco_spl_w_toc.json -o terms.json
+        cmapr rarities output/corpus/eco_spl_w_toc.json --no-lemmatize
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -239,7 +268,115 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
         click.echo(f"Detecting rare terms (method={method})...")
 
     scorer = PhilosophicalTermScorer(docs, reference, use_lemmas=True)
-    candidates = scorer.score_all(min_score=threshold, top_n=top_n)
+    candidates = scorer.score_all(
+        min_score=threshold, top_n=None if not no_lemmatize else top_n
+    )
+
+    # Strip stray quote characters that can attach to tokens from PDF extraction
+    # e.g. "'animal'" -> "animal", "'instructional" -> "instructional"
+    _QUOTES = "'\u2018\u2019\u201a\u201b"
+    candidates = [
+        (term.strip(_QUOTES), score, components)
+        for term, score, components in candidates
+        if term.strip(_QUOTES)
+    ]
+
+    if not no_filter_names:
+        from concept_mapper.analysis.rarity import proper_noun_ratios
+
+        pn_ratios = proper_noun_ratios(docs)
+        ref_total = sum(reference.values())
+
+        def _is_proper_name(term: str) -> bool:
+            # Must be frequently tagged as a proper noun in this corpus
+            if pn_ratios.get(term, 0) < 0.3:
+                return False
+            # Common English words (language, philosophy, symbol) appear often
+            # in the Brown reference corpus even if sometimes title-cased here
+            ref_ppm = reference.get(term, 0) / ref_total * 1_000_000
+            return ref_ppm < 25
+
+        before = len(candidates)
+        candidates = [
+            (term, score, components)
+            for term, score, components in candidates
+            if not _is_proper_name(term)
+        ]
+        if verbose and len(candidates) < before:
+            click.echo(
+                f"Filtered {before - len(candidates)} proper name(s) "
+                f"(use --no-filter-names to keep them)"
+            )
+
+    if not no_lemmatize:
+        from concept_mapper.preprocessing.lemmatize import lemmatize
+        from nltk.corpus import wordnet as wn
+
+        # Pass 1: merge inflected noun forms (e.g. "semiotics" -> "semiotic")
+        lemma_best: dict = {}
+        for term, score, components in candidates:
+            base = lemmatize(term, wn.NOUN)
+            if base not in lemma_best or score > lemma_best[base][1]:
+                lemma_best[base] = (base, score, components)
+
+        # Pass 2: merge derivational adjective/noun variants whose base form is
+        # already a candidate (e.g. "co-textual" -> "co-text", "referential" ->
+        # "reference" won't match, but "co-textual" -> "co-text" will).
+        # Longer suffixes are tried first to avoid partial matches.
+        _DERIV_SUFFIXES = (
+            "ual",
+            "ial",
+            "ical",
+            "ic",
+            "ive",
+            "ous",
+            "ity",
+            "ism",
+            "ist",
+            "ness",
+            "ary",
+            "ory",
+            "al",
+        )
+        merged: dict = {}
+        for base_form, entry in lemma_best.items():
+            canonical = base_form
+            for suffix in _DERIV_SUFFIXES:
+                if base_form.endswith(suffix) and len(base_form) - len(suffix) >= 3:
+                    shorter = base_form[: -len(suffix)]
+                    if shorter in lemma_best:
+                        canonical = shorter
+                        break
+            _, score, components = entry
+            if canonical not in merged or score > merged[canonical][1]:
+                merged[canonical] = (canonical, score, components)
+
+        candidates = sorted(merged.values(), key=lambda x: x[1], reverse=True)[:top_n]
+
+    if not no_filter_fragments:
+        from nltk.corpus import wordnet as wn
+
+        _WN_WORDS = set(wn.words())
+        _COMPLETION_SUFFIXES = ("s", "y", "es", "ed", "er", "al", "ic", "is", "sis")
+
+        def _is_fragment(term: str) -> bool:
+            if len(term) < 4:
+                return True
+            if term in _WN_WORDS:
+                return False
+            return any((term + s) in _WN_WORDS for s in _COMPLETION_SUFFIXES)
+
+        before = len(candidates)
+        candidates = [
+            (term, score, components)
+            for term, score, components in candidates
+            if not _is_fragment(term)
+        ]
+        if verbose and len(candidates) < before:
+            click.echo(
+                f"Filtered {before - len(candidates)} word fragment(s) "
+                f"(use --no-filter-fragments to keep them)"
+            )
 
     # Check if any terms were found
     if not candidates:
@@ -262,7 +399,7 @@ def rarities(ctx, corpus, method, threshold, top_n, output):
         output_path = Path(output)
     else:
         # NEW: Derive output filename from corpus filename
-        output_path = infer_output_path(Path(corpus), output_dir, "terms")
+        output_path = infer_output_path(Path(corpus), output_dir, "rarities")
 
     if verbose:
         identifier = derive_identifier(Path(corpus))
@@ -1718,13 +1855,13 @@ def analyze(
     identifies grammatical relations between them.
 
     Examples:
-        cmapr analyze corpus.json "consciousness"
-        cmapr analyze corpus.json "being" --top-n 10
-        cmapr analyze corpus.json "intentionality" --lemma -p nouns -p verbs
-        cmapr analyze corpus.json "dialectic" --format json -o relations.json
-        cmapr analyze corpus.json "semiotic" -w s0
-        cmapr analyze corpus.json "semiotic" -w s1
-        cmapr analyze corpus.json "semiotic" -w p0 --top-n 5
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic"
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --top-n 10
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --lemma -p nouns -p verbs
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --format json -o relations.json
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" -w s0
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" -w s1
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" -w p0 --top-n 5
     """
     from concept_mapper.analysis.contextual_relations import analyze_context
     import json

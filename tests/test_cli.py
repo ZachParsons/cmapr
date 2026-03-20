@@ -600,6 +600,8 @@ class TestCLIIntegration:
                 "0.0",
                 "--top-n",
                 "10",
+                "--no-filter-names",
+                "--no-filter-fragments",
                 "--output",
                 str(terms_file),
             ],
@@ -677,9 +679,9 @@ class TestSourceDerivedFilenames:
 
         assert result.exit_code == 0
         # Should create corpus.json (not terms.json) because corpus was named corpus.json
-        expected_terms = output_dir / "terms" / "corpus.json"
+        expected_terms = output_dir / "rarities" / "corpus.json"
         assert expected_terms.exists()
-        assert not (output_dir / "terms" / "terms.json").exists()
+        assert not (output_dir / "rarities" / "terms.json").exists()
 
     def test_graph_source_derived_naming(self, runner, sample_corpus_json, tmp_path):
         """Test that graph uses source-derived output filename."""
@@ -697,6 +699,8 @@ class TestSourceDerivedFilenames:
                 "0.0",
                 "--top-n",
                 "5",
+                "--no-filter-names",
+                "--no-filter-fragments",
                 "--output",
                 str(terms_file),
             ],
@@ -736,6 +740,8 @@ class TestSourceDerivedFilenames:
                 "0.0",
                 "--top-n",
                 "5",
+                "--no-filter-names",
+                "--no-filter-fragments",
                 "--output",
                 str(terms_file),
             ],
@@ -878,11 +884,13 @@ class TestSourceDerivedFilenames:
                 "0.0",
                 "--top-n",
                 "5",
+                "--no-filter-names",
+                "--no-filter-fragments",
             ],
         )
         assert result.exit_code == 0
 
-        terms_file = output_dir / "terms" / "sample.json"
+        terms_file = output_dir / "rarities" / "sample.json"
         assert terms_file.exists()
 
         # 3. Graph

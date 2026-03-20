@@ -119,7 +119,7 @@ class TestFilesystemUtils:
 
         assert dirs["base"].exists()
         assert dirs["corpus"].exists()
-        assert dirs["terms"].exists()
+        assert dirs["rarities"].exists()
         assert dirs["graphs"].exists()
         assert dirs["exports"].exists()
         assert dirs["cache"].exists()

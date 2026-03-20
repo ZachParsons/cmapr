@@ -30,7 +30,7 @@ def ensure_output_structure(base_dir: Path = Path("output")) -> dict[str, Path]:
     directories = {
         "base": base_dir,
         "corpus": base_dir / "corpus",
-        "terms": base_dir / "terms",
+        "rarities": base_dir / "rarities",
         "graphs": base_dir / "graphs",
         "exports": base_dir / "exports",
         "cache": base_dir / "cache",
@@ -70,7 +70,7 @@ def validate_file_path(path: Path, must_exist: bool = False) -> Path:
 
 def get_output_path(
     filename: str,
-    subdir: str = "terms",
+    subdir: str = "rarities",
     base_dir: Path = Path("output"),
     ensure_dir: bool = True,
 ) -> Path:
@@ -79,7 +79,7 @@ def get_output_path(
 
     Args:
         filename: Output filename
-        subdir: Subdirectory within output (e.g., 'corpus', 'terms', 'graphs', 'exports')
+        subdir: Subdirectory within output (e.g., 'corpus', 'rarities', 'graphs', 'exports')
         base_dir: Base output directory
         ensure_dir: If True, create directory if it doesn't exist
 
@@ -174,7 +174,7 @@ def infer_output_path(
     Args:
         input_path: Input file path
         output_dir: Base output directory
-        subdir: Subdirectory within output (e.g., 'corpus', 'terms', 'graphs', 'exports')
+        subdir: Subdirectory within output (e.g., 'corpus', 'rarities', 'graphs', 'exports')
         suffix: Optional suffix to append to identifier (e.g., '_cooccurrence')
         extension: File extension (default: '.json')
 

@@ -1382,8 +1382,35 @@ def _is_valid_term(term: str) -> bool:
     if all(c in string.punctuation for c in term):
         return False
 
-    # Common abbreviations that shouldn't be terms
-    if term.lower() in {"i.e", "e.g", "etc", "vs", "cf"}:
+    # Common abbreviations and citation/footnote artifacts that shouldn't be terms
+    if term.lower() in {
+        "i.e",
+        "e.g",
+        "etc",
+        "vs",
+        "cf",
+        # Bibliographic / footnote abbreviations
+        "ibid",
+        "idem",
+        "ibidem",
+        "op",
+        "cit",
+        "loc",
+        "passim",
+        "viz",
+        "infra",
+        "supra",
+        "ante",
+        # Publication reference shorthands
+        "pp",
+        "vol",
+        "fig",
+        "trans",
+        "ed",
+        "eds",
+        "repr",
+        "rev",
+    }:
         return False
 
     # Must contain at least one letter
@@ -1714,3 +1741,35 @@ def score_philosophical_terms(
 
     # Return simplified (term, score) tuples
     return [(term, score) for term, score, components in results]
+
+
+def proper_noun_ratios(docs: List[ProcessedDocument]) -> Dict[str, float]:
+    """
+    Compute the fraction of each term's occurrences that are tagged NNP/NNPS.
+
+    Terms that are almost always proper nouns (ratio near 1.0) are likely
+    personal names, place names, or brand names.  Terms with a low ratio
+    are ordinary vocabulary even if they occasionally appear capitalized.
+
+    Args:
+        docs: List of preprocessed documents (must have pos_tags populated)
+
+    Returns:
+        Dict mapping lowercased term -> fraction of occurrences tagged NNP/NNPS
+
+    Example:
+        >>> ratios = proper_noun_ratios(docs)
+        >>> ratios.get("peirce", 0)   # near 1.0 — always a name
+        0.97
+        >>> ratios.get("sign", 0)     # near 0.0 — common noun
+        0.02
+    """
+    total: Counter = Counter()
+    proper: Counter = Counter()
+    for doc in docs:
+        for word, pos in doc.pos_tags:
+            key = word.lower()
+            total[key] += 1
+            if pos.startswith("NNP"):
+                proper[key] += 1
+    return {word: proper.get(word, 0) / count for word, count in total.items()}
