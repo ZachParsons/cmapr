@@ -4,9 +4,12 @@ Graph construction from co-occurrence and relations.
 This module provides functions to build ConceptGraphs from analysis results.
 """
 
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 from concept_mapper.graph.model import ConceptGraph
 from concept_mapper.analysis.relations import Relation
+
+if TYPE_CHECKING:
+    from concept_mapper.analysis.contextual_relations import ContextualRelation
 
 
 def graph_from_cooccurrence(
@@ -147,6 +150,67 @@ def graph_from_relations(
                 edge_attrs["evidence"] = existing["evidence"]
             # Increase weight
             edge_attrs["weight"] = existing.get("weight", 1) + edge_attrs["weight"]
+
+        graph.add_edge(source, target, **edge_attrs)
+
+    return graph
+
+
+def graph_from_contextual_relations(
+    relations: List["ContextualRelation"],
+    term_filter: Optional[set] = None,
+) -> ConceptGraph:
+    """
+    Build a directed graph from ContextualRelation objects produced by analyze_context().
+
+    Designed for batch analysis: collects relations from analyzing multiple terms
+    and merges duplicate edges (same source/target/type) by taking the max score
+    and combining evidence. Cooccurrence edges are normalised to alphabetical
+    source/target order so A~B and B~A (from analysing A then B) collapse to one edge.
+
+    Args:
+        relations: Combined list of ContextualRelation from one or more analyze_context calls
+        term_filter: If provided, only include edges where both endpoints are in
+                     this set (lowercased). Keeps the graph focused on known terms.
+
+    Returns:
+        Directed ConceptGraph with relation_type and weight on each edge
+    """
+    graph = ConceptGraph(directed=True)
+    _filter = {t.lower() for t in term_filter} if term_filter else None
+
+    for relation in relations:
+        source = relation.source.lower()
+        target = relation.target.lower()
+
+        if source == target:
+            continue
+
+        if _filter is not None and (source not in _filter or target not in _filter):
+            continue
+
+        # Normalise cooccurrence direction so A~B and B~A merge
+        if relation.relation_type == "cooccurrence" and source > target:
+            source, target = target, source
+
+        for node in (source, target):
+            if not graph.has_node(node):
+                graph.add_node(node, label=node)
+
+        edge_attrs = {
+            "relation_type": relation.relation_type,
+            "weight": relation.score,
+            "evidence": list(relation.evidence),
+        }
+        if relation.metadata:
+            edge_attrs["metadata"] = relation.metadata
+
+        if graph.has_edge(source, target):
+            existing = graph.get_edge(source, target)
+            edge_attrs["weight"] = max(existing.get("weight", 0), relation.score)
+            edge_attrs["evidence"] = list(
+                set(existing.get("evidence", []) + edge_attrs["evidence"])
+            )
 
         graph.add_edge(source, target, **edge_attrs)
 

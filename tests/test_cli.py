@@ -365,10 +365,8 @@ class TestSearchCommand:
 class TestGraphCommand:
     """Tests for graph command."""
 
-    def test_graph_cooccurrence(
-        self, runner, sample_corpus_json, sample_terms_json, tmp_path
-    ):
-        """Test graph building with co-occurrence."""
+    def test_graph_basic(self, runner, sample_corpus_json, sample_terms_json, tmp_path):
+        """Test graph building produces valid D3 JSON."""
         output_file = tmp_path / "graph.json"
 
         result = runner.invoke(
@@ -378,10 +376,6 @@ class TestGraphCommand:
                 str(sample_corpus_json),
                 "--terms",
                 str(sample_terms_json),
-                "--method",
-                "cooccurrence",
-                "--threshold",
-                "0.0",
                 "--output",
                 str(output_file),
             ],
@@ -390,17 +384,16 @@ class TestGraphCommand:
         assert result.exit_code == 0
         assert output_file.exists()
 
-        # Verify JSON structure
         with open(output_file) as f:
             data = json.load(f)
 
         assert "nodes" in data
         assert "links" in data
 
-    def test_graph_relations(
+    def test_graph_no_relations(
         self, runner, sample_corpus_json, sample_terms_json, tmp_path
     ):
-        """Test graph building with relations."""
+        """Test graph building with relations disabled (co-occurrence only)."""
         output_file = tmp_path / "graph.json"
 
         result = runner.invoke(
@@ -410,8 +403,7 @@ class TestGraphCommand:
                 str(sample_corpus_json),
                 "--terms",
                 str(sample_terms_json),
-                "--method",
-                "relations",
+                "--no-relations",
                 "--output",
                 str(output_file),
             ],
@@ -589,8 +581,6 @@ class TestCLIIntegration:
                 str(corpus_file),
                 "--terms",
                 str(terms_file),
-                "--method",
-                "cooccurrence",
                 "--output",
                 str(graph_file),
             ],
@@ -728,14 +718,12 @@ class TestSourceDerivedFilenames:
                 str(corpus_file),
                 "--terms",
                 str(terms_file),
-                "--method",
-                "relations",
             ],
         )
 
         assert result.exit_code == 0
-        # Should create corpus_relations.json
-        expected_graph = output_dir / "graphs" / "corpus_relations.json"
+        # Should create corpus.json derived from corpus filename
+        expected_graph = output_dir / "graphs" / "corpus.json"
         assert expected_graph.exists()
 
     def test_export_source_derived_naming(self, runner, tmp_path):

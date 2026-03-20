@@ -28,13 +28,11 @@ from concept_mapper.corpus.models import ProcessedDocument
 from concept_mapper.preprocessing.pipeline import preprocess
 from concept_mapper.analysis.reference import load_reference_corpus
 from concept_mapper.analysis.rarity import PhilosophicalTermScorer
-from concept_mapper.analysis.cooccurrence import build_cooccurrence_matrix
-from concept_mapper.analysis.relations import get_relations
 from concept_mapper.search.find import find_sentences
 
 from concept_mapper.terms.models import TermList
 from concept_mapper.terms.manager import TermManager
-from concept_mapper.graph import graph_from_cooccurrence, graph_from_relations
+
 from concept_mapper.export import (
     export_d3_json,
     export_graphml,
@@ -743,31 +741,84 @@ def search(
     "-t",
     type=click.Path(exists=True),
     required=True,
-    help="Terms file (JSON)",
+    help="Terms file (JSON) — typically the output of rarities",
 )
 @click.option(
-    "--method",
-    "-m",
-    type=click.Choice(["cooccurrence", "relations"]),
-    default="cooccurrence",
-    help="Graph construction method",
+    "--threshold",
+    "-t2",
+    "threshold",
+    type=float,
+    default=0.1,
+    help="Minimum significance score for relations (default: 0.1)",
 )
-@click.option("--threshold", type=float, default=0.3, help="Edge weight threshold")
+@click.option(
+    "--no-relations",
+    is_flag=True,
+    help="Skip grammatical relation extraction (faster, co-occurrence only)",
+)
+@click.option(
+    "--top-n",
+    "-n",
+    type=int,
+    default=None,
+    help="Limit to top N relations per term",
+)
+@click.option(
+    "--lemma",
+    "-l",
+    is_flag=True,
+    help="Match lemmatized forms when searching for each term",
+)
+@click.option(
+    "--pos",
+    "-p",
+    type=click.Choice(["nouns", "verbs", "adjectives", "adverbs"]),
+    multiple=True,
+    help="POS types to extract (can specify multiple). Defaults to nouns and verbs.",
+)
+@click.option(
+    "--start-from-section",
+    type=str,
+    default=None,
+    help="Skip content before this section number (e.g. '1' excludes front-matter).",
+)
+@click.option(
+    "--exclude-sections",
+    type=str,
+    default=None,
+    help="Exclude sections whose title matches this regex (e.g. 'index|bibliography').",
+)
 @click.option("--output", "-o", type=click.Path(), help="Output graph file")
 @click.pass_context
-def graph(ctx, corpus, terms, method, threshold, output):
+def graph(
+    ctx,
+    corpus,
+    terms,
+    threshold,
+    no_relations,
+    top_n,
+    lemma,
+    pos,
+    start_from_section,
+    exclude_sections,
+    output,
+):
     """
-    Build concept graph from corpus.
+    Build concept graph by running analyze on each term in a terms file.
+
+    Runs analyze_context() on every term from the rarities output and combines
+    the results into a graph suitable for export.
 
     Examples:
-        cmapr graph corpus.json -t terms.json -m cooccurrence
-        cmapr graph corpus.json -t terms.json -m relations -o graph.json
+        cmapr graph corpus.json -t rarities.json
+        cmapr graph corpus.json -t rarities.json --no-relations
+        cmapr graph corpus.json -t rarities.json --start-from-section 1
     """
+    from concept_mapper.analysis.contextual_relations import analyze_context
+    from concept_mapper.graph.builders import graph_from_contextual_relations
+
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
-
-    # Load corpus
-    from concept_mapper.corpus.models import ProcessedDocument
 
     with open(corpus, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -777,88 +828,52 @@ def graph(ctx, corpus, terms, method, threshold, output):
     if verbose:
         click.echo(f"Loaded {len(docs)} document(s)")
 
-    # Load terms
     manager = TermManager()
     manager.import_from_json(Path(terms))
     term_list = manager.term_list
 
     if verbose:
-        click.echo(f"Loaded {len(term_list)} terms")
+        click.echo(f"Loaded {len(term_list)} term(s)")
 
-    # Build graph
-    if method == "cooccurrence":
-        if verbose:
-            click.echo("Building co-occurrence matrix...")
+    pos_types = list(pos) if pos else None
 
-        matrix = build_cooccurrence_matrix(
-            term_list, docs, method="pmi", window="sentence"
-        )
-
-        if verbose:
-            click.echo(f"Building graph (threshold={threshold})...")
-
-        concept_graph = graph_from_cooccurrence(matrix, threshold=threshold)
-
-    else:  # relations
-        if verbose:
-            click.echo("Extracting relations...")
-
-        all_relations = []
-        with click.progressbar(term_list, label="Extracting") as bar:
-            for term_entry in bar:
-                relations = get_relations(term_entry.term, docs)
-                all_relations.extend(relations)
-
-        if verbose:
-            click.echo(f"Found {len(all_relations)} relations")
-            click.echo("Building graph...")
-
-        concept_graph = graph_from_relations(all_relations)
-
-        # Connect any isolated nodes via co-occurrence fallback
-        from concept_mapper.graph.operations import (
-            find_isolated_nodes,
-            connect_isolated_nodes,
-        )
-
-        isolated = find_isolated_nodes(concept_graph)
-        if isolated:
-            if verbose:
-                click.echo(
-                    f"Found {len(isolated)} isolated node(s), building co-occurrence fallback..."
-                )
-            fallback_matrix = build_cooccurrence_matrix(
-                term_list, docs, method="pmi", window="sentence"
+    all_relations = []
+    with click.progressbar(term_list, label="Analyzing") as bar:
+        for term_entry in bar:
+            term_relations = analyze_context(
+                search_term=term_entry.term,
+                docs=docs,
+                significance_threshold=threshold,
+                pos_types=pos_types,
+                match_lemma=lemma,
+                extract_relations=not no_relations,
+                top_n=top_n,
             )
-            connected = connect_isolated_nodes(concept_graph, fallback_matrix)
-            if verbose:
-                click.echo(f"Connected {connected}/{len(isolated)} isolated node(s)")
+            term_relations = _filter_relations(
+                term_relations, start_from_section, exclude_sections
+            )
+            all_relations.extend(term_relations)
+
+    if verbose:
+        click.echo(f"Collected {len(all_relations)} relations across all terms")
+
+    concept_graph = graph_from_contextual_relations(all_relations)
 
     click.echo(
         f"\n✓ Graph: {concept_graph.node_count()} nodes, {concept_graph.edge_count()} edges"
     )
 
-    # Validate before saving
     validate_concept_graph(concept_graph)
 
-    # Save
     if output:
         output_path = Path(output)
     else:
-        # NEW: Derive output filename from corpus filename with optional method suffix
-        suffix = f"_{method}" if method != "cooccurrence" else ""
-        output_path = infer_output_path(
-            Path(corpus), output_dir, "graphs", suffix=suffix
-        )
+        output_path = infer_output_path(Path(corpus), output_dir, "graphs")
 
     if verbose:
-        identifier = derive_identifier(Path(corpus))
-        click.echo(f"Derived identifier: '{identifier}'")
         click.echo(f"Output: {output_path}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Export to D3 JSON
     export_d3_json(concept_graph, output_path)
 
     click.echo(f"✓ Saved graph to {output_path}")
@@ -1923,7 +1938,9 @@ def analyze(
                 for rel_type in ["svo", "copular", "prep", "cooccurrence"]:
                     if rel_type not in by_type:
                         continue
-                    rels = sorted(by_type[rel_type], key=lambda r: r.score, reverse=True)
+                    rels = sorted(
+                        by_type[rel_type], key=lambda r: r.score, reverse=True
+                    )
                     click.echo(f"\n  {rel_type.upper()}:")
                     for rel in rels:
                         connector = (
@@ -1932,7 +1949,9 @@ def analyze(
                             or rel.metadata.get("preposition")
                         )
                         if connector:
-                            click.echo(f"    {rel.source} --{connector}--> {rel.target}")
+                            click.echo(
+                                f"    {rel.source} --{connector}--> {rel.target}"
+                            )
                         else:
                             click.echo(f"    {rel.source} ~ {rel.target}")
 
