@@ -2178,11 +2178,17 @@ def replace(ctx, corpus, source, target, output, preview):
 @click.argument("text_file", type=click.Path(exists=True))
 @click.option("--toc", type=click.Path(exists=True), help="Table of contents file")
 @click.option("--clean-ocr", is_flag=True, help="Clean OCR/PDF artifacts during ingest")
-@click.option("--top-n", "-n", type=int, default=50, help="Number of rare terms (default: 50)")
+@click.option(
+    "--top-n", "-n", type=int, default=50, help="Number of rare terms (default: 50)"
+)
 @click.option("--no-lemmatize", is_flag=True, help="Disable term lemmatization")
 @click.option("--no-filter-names", is_flag=True, help="Disable proper name filtering")
-@click.option("--no-filter-fragments", is_flag=True, help="Disable word fragment filtering")
-@click.option("--no-relations", is_flag=True, help="Skip grammatical relation extraction")
+@click.option(
+    "--no-filter-fragments", is_flag=True, help="Disable word fragment filtering"
+)
+@click.option(
+    "--no-relations", is_flag=True, help="Skip grammatical relation extraction"
+)
 @click.option(
     "--start-from-section",
     type=str,
@@ -2196,7 +2202,8 @@ def replace(ctx, corpus, source, target, output, preview):
     help="Exclude sections matching this regex (e.g. 'index|bibliography')",
 )
 @click.option(
-    "--format", "-f",
+    "--format",
+    "-f",
     type=click.Choice(["html", "graphml", "csv", "gexf", "d3"]),
     default="html",
     help="Export format (default: html)",
@@ -2230,7 +2237,6 @@ def run(
     from concept_mapper.analysis.contextual_relations import analyze_context
     from concept_mapper.graph.builders import graph_from_contextual_relations
 
-    verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
     text_path = Path(text_file)
 
@@ -2253,31 +2259,53 @@ def run(
 
     reference = load_reference_corpus()
     scorer = PhilosophicalTermScorer(docs, reference, use_lemmas=True)
-    candidates = scorer.score_all(min_score=0.5, top_n=None if not no_lemmatize else top_n)
+    candidates = scorer.score_all(
+        min_score=0.5, top_n=None if not no_lemmatize else top_n
+    )
 
     # Quote stripping
     _QUOTES = "'\u2018\u2019\u201a\u201b"
-    candidates = [(t.strip(_QUOTES), s, c) for t, s, c in candidates if t.strip(_QUOTES)]
+    candidates = [
+        (t.strip(_QUOTES), s, c) for t, s, c in candidates if t.strip(_QUOTES)
+    ]
 
     if not no_filter_names:
         from concept_mapper.analysis.rarity import proper_noun_ratios
+
         pn_ratios = proper_noun_ratios(docs)
         ref_total = sum(reference.values())
+
         def _is_proper(term):
             if pn_ratios.get(term, 0) < 0.3:
                 return False
             return reference.get(term, 0) / ref_total * 1_000_000 < 25
+
         candidates = [(t, s, c) for t, s, c in candidates if not _is_proper(t)]
 
     if not no_lemmatize:
         from concept_mapper.preprocessing.lemmatize import lemmatize
         from nltk.corpus import wordnet as wn
+
         lemma_best: dict = {}
         for term, score, components in candidates:
             base = lemmatize(term, wn.NOUN)
             if base not in lemma_best or score > lemma_best[base][1]:
                 lemma_best[base] = (base, score, components)
-        _DERIV = ("ual", "ial", "ical", "ic", "ive", "ous", "ity", "ism", "ist", "ness", "ary", "ory", "al")
+        _DERIV = (
+            "ual",
+            "ial",
+            "ical",
+            "ic",
+            "ive",
+            "ous",
+            "ity",
+            "ism",
+            "ist",
+            "ness",
+            "ary",
+            "ory",
+            "al",
+        )
         merged: dict = {}
         for base_form, entry in lemma_best.items():
             canonical = base_form
@@ -2294,14 +2322,17 @@ def run(
 
     if not no_filter_fragments:
         from nltk.corpus import wordnet as wn
+
         _WN = set(wn.words())
         _COMP = ("s", "y", "es", "ed", "er", "al", "ic", "is", "sis")
+
         def _is_frag(term):
             if len(term) < 4:
                 return True
             if term in _WN:
                 return False
             return any((term + s) in _WN for s in _COMP)
+
         candidates = [(t, s, c) for t, s, c in candidates if not _is_frag(t)]
 
     if not candidates:
@@ -2311,6 +2342,7 @@ def run(
     # Save rarities
     from concept_mapper.terms.models import TermList
     from concept_mapper.validation import validate_term_list
+
     term_data = [{"term": t, "metadata": {"score": s}} for t, s, _ in candidates]
     validate_term_list(term_data)
     term_list_obj = TermList.from_dict({"terms": term_data})
@@ -2342,7 +2374,9 @@ def run(
     graph_path.parent.mkdir(parents=True, exist_ok=True)
     export_d3_json(concept_graph, graph_path)
 
-    click.echo(f"    ✓ {concept_graph.node_count()} nodes, {concept_graph.edge_count()} edges → {graph_path}")
+    click.echo(
+        f"    ✓ {concept_graph.node_count()} nodes, {concept_graph.edge_count()} edges → {graph_path}"
+    )
 
     # ── Step 4: Export ────────────────────────────────────────────────────────
     click.echo(f"[4/4] Exporting ({format})...")
@@ -2352,20 +2386,24 @@ def run(
 
     if format == "html":
         from concept_mapper.export.html import export_html
+
         export_path.mkdir(parents=True, exist_ok=True)
         export_html(concept_graph, export_path, title=viz_title)
         result_path = export_path / "index.html"
     elif format == "graphml":
         from concept_mapper.export.formats import export_graphml
+
         result_path = export_path.with_suffix(".graphml")
         export_graphml(concept_graph, result_path)
     elif format == "csv":
         from concept_mapper.export.formats import export_csv
+
         export_path.mkdir(parents=True, exist_ok=True)
         export_csv(concept_graph, export_path)
         result_path = export_path
     elif format == "gexf":
         from concept_mapper.export.formats import export_gexf
+
         result_path = export_path.with_suffix(".gexf")
         export_gexf(concept_graph, result_path)
     else:  # d3
