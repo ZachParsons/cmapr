@@ -357,34 +357,6 @@ class TestSearchCommand:
 # ============================================================================
 
 
-class TestConcordanceCommand:
-    """Tests for concordance command."""
-
-    def test_concordance_basic(self, runner, sample_corpus_json):
-        """Test basic concordance."""
-        result = runner.invoke(cli, ["concordance", str(sample_corpus_json), "Geist"])
-
-        assert result.exit_code == 0
-        assert "KWIC" in result.output
-
-    def test_concordance_width(self, runner, sample_corpus_json):
-        """Test concordance with custom width."""
-        result = runner.invoke(
-            cli, ["concordance", str(sample_corpus_json), "being", "--width", "30"]
-        )
-
-        assert result.exit_code == 0
-
-    def test_concordance_no_matches(self, runner, sample_corpus_json):
-        """Test concordance with no matches."""
-        result = runner.invoke(
-            cli, ["concordance", str(sample_corpus_json), "nonexistent"]
-        )
-
-        assert result.exit_code == 0
-        assert "No matches" in result.output
-
-
 # ============================================================================
 # Test Graph Command
 # ============================================================================

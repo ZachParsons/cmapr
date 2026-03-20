@@ -1,5 +1,5 @@
 """
-Tests for search and concordance functionality (Phase 5).
+Tests for search functionality.
 """
 
 import pytest
@@ -7,9 +7,6 @@ from concept_mapper.corpus.models import ProcessedDocument
 from concept_mapper.search import (
     SentenceMatch,
     find_sentences,
-    KWICLine,
-    concordance,
-    format_kwic_lines,
     ContextWindow,
     get_context,
     dispersion,
@@ -23,10 +20,6 @@ from concept_mapper.search.find import (
     find_sentences_all,
     count_term_occurrences,
     find_in_document,
-)
-from concept_mapper.search.concordance import (
-    concordance_sorted,
-    concordance_filtered,
 )
 from concept_mapper.search.context import (
     get_context_by_match,
@@ -242,122 +235,6 @@ class TestFind:
 # ============================================================================
 # Test Concordance (KWIC)
 # ============================================================================
-
-
-class TestConcordance:
-    """Tests for KWIC concordance functionality."""
-
-    def test_concordance_basic(self, sample_docs):
-        """Test basic concordance generation."""
-        lines = concordance("abstraction", sample_docs, width=30)
-
-        assert len(lines) == 3  # Three occurrences
-        assert all(isinstance(line, KWICLine) for line in lines)
-        assert all(line.keyword.lower() == "abstraction" for line in lines)
-
-    def test_concordance_preserves_case(self, sample_docs):
-        """Test that keyword preserves original case."""
-        lines = concordance("abstraction", sample_docs)
-
-        # Should have both "Abstraction" (capitalized) and "abstraction" (lowercase)
-        keywords = {line.keyword for line in lines}
-        assert "Abstraction" in keywords
-        assert "abstraction" in keywords
-
-    def test_concordance_context_extraction(self, sample_docs):
-        """Test that left and right context are extracted."""
-        lines = concordance("abstraction", sample_docs, width=20)
-
-        for line in lines:
-            # All lines should have some context (except edge cases)
-            assert isinstance(line.left_context, str)
-            assert isinstance(line.right_context, str)
-
-    def test_concordance_width(self, sample_docs):
-        """Test that width parameter affects context size."""
-        lines_narrow = concordance("abstraction", sample_docs, width=10)
-        lines_wide = concordance("abstraction", sample_docs, width=50)
-
-        # Wider context should generally be longer
-        # (though word boundary trimming may affect this)
-        assert len(lines_narrow) == len(lines_wide)  # Same number of matches
-
-    def test_concordance_case_sensitive(self, sample_docs):
-        """Test case-sensitive concordance."""
-        lines = concordance("Abstraction", sample_docs, case_sensitive=True)
-
-        # Only matches capitalized form
-        assert len(lines) == 2
-        assert all(line.keyword == "Abstraction" for line in lines)
-
-    def test_kwic_line_str(self, sample_docs):
-        """Test KWICLine string formatting."""
-        lines = concordance("abstraction", sample_docs)
-
-        line_str = str(lines[0])
-        assert "[abstraction]" in line_str or "[Abstraction]" in line_str
-
-    def test_format_kwic_lines_basic(self, sample_docs):
-        """Test formatting KWIC lines."""
-        lines = concordance("abstraction", sample_docs, width=30)
-        formatted = format_kwic_lines(lines, width=30)
-
-        assert isinstance(formatted, str)
-        assert "[abstraction]" in formatted.lower()
-        # Should have multiple lines (one per occurrence)
-        assert formatted.count("\n") >= len(lines) - 1
-
-    def test_format_kwic_lines_with_doc_id(self, sample_docs):
-        """Test formatting with document IDs."""
-        lines = concordance("abstraction", sample_docs)
-        formatted = format_kwic_lines(lines, show_doc_id=True)
-
-        assert "[doc1.txt:" in formatted
-        assert "[doc2.txt:" in formatted
-
-    def test_concordance_sorted_left(self, sample_docs):
-        """Test sorting concordance by left context."""
-        lines = concordance_sorted("abstraction", sample_docs, sort_by="left")
-
-        assert len(lines) == 3
-        # Lines should be sorted (hard to verify exact order without knowing trimming)
-        assert all(isinstance(line, KWICLine) for line in lines)
-
-    def test_concordance_sorted_right(self, sample_docs):
-        """Test sorting concordance by right context."""
-        lines = concordance_sorted("abstraction", sample_docs, sort_by="right")
-
-        assert len(lines) == 3
-        assert all(isinstance(line, KWICLine) for line in lines)
-
-    def test_concordance_sorted_invalid(self, sample_docs):
-        """Test invalid sort_by parameter."""
-        with pytest.raises(ValueError):
-            concordance_sorted("abstraction", sample_docs, sort_by="invalid")
-
-    def test_concordance_filtered(self, sample_docs):
-        """Test filtering concordance by additional terms."""
-        # Find lines with "abstraction" that also contain "concept"
-        lines = concordance_filtered(
-            "abstraction", sample_docs, filter_terms=["concept"]
-        )
-
-        # Should match at least the first sentence
-        assert len(lines) >= 1
-        # Verify "concept" appears somewhere in the full context
-        assert any(
-            "concept" in (line.left_context + line.keyword + line.right_context).lower()
-            for line in lines
-        )
-
-    def test_concordance_filtered_multiple_terms(self, sample_docs):
-        """Test filtering with multiple filter terms."""
-        lines = concordance_filtered(
-            "abstraction", sample_docs, filter_terms=["philosophy", "concept"]
-        )
-
-        # Should match sentences containing either "philosophy" or "concept"
-        assert len(lines) >= 1
 
 
 # ============================================================================

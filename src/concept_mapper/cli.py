@@ -2,15 +2,19 @@
 Command-line interface for Concept Mapper.
 
 Commands:
+  # main workflow.
   ingest      Parse raw text files into a processed corpus JSON.
   rarities    Score and rank terms by rarity/significance across a corpus.
-  search      Find sentences containing a term, with optional context.
-  concordance Show a term in its surrounding text context (KWIC view).
-  graph       Build a co-occurrence or relation graph from a corpus.
-  export      Convert a graph file to D3, GraphML, CSV, GEXF, or HTML.
-  diagram     Render a dependency parse tree for a sentence.
   analyze     Analyse a term's contextual terms across a windowed neighborhood.
+  export      Convert a graph file to D3, GraphML, CSV, GEXF, or HTML.
+
+  # experiments.
   replace     Replace one term with another throughout a corpus.
+
+  # utils.
+  diagram     Render a dependency parse tree for a given sentence.
+  search      Find sentences containing a term, with optional context.
+  graph       Build a co-occurrence or relation graph from a corpus.
 """
 
 import click
@@ -27,7 +31,7 @@ from concept_mapper.analysis.rarity import PhilosophicalTermScorer
 from concept_mapper.analysis.cooccurrence import build_cooccurrence_matrix
 from concept_mapper.analysis.relations import get_relations
 from concept_mapper.search.find import find_sentences
-from concept_mapper.search.concordance import concordance
+
 from concept_mapper.terms.models import TermList
 from concept_mapper.terms.manager import TermManager
 from concept_mapper.graph import graph_from_cooccurrence, graph_from_relations
@@ -537,14 +541,14 @@ def search(
     Search for term occurrences in corpus.
 
     Examples:
-        cmapr search corpus.json "consciousness"
-        cmapr search corpus.json "being" --context 2
-        cmapr search corpus.json "run" --lemma
-        cmapr search corpus.json "intentionality" --diagram
-        cmapr search corpus.json "dialectic" --diagram --diagram-format tree
-        cmapr search corpus.json "intentionality" --extract-significant --threshold 1.5
-        cmapr search corpus.json "capitalism" -e -p nouns -p verbs --top-n 5
-        cmapr search corpus.json "consciousness" -e --aggregate --detailed
+        cmapr search output/corpus/eco_spl_w_toc.json "consciousness"
+        cmapr search output/corpus/eco_spl_w_toc.json "being" --context 2
+        cmapr search output/corpus/eco_spl_w_toc.json "run" --lemma
+        cmapr search output/corpus/eco_spl_w_toc.json "intentionality" --diagram
+        cmapr search output/corpus/eco_spl_w_toc.json "dialectic" --diagram --diagram-format tree
+        cmapr search output/corpus/eco_spl_w_toc.json "intentionality" --extract-significant --threshold 1.5
+        cmapr search output/corpus/eco_spl_w_toc.json "capitalism" -e -p nouns -p verbs --top-n 5
+        cmapr search output/corpus/eco_spl_w_toc.json "consciousness" -e --aggregate --detailed
     """
     verbose = ctx.obj["verbose"]
 
@@ -725,68 +729,6 @@ def search(
                     f.write(f"{match.sentence}\n")
 
         click.echo(f"\n✓ Saved {len(matches)} matches to {output_path}")
-
-
-# ============================================================================
-# Concordance Command
-# ============================================================================
-
-
-@cli.command()
-@click.argument("corpus", type=click.Path(exists=True))
-@click.argument("term")
-@click.option("--width", "-w", type=int, default=50, help="Context width in characters")
-@click.option("--output", "-o", type=click.Path(), help="Output file")
-@click.pass_context
-def concordance_cmd(ctx, corpus, term, width, output):
-    """
-    Display KWIC (Key Word In Context) concordance.
-
-    Examples:
-        cmapr concordance corpus.json "consciousness"
-        cmapr concordance corpus.json "being" --width 80
-    """
-    verbose = ctx.obj["verbose"]
-
-    # Load corpus
-    from concept_mapper.corpus.models import ProcessedDocument
-
-    with open(corpus, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    docs = [ProcessedDocument(**doc_data) for doc_data in data]
-
-    if verbose:
-        click.echo(f"Building concordance for '{term}'...")
-
-    # Generate concordance
-    lines = concordance(term, docs, width=width)
-
-    if not lines:
-        click.echo(f"No matches found for '{term}'")
-        return
-
-    # Display
-    click.echo(f"\nKWIC Concordance for '{term}' ({len(lines)} occurrences):")
-    click.echo("=" * (width * 2 + 20))
-
-    for line in lines:
-        click.echo(
-            f"{line.left_context:>{width}} | {line.keyword} | {line.right_context:<{width}}"
-        )
-
-    # Save if requested
-    if output:
-        output_path = Path(output)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        with open(output_path, "w", encoding="utf-8") as f:
-            for line in lines:
-                f.write(
-                    f"{line.left_context:>{width}} | {line.keyword} | {line.right_context:<{width}}\n"
-                )
-
-        click.echo(f"\n✓ Saved concordance to {output_path}")
 
 
 # ============================================================================
