@@ -6,8 +6,8 @@ set -e
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-INPUT_TEXT="$PROJECT_ROOT/eco_spl.txt"
-TOC_FILE="$PROJECT_ROOT/eco_spl_toc.txt"
+INPUT_TEXT="$PROJECT_ROOT/samples/eco_spl.txt"
+TOC_FILE="$PROJECT_ROOT/samples/eco_spl_toc.txt"
 OUTPUT_DIR="$PROJECT_ROOT/output"
 
 echo "=================================="

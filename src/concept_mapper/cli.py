@@ -104,9 +104,9 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc):
     detection when automatic detection fails or is unreliable.
 
     Examples:
-        cmapr ingest eco_spl.txt
-        cmapr ingest eco_spl.txt --clean-ocr
-        cmapr ingest eco_spl.txt --toc eco_spl_toc.txt
+        cmapr ingest samples/eco_spl.txt
+        cmapr ingest samples/eco_spl.txt --clean-ocr
+        cmapr ingest samples/eco_spl.txt --toc samples/eco_spl_toc.txt
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -2222,10 +2222,10 @@ def run(
     Run the full workflow: ingest → rarities → graph → export.
 
     Examples:
-        cmapr run eco_spl.txt
-        cmapr run eco_spl.txt --toc eco_spl_toc.txt --top-n 30
-        cmapr run eco_spl.txt --no-relations --format graphml
-        cmapr run eco_spl.txt --start-from-section 1 --exclude-sections 'index|bibliography'
+        cmapr run samples/eco_spl.txt
+        cmapr run samples/eco_spl.txt --toc samples/eco_spl_toc.txt --top-n 30
+        cmapr run samples/eco_spl.txt --no-relations --format graphml
+        cmapr run samples/eco_spl.txt --start-from-section 1 --exclude-sections 'index|bibliography'
     """
     from concept_mapper.analysis.contextual_relations import analyze_context
     from concept_mapper.graph.builders import graph_from_contextual_relations
