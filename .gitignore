@@ -45,6 +45,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+coverage.json
 *.cover
 *.py.cover
 .hypothesis/
@@ -211,7 +212,7 @@ venv.old/
 output/*
 !output/.gitkeep
 !output/corpus/.gitkeep
-!output/terms/.gitkeep
+!output/rarities/.gitkeep
 !output/graphs/.gitkeep
 !output/exports/.gitkeep
 *.pickle
