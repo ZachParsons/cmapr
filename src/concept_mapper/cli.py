@@ -1910,35 +1910,31 @@ def analyze(
                                 f"(score: {rel.score:.2f}, {evidence_info})"
                             )
             else:
-                # Minimal mode: list significant terms with POS tags
-                click.echo(f"\nSignificant terms co-occurring with '{term}':")
+                # Default mode: group by relation type
+                click.echo(f"\nContextual relations for '{term}':")
+                click.echo("-" * 50)
 
-                # Build term -> POS mapping from documents
-                term_pos = {}
-                for doc in docs:
-                    for i, (token, pos) in enumerate(doc.pos_tags):
-                        term = doc.lemmas[i] if i < len(doc.lemmas) else token
-                        if term not in term_pos:
-                            term_pos[term] = pos
-
-                # Collect terms with their POS tags
-                term_pos_list = []
-                for rel in relations:
-                    pos = term_pos.get(rel.target, "UNK")
-                    pos_label = _get_pos_label(pos)
-                    term_pos_list.append((pos_label, rel.target))
-
-                # Group by POS for better organization
                 from collections import defaultdict
 
-                by_pos = defaultdict(list)
-                for pos_label, term in term_pos_list:
-                    by_pos[pos_label].append(term)
+                by_type = defaultdict(list)
+                for rel in relations:
+                    by_type[rel.relation_type].append(rel)
 
-                for pos_label in sorted(by_pos.keys()):
-                    terms = sorted(set(by_pos[pos_label]))
-                    for term in terms:
-                        click.echo(f"  {pos_label}: {term}")
+                for rel_type in ["svo", "copular", "prep", "cooccurrence"]:
+                    if rel_type not in by_type:
+                        continue
+                    rels = sorted(by_type[rel_type], key=lambda r: r.score, reverse=True)
+                    click.echo(f"\n  {rel_type.upper()}:")
+                    for rel in rels:
+                        connector = (
+                            rel.metadata.get("verb")
+                            or rel.metadata.get("copula")
+                            or rel.metadata.get("preposition")
+                        )
+                        if connector:
+                            click.echo(f"    {rel.source} --{connector}--> {rel.target}")
+                        else:
+                            click.echo(f"    {rel.source} ~ {rel.target}")
 
     elif format == "json":
         from concept_mapper.analysis.contextual_relations import (
