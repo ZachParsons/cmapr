@@ -2385,11 +2385,8 @@ def run(
     export_path = infer_output_path(text_path, output_dir, "exports")
 
     if format == "html":
-        from concept_mapper.export.html import export_html
-
         export_path.mkdir(parents=True, exist_ok=True)
-        export_html(concept_graph, export_path, title=viz_title)
-        result_path = export_path / "index.html"
+        result_path = generate_html(concept_graph, export_path, title=viz_title)
     elif format == "graphml":
         from concept_mapper.export.formats import export_graphml
 
