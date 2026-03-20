@@ -2346,6 +2346,7 @@ def run(
     term_data = [{"term": t, "metadata": {"score": s}} for t, s, _ in candidates]
     validate_term_list(term_data)
     term_list_obj = TermList.from_dict({"terms": term_data})
+    term_names = {t.lower() for t, _, _ in candidates}
     rarities_path = infer_output_path(text_path, output_dir, "rarities")
     rarities_path.parent.mkdir(parents=True, exist_ok=True)
     TermManager(term_list_obj).export_to_json(rarities_path)
@@ -2367,7 +2368,7 @@ def run(
             rels = _filter_relations(rels, start_from_section, exclude_sections)
             all_relations.extend(rels)
 
-    concept_graph = graph_from_contextual_relations(all_relations)
+    concept_graph = graph_from_contextual_relations(all_relations, term_filter=term_names)
     validate_concept_graph(concept_graph)
 
     graph_path = infer_output_path(text_path, output_dir, "graphs")
