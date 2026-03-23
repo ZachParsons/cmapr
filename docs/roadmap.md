@@ -429,7 +429,7 @@ Note: Pattern-based implementation using NLTK POS tagging. spaCy dependency pars
   - [x] Tests: 8 tests
 
 - [x] **10.8 Analyze command**
-  - [x] `cmapr analyze <corpus> --term "Begriff"`
+  - [x] `cmapr analyze <corpus> "Begriff"`
   - [x] Integrated SVO + co-occurrence contextual analysis
   - [x] Tests included in contextual relations module
 
@@ -486,6 +486,10 @@ src/concept_mapper/
 
 ## Future Work
 
+- [ ] **Structured ingestion pipeline** — extend the ingestion process into a cleaner, isolated interface that produces richly labeled documents: classify front-matter sections (title page, copyright, table of contents, introduction) and back-matter sections (bibliography, references, index, appendix/appendices) by heuristic or model; strip running headers and page numbers from each page; label paragraph boundaries and types. Investigate whether an existing package (e.g. `docling`, `pymupdf4llm`, `unstructured`, `nougat`) already handles some or all of this, particularly for PDF input, before implementing from scratch.
+- [ ] **Investigate co-occurrence vs grammatical relation extraction in `analyze`** — the two pipelines currently run together and merge output without clear separation: co-occurrence is purely statistical (terms that appear near the search term, scored by corpus frequency) while grammatical extraction finds structural triples (SVO, copular, prepositional). Decide what to keep, what to discard, and what to expose as parameters — e.g. separate flags to enable/disable each, independent POS filtering per pipeline, and whether the merged output is the right model or if they should be presented distinctly.
+- [ ] **Complete `analyze` command** — infer relationships between significant terms: given a search term, identify which other rare/significant terms co-occur with it, extract the grammatical relations between them (SVO, copular, prepositional), and surface a ranked summary of conceptual links — moving beyond listing occurrences toward actual relational inference.
+- [ ] **Complete `graph` command** — batch `analyze`: run the full relational inference pipeline across all terms in a term list, aggregate the results into a unified concept graph, and export it; effectively `analyze` applied to every term pair rather than a single search term.
 - [ ] Automatic document structure discovery (chapter/section segmentation for large texts)
 - [ ] Usage-based definition generation (aggregate co-occurrences and relations into empirical definitions)
 - [ ] **Investigate pdfplumber for source text ingestion** — determine whether pdfplumber can replace the current two-file workflow (raw OCR text + manually cleaned table of contents) by extracting structured text and TOC directly from the source PDF.

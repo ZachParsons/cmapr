@@ -260,8 +260,8 @@ class ContextualRelationExtractor:
         # Create nodes
         nodes = [{"id": term, "label": term} for term in terms]
 
-        # Create edges
-        edges = [
+        # Create links
+        links = [
             {
                 "source": rel.source,
                 "target": rel.target,
@@ -272,7 +272,7 @@ class ContextualRelationExtractor:
             for rel in relations
         ]
 
-        return {"nodes": nodes, "edges": edges}
+        return {"nodes": nodes, "links": links}
 
 
 def analyze_context(

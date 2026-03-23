@@ -950,21 +950,21 @@ def export(ctx, graph_file, format, output, title):
     if output:
         output_path = Path(output)
     else:
-        # NEW: Derive output path from graph filename
-        identifier = derive_identifier(Path(graph_file))
-        exports_dir = output_dir / "exports"
-        exports_dir.mkdir(parents=True, exist_ok=True)
+        graph_path = Path(graph_file)
+        term_identifier = derive_identifier(graph_path)
+        work_identifier = derive_identifier(graph_path.parent) if graph_path.parent.name not in (".", "graphs") else term_identifier
+        viz_dir = output_dir / "viz" / work_identifier
 
         if format == "html":
-            output_path = exports_dir / identifier
+            output_path = viz_dir / term_identifier
         elif format == "csv":
-            output_path = exports_dir / identifier / "csv"
+            output_path = viz_dir / "csv"
         else:
-            output_path = exports_dir / f"{identifier}.{format}"
+            output_path = viz_dir / f"{term_identifier}.{format}"
 
     if verbose:
-        identifier = derive_identifier(Path(graph_file))
-        click.echo(f"Derived identifier: '{identifier}'")
+        term_identifier = derive_identifier(Path(graph_file))
+        click.echo(f"Derived identifier: '{term_identifier}'")
         click.echo(f"Output: {output_path}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1701,7 +1701,7 @@ def _display_window_analysis(
     "--top-n",
     "-n",
     type=int,
-    help="Limit to top N most significant terms per context",
+    help="Limit to top N most significant terms per sentence",
 )
 @click.option(
     "--threshold",
@@ -1781,7 +1781,7 @@ def _display_window_analysis(
     default=None,
     help=(
         "Exclude sections whose title matches this regex (case-insensitive). "
-        "E.g. 'index|bibliography' to skip back-matter."
+        "E.g. 'bibliography|references|index|appendix|appendices' to skip back-matter."
     ),
 )
 @click.pass_context
@@ -1812,11 +1812,28 @@ def analyze(
     Examples:
         cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic"
         cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --top-n 10
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --lemma -p nouns -p verbs
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --threshold 0.5
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" -p nouns -p verbs
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --lemma
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --no-relations
         cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --format json -o relations.json
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --format csv -o relations.csv
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --format graph -o output/graphs/eco_spl/semiotic.json
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --group-by 2
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --show-structure
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --verbose
         cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" -w s0
         cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" -w s1
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" -w p0 --top-n 5
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" -w p0
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --start-from-section 1
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" \
+            --exclude-sections 'bibliography|references|index|appendix|appendices'
+        
+        # working command:
+        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" \
+            --start-from-section 1 \
+            --exclude-sections 'bibliography|references|index|appendix|appendices' \
+            -w s0
     """
     from concept_mapper.analysis.contextual_relations import analyze_context
     import json
@@ -1953,6 +1970,11 @@ def analyze(
                         else:
                             click.echo(f"    {rel.source} ~ {rel.target}")
 
+        click.echo(
+            f"\nTotal: {len(relations)} relations, "
+            f"{len({rel.target for rel in relations})} unique terms"
+        )
+
     elif format == "json":
         from concept_mapper.analysis.contextual_relations import (
             ContextualRelationExtractor,
@@ -2041,7 +2063,9 @@ def analyze(
         if output:
             output_path = Path(output)
         else:
-            output_path = Path("relations_graph.json")
+            corpus_stem = Path(corpus).stem
+            term_slug = term.replace(" ", "_")
+            output_path = Path("output") / "graphs" / corpus_stem / f"{term_slug}.json"
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -2049,7 +2073,7 @@ def analyze(
             json.dump(graph_data, f, indent=2, ensure_ascii=False)
 
         click.echo(
-            f"✓ Saved graph with {len(graph_data['nodes'])} nodes and {len(graph_data['edges'])} edges to {output_path}"
+            f"✓ Saved graph with {len(graph_data['nodes'])} nodes and {len(graph_data['links'])} edges to {output_path}"
         )
 
 
@@ -2368,7 +2392,9 @@ def run(
             rels = _filter_relations(rels, start_from_section, exclude_sections)
             all_relations.extend(rels)
 
-    concept_graph = graph_from_contextual_relations(all_relations, term_filter=term_names)
+    concept_graph = graph_from_contextual_relations(
+        all_relations, term_filter=term_names
+    )
     validate_concept_graph(concept_graph)
 
     graph_path = infer_output_path(text_path, output_dir, "graphs")
