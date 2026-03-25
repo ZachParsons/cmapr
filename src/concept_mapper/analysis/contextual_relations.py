@@ -68,6 +68,38 @@ class ContextualRelationExtractor:
         self.significance_threshold = significance_threshold
         self.pos_types = pos_types or ["nouns", "verbs"]
         self.scoring_mode = scoring_mode
+        self._term_freqs = None
+        self._max_freq = None
+        if scoring_mode == "corpus_frequency":
+            self._precompute_frequencies()
+
+    def _precompute_frequencies(self):
+        """Precompute corpus frequency map once for reuse across extract_for_term calls."""
+        from collections import Counter
+        from concept_mapper.preprocessing.tokenize import tokenize_words
+        from concept_mapper.preprocessing.tagging import tag_tokens
+        from concept_mapper.preprocessing.lemmatize import lemmatize_tagged
+        from concept_mapper.search.extract import POS_TAG_GROUPS, STOPWORDS
+
+        pos_tags = set()
+        for pos_type in self.pos_types:
+            if pos_type in POS_TAG_GROUPS:
+                pos_tags.update(POS_TAG_GROUPS[pos_type])
+
+        all_terms = []
+        for doc in self.docs:
+            for sent in doc.sentences:
+                tokens = tokenize_words(sent)
+                if tokens:
+                    tagged = tag_tokens(tokens)
+                    lemmas = lemmatize_tagged(tagged)
+                    for (token, pos), lemma in zip(tagged, lemmas):
+                        lemma_lower = lemma.lower()
+                        if pos in pos_tags and lemma_lower not in STOPWORDS:
+                            all_terms.append(lemma_lower)
+
+        self._term_freqs = Counter(all_terms)
+        self._max_freq = max(self._term_freqs.values()) if self._term_freqs else 1
 
     def extract_for_term(
         self,
@@ -108,6 +140,8 @@ class ContextualRelationExtractor:
             top_n=top_n,
             match_lemma=match_lemma,
             scoring_mode=self.scoring_mode,
+            term_freqs=self._term_freqs,
+            max_freq=self._max_freq,
         )
 
         # Step 3: Build co-occurrence relations from significant terms

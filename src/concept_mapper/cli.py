@@ -266,10 +266,8 @@ def rarities(
     reference = load_reference_corpus()
 
     # Detect terms
-    if verbose:
-        click.echo(f"Detecting rare terms (method={method})...")
-
-    scorer = PhilosophicalTermScorer(docs, reference, use_lemmas=True)
+    click.echo(f"Computing signals (method={method})...")
+    scorer = PhilosophicalTermScorer(docs, reference, use_lemmas=True, verbose=True)
     candidates = scorer.score_all(
         min_score=threshold, top_n=None if not no_lemmatize else top_n
     )
@@ -812,7 +810,7 @@ def graph(
         cmapr graph output/corpus/eco_spl_w_toc.json -t output/rarities/eco_spl_w_toc.json --no-relations
         cmapr graph output/corpus/eco_spl_w_toc.json -t output/rarities/eco_spl_w_toc.json --start-from-section 1
     """
-    from concept_mapper.analysis.contextual_relations import analyze_context
+    from concept_mapper.analysis.contextual_relations import ContextualRelationExtractor
     from concept_mapper.graph.builders import graph_from_contextual_relations
 
     verbose = ctx.obj["verbose"]
@@ -835,14 +833,18 @@ def graph(
 
     pos_types = list(pos) if pos else None
 
+    click.echo("Precomputing corpus frequencies...")
+    extractor = ContextualRelationExtractor(
+        docs=docs,
+        significance_threshold=threshold,
+        pos_types=pos_types,
+    )
+
     all_relations = []
     with click.progressbar(term_list, label="Analyzing") as bar:
         for term_entry in bar:
-            term_relations = analyze_context(
+            term_relations = extractor.extract_for_term(
                 search_term=term_entry.term,
-                docs=docs,
-                significance_threshold=threshold,
-                pos_types=pos_types,
                 match_lemma=lemma,
                 extract_relations=not no_relations,
                 top_n=top_n,
@@ -1498,10 +1500,13 @@ def _filter_relations(relations, start_section=None, exclude_pattern=None):
     """Filter a list of ContextualRelation objects by section filters."""
     if start_section is None and exclude_pattern is None:
         return relations
+    from concept_mapper.corpus.models import SentenceLocation
     filtered = []
     for rel in relations:
-        loc = rel.evidence_locations[0] if rel.evidence_locations else None
-        if _location_passes_filters(loc, start_section, exclude_pattern):
+        raw_loc = rel.evidence_locations[0] if rel.evidence_locations else None
+        if isinstance(raw_loc, dict):
+            raw_loc = SentenceLocation(**raw_loc)
+        if _location_passes_filters(raw_loc, start_section, exclude_pattern):
             filtered.append(rel)
     return filtered
 

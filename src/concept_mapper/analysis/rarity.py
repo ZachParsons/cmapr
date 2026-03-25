@@ -1479,6 +1479,7 @@ class PhilosophicalTermScorer:
         use_lemmas: bool = True,
         min_author_freq: int = 3,
         weights: Optional[Dict[str, float]] = None,
+        verbose: bool = False,
     ):
         """
         Initialize scorer with corpus and weighting parameters.
@@ -1509,13 +1510,20 @@ class PhilosophicalTermScorer:
             "capitalized": 0.2,
         }
         self.weights = weights if weights is not None else default_weights
+        self.verbose = verbose
 
         # Precompute signals
         self._compute_signals()
 
     def _compute_signals(self):
         """Precompute all detection signals for efficiency."""
+        def _log(msg):
+            if self.verbose:
+                import sys
+                print(msg, flush=True, file=sys.stderr)
+
         # Signal 1: Relative frequency ratios
+        _log("  [1/5] Computing frequency ratios...")
         self.ratios = compare_to_reference(
             self.docs,
             self.reference_corpus,
@@ -1524,6 +1532,7 @@ class PhilosophicalTermScorer:
         )
 
         # Signal 2: TF-IDF scores
+        _log("  [2/5] Computing TF-IDF scores...")
         self.tfidf_scores = tfidf_vs_reference(
             self.docs,
             self.reference_corpus,
@@ -1532,6 +1541,7 @@ class PhilosophicalTermScorer:
         )
 
         # Signal 3: Neologisms (multiple sources)
+        _log("  [3/5] Detecting neologisms (WordNet lookup — slowest step)...")
         self.neologisms = get_all_neologism_signals(
             self.docs,
             self.reference_corpus,
@@ -1540,9 +1550,11 @@ class PhilosophicalTermScorer:
         )
 
         # Signal 4: Definitional contexts
+        _log("  [4/5] Scanning definitional contexts...")
         self.definitional_scores = score_by_definitional_context(self.docs, terms=None)
 
         # Signal 5: Capitalized terms
+        _log("  [5/5] Detecting capitalized technical terms...")
         self.capitalized_terms = get_capitalized_technical_terms(
             self.docs, min_author_freq=self.min_author_freq
         )

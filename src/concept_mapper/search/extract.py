@@ -251,6 +251,8 @@ def extract_significant_terms(
     reference_corpus=None,
     scorer_weights: Dict[str, float] = None,
     scoring_mode: str = "corpus_frequency",
+    term_freqs=None,
+    max_freq=None,
 ) -> List[SignificantTermsResult]:
     """
     Search for a term and extract significant verbs/nouns from matching sentences.
@@ -331,24 +333,24 @@ def extract_significant_terms(
             return scorer.score_term(term)
 
     elif scoring_mode == "corpus_frequency":
-        # Build frequency map for corpus-based scoring
-        from collections import Counter
+        # Build frequency map for corpus-based scoring (skip if pre-computed)
+        if term_freqs is None:
+            from collections import Counter
 
-        # Get all terms from the corpus with POS filtering, excluding stopwords
-        all_terms = []
-        for doc in docs:
-            for sent in doc.sentences:
-                tokens = tokenize_words(sent)
-                if tokens:
-                    tagged = tag_tokens(tokens)
-                    lemmas_list = lemmatize_tagged(tagged)
-                    for (token, pos), lemma in zip(tagged, lemmas_list):
-                        lemma_lower = lemma.lower()
-                        if pos in pos_tags_to_extract and lemma_lower not in STOPWORDS:
-                            all_terms.append(lemma_lower)
+            all_terms = []
+            for doc in docs:
+                for sent in doc.sentences:
+                    tokens = tokenize_words(sent)
+                    if tokens:
+                        tagged = tag_tokens(tokens)
+                        lemmas_list = lemmatize_tagged(tagged)
+                        for (token, pos), lemma in zip(tagged, lemmas_list):
+                            lemma_lower = lemma.lower()
+                            if pos in pos_tags_to_extract and lemma_lower not in STOPWORDS:
+                                all_terms.append(lemma_lower)
 
-        term_freqs = Counter(all_terms)
-        max_freq = max(term_freqs.values()) if term_freqs else 1
+            term_freqs = Counter(all_terms)
+            max_freq = max(term_freqs.values()) if term_freqs else 1
 
         # Scoring function: normalized frequency (0-10 scale for interpretability)
         def score_func(term):
