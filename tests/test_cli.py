@@ -733,8 +733,10 @@ class TestSourceDerivedFilenames:
 
         output_dir = tmp_path / "output"
 
-        # Create a simple graph file with source-derived name
-        graph_file = tmp_path / "eco_spl.json"
+        # Create a simple graph file with source-derived name (flat, in graphs/)
+        graphs_dir = tmp_path / "graphs"
+        graphs_dir.mkdir()
+        graph_file = graphs_dir / "eco_spl.json"
         graph = ConceptGraph()
         graph.add_node("term1")
         graph.add_node("term2")
@@ -754,10 +756,9 @@ class TestSourceDerivedFilenames:
         )
 
         assert result.exit_code == 0
-        # Should create eco_spl/ directory (not visualization/)
-        expected_viz = output_dir / "exports" / "eco_spl" / "index.html"
+        # Should create viz/eco_spl/ directory namespaced by term
+        expected_viz = output_dir / "viz" / "eco_spl" / "index.html"
         assert expected_viz.exists()
-        assert not (output_dir / "exports" / "visualization" / "index.html").exists()
 
     def test_multiple_texts_no_overwrite(self, runner, tmp_path):
         """Test that processing multiple texts doesn't cause overwrites."""
@@ -884,7 +885,7 @@ class TestSourceDerivedFilenames:
         )
         assert result.exit_code == 0
 
-        viz_file = output_dir / "exports" / "sample" / "index.html"
+        viz_file = output_dir / "viz" / "sample" / "index.html"
         assert viz_file.exists()
 
 

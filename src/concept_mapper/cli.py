@@ -952,15 +952,22 @@ def export(ctx, graph_file, format, output, title):
     else:
         graph_path = Path(graph_file)
         term_identifier = derive_identifier(graph_path)
-        work_identifier = derive_identifier(graph_path.parent) if graph_path.parent.name not in (".", "graphs") else term_identifier
-        viz_dir = output_dir / "viz" / work_identifier
+        parent_name = graph_path.parent.name
+        _known = {"graphs", "exports", "viz", "output", ".", ".."}
+        if parent_name and parent_name not in _known:
+            # Graph is in a work-namespaced subdir e.g. graphs/eco_spl_w_toc/semiotic.json
+            work_identifier = derive_identifier(graph_path.parent)
+            base = output_dir / "viz" / work_identifier / term_identifier
+        else:
+            # Graph is directly in graphs/ e.g. graphs/sample.json
+            base = output_dir / "viz" / term_identifier
 
         if format == "html":
-            output_path = viz_dir / term_identifier
+            output_path = base
         elif format == "csv":
-            output_path = viz_dir / "csv"
+            output_path = base / "csv"
         else:
-            output_path = viz_dir / f"{term_identifier}.{format}"
+            output_path = base.parent / f"{term_identifier}.{format}"
 
     if verbose:
         term_identifier = derive_identifier(Path(graph_file))
