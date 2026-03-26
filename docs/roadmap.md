@@ -486,14 +486,12 @@ src/concept_mapper/
 
 ## Future Work
 
-- [ ] **Structured ingestion pipeline** — extend the ingestion process into a cleaner, isolated interface that produces richly labeled documents: classify front-matter sections (title page, copyright, table of contents, introduction) and back-matter sections (bibliography, references, index, appendix/appendices) by heuristic or model; strip running headers and page numbers from each page; label paragraph boundaries and types. Investigate whether an existing package (e.g. `docling`, `pymupdf4llm`, `unstructured`, `nougat`) already handles some or all of this, particularly for PDF input, before implementing from scratch.
+- [ ] **Structured ingestion pipeline** — a cleaner, isolated ingestion interface that produces richly labeled documents. Covers: (1) investigate whether an existing package (`docling`, `pymupdf4llm`, `unstructured`, `nougat`, `pdfplumber`) can replace the current two-file workflow (raw OCR text + manually cleaned TOC) by extracting structured text, TOC, and layout directly from PDF; (2) classify front-matter (title page, copyright, TOC, introduction) and back-matter (bibliography, references, index, appendix) sections by heuristic or model; (3) strip running headers and page numbers per page; (4) detect and label document structure (parts, chapters, sections) and paragraph boundaries automatically.
 - [ ] **Implement concept graph** — see `docs/spec-graph.md` for full specification. Covers three layers:
   - **Data extraction**: node filtering (POS, length, fragment, OCR artifact checks), typed directed proposition edges (definition, kind-of, property, opposition, production, dependence), co-occurrence as candidate-discovery mechanism not edge type, multi-word term support
   - **Graph workflows**: (A) threshold-driven from rarities list; (B) seed-word-driven with options for POS filter, count limit, section grouping (separate subgraphs per section), and depth limit (same-sentence or same-paragraph window); `graph` = batch `analyze` + merge
   - **Visualization**: tuned D3 force params, directed edges, typed edge labels, section subgraph navigation, interactive node expand/collapse, node detail panel (definition, frequency, location)
-- [ ] Automatic document structure discovery (chapter/section segmentation for large texts)
 - [ ] Usage-based definition generation (aggregate co-occurrences and relations into empirical definitions)
-- [ ] **Investigate pdfplumber for source text ingestion** — determine whether pdfplumber can replace the current two-file workflow (raw OCR text + manually cleaned table of contents) by extracting structured text and TOC directly from the source PDF.
 - [ ] **Test suite cleanup** — use `pytest-cov` to identify undercovered code paths (add tests) and overcovered ones (redundant tests testing the same path with different labels); target reducing test count from ~718 to ~510-540 (~25% reduction) while improving branch coverage; delete redundant tests rather than merging them to keep intent legible.
 - [ ] Database backend for large-scale corpora
 - [ ] Temporal analysis across an author's career
