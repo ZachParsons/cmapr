@@ -218,7 +218,10 @@ class TestFilesystemUtils:
         input_path = Path("sample1_analytic_pragmatism.txt")
         output_path = infer_output_path(input_path, tmp_path, "corpus")
 
-        assert output_path == tmp_path / "corpus" / "sample1_analytic_pragmatism.json"
+        assert (
+            output_path
+            == tmp_path / "corpus" / "sample1_analytic_pragmatism" / "corpus.json"
+        )
         assert output_path.parent.exists()
 
     def test_infer_output_path_with_suffix(self, tmp_path):
@@ -230,7 +233,7 @@ class TestFilesystemUtils:
             input_path, tmp_path, "graphs", suffix="_relations"
         )
 
-        assert output_path == tmp_path / "graphs" / "sample1_relations.json"
+        assert output_path == tmp_path / "graphs" / "sample1" / "graph_relations.json"
 
     def test_infer_output_path_with_custom_extension(self, tmp_path):
         """Test inferring output path with custom extension."""
@@ -241,4 +244,4 @@ class TestFilesystemUtils:
             input_path, tmp_path, "exports", extension=".html"
         )
 
-        assert output_path == tmp_path / "exports" / "sample1.html"
+        assert output_path == tmp_path / "exports" / "sample1" / "sample1.html"

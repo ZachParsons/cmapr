@@ -8,16 +8,16 @@ and validating file paths.
 from pathlib import Path
 
 
-def ensure_output_structure(base_dir: Path = Path("output")) -> dict[str, Path]:
+def ensure_output_structure(base_dir: Path = Path("data/output")) -> dict[str, Path]:
     """
     Create standard output directory structure.
 
     Creates the following directories:
-    - output/corpus/
-    - output/terms/
-    - output/graphs/
-    - output/exports/
-    - output/cache/
+    - data/output/corpus/
+    - data/output/rarities/
+    - data/output/graphs/
+    - data/output/exports/
+    - data/output/cache/
 
     Args:
         base_dir: Base output directory (default: "output")
@@ -71,7 +71,7 @@ def validate_file_path(path: Path, must_exist: bool = False) -> Path:
 def get_output_path(
     filename: str,
     subdir: str = "rarities",
-    base_dir: Path = Path("output"),
+    base_dir: Path = Path("data/output"),
     ensure_dir: bool = True,
 ) -> Path:
     """
@@ -95,7 +95,7 @@ def get_output_path(
 
 
 def get_cache_path(
-    cache_name: str, base_dir: Path = Path("output"), ensure_dir: bool = True
+    cache_name: str, base_dir: Path = Path("data/output"), ensure_dir: bool = True
 ) -> Path:
     """
     Get path for cached data.
@@ -175,19 +175,31 @@ def infer_output_path(
         input_path: Input file path
         output_dir: Base output directory
         subdir: Subdirectory within output (e.g., 'corpus', 'rarities', 'graphs', 'exports')
-        suffix: Optional suffix to append to identifier (e.g., '_cooccurrence')
+        suffix: Optional suffix to append to canonical name (e.g., '_cooccurrence')
         extension: File extension (default: '.json')
 
     Returns:
-        Path object: output_dir/subdir/identifier{suffix}{extension}
+        Path object: output_dir/subdir/<work>/<canonical>{suffix}{extension}
+        where <canonical> is derived from the subdir name (corpus, rarities, graph)
 
     Examples:
-        >>> infer_output_path(Path("eco_spl.txt"), Path("output"), "corpus")
-        Path('output/corpus/eco_spl.json')
-        >>> infer_output_path(Path("data.txt"), Path("out"), "graphs", "_cooccur", ".json")
-        Path('out/graphs/data_cooccur.json')
+        >>> infer_output_path(Path("eco_spl_w_toc.txt"), Path("data/output"), "corpus")
+        Path('data/output/corpus/eco_spl_w_toc/corpus.json')
+        >>> infer_output_path(Path("eco_spl_w_toc.txt"), Path("data/output"), "graphs")
+        Path('data/output/graphs/eco_spl_w_toc/graph.json')
     """
+    _canonical = {"corpus": "corpus", "rarities": "rarities", "graphs": "graph"}
+    _canonical_stems = set(_canonical.values())
+    _known_subdirs = {"corpus", "rarities", "graphs", "exports", "cache"}
     identifier = derive_identifier(input_path)
-    output_subdir = output_dir / subdir
-    output_subdir.mkdir(parents=True, exist_ok=True)
-    return output_subdir / f"{identifier}{suffix}{extension}"
+    # If the filename is a canonical name (corpus.json, rarities.json, graph.json)
+    # AND it lives inside a known subdir (e.g. corpus/eco_spl_w_toc/corpus.json),
+    # the real work identifier is the parent directory name.
+    if identifier in _canonical_stems:
+        parent = input_path.parent
+        if parent.parent.name in _known_subdirs:
+            identifier = derive_identifier(parent)
+    work_dir = output_dir / subdir / identifier
+    work_dir.mkdir(parents=True, exist_ok=True)
+    canonical = _canonical.get(subdir, identifier)
+    return work_dir / f"{canonical}{suffix}{extension}"

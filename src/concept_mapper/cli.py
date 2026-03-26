@@ -51,7 +51,11 @@ from concept_mapper.storage.utils import derive_identifier, infer_output_path
 @click.group()
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option(
-    "--output-dir", "-o", type=click.Path(), default="output", help="Output directory"
+    "--output-dir",
+    "-o",
+    type=click.Path(),
+    default="data/output",
+    help="Output directory",
 )
 @click.pass_context
 def cli(ctx, verbose, output_dir):
@@ -104,9 +108,9 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc):
     detection when automatic detection fails or is unreliable.
 
     Examples:
-        cmapr ingest samples/eco_spl.txt
-        cmapr ingest samples/eco_spl.txt --clean-ocr
-        cmapr ingest samples/eco_spl.txt --toc samples/eco_spl_toc.txt
+        cmapr ingest data/input/eco_spl.txt
+        cmapr ingest data/input/eco_spl.txt --clean-ocr
+        cmapr ingest data/input/eco_spl.txt --toc data/input/eco_spl_toc.txt
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -237,10 +241,10 @@ def rarities(
     statistical rarity analysis.
 
     Examples:
-        cmapr rarities output/corpus/eco_spl_w_toc.json
-        cmapr rarities output/corpus/eco_spl_w_toc.json --top-n 30
-        cmapr rarities output/corpus/eco_spl_w_toc.json --no-lemmatize
-        cmapr rarities output/corpus/eco_spl_w_toc.json --no-filter-names
+        cmapr rarities data/output/corpus/eco_spl_w_toc/corpus.json
+        cmapr rarities data/output/corpus/eco_spl_w_toc/corpus.json --top-n 30
+        cmapr rarities data/output/corpus/eco_spl_w_toc/corpus.json --no-lemmatize
+        cmapr rarities data/output/corpus/eco_spl_w_toc/corpus.json --no-filter-names
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -537,14 +541,14 @@ def search(
     Search for term occurrences in corpus.
 
     Examples:
-        cmapr search output/corpus/eco_spl_w_toc.json "consciousness"
-        cmapr search output/corpus/eco_spl_w_toc.json "being" --context 2
-        cmapr search output/corpus/eco_spl_w_toc.json "run" --lemma
-        cmapr search output/corpus/eco_spl_w_toc.json "intentionality" --diagram
-        cmapr search output/corpus/eco_spl_w_toc.json "dialectic" --diagram --diagram-format tree
-        cmapr search output/corpus/eco_spl_w_toc.json "intentionality" --extract-significant --threshold 1.5
-        cmapr search output/corpus/eco_spl_w_toc.json "capitalism" -e -p nouns -p verbs --top-n 5
-        cmapr search output/corpus/eco_spl_w_toc.json "consciousness" -e --aggregate --detailed
+        cmapr search data/output/corpus/eco_spl_w_toc/corpus.json "consciousness"
+        cmapr search data/output/corpus/eco_spl_w_toc/corpus.json "being" --context 2
+        cmapr search data/output/corpus/eco_spl_w_toc/corpus.json "run" --lemma
+        cmapr search data/output/corpus/eco_spl_w_toc/corpus.json "intentionality" --diagram
+        cmapr search data/output/corpus/eco_spl_w_toc/corpus.json "dialectic" --diagram --diagram-format tree
+        cmapr search data/output/corpus/eco_spl_w_toc/corpus.json "intentionality" --extract-significant --threshold 1.5
+        cmapr search data/output/corpus/eco_spl_w_toc/corpus.json "capitalism" -e -p nouns -p verbs --top-n 5
+        cmapr search data/output/corpus/eco_spl_w_toc/corpus.json "consciousness" -e --aggregate --detailed
     """
     verbose = ctx.obj["verbose"]
 
@@ -748,9 +752,9 @@ def search(
     help="Minimum significance score for relations (default: 0.1)",
 )
 @click.option(
-    "--no-relations",
+    "--with-relations",
     is_flag=True,
-    help="Skip grammatical relation extraction (faster, co-occurrence only)",
+    help="Include grammatical relation extraction (SVO, copular, prep) — slower, not needed for visualization",
 )
 @click.option(
     "--top-n",
@@ -791,7 +795,7 @@ def graph(
     corpus,
     terms,
     threshold,
-    no_relations,
+    with_relations,
     top_n,
     lemma,
     pos,
@@ -806,9 +810,9 @@ def graph(
     the results into a graph suitable for export.
 
     Examples:
-        cmapr graph output/corpus/eco_spl_w_toc.json -t output/rarities/eco_spl_w_toc.json
-        cmapr graph output/corpus/eco_spl_w_toc.json -t output/rarities/eco_spl_w_toc.json --no-relations
-        cmapr graph output/corpus/eco_spl_w_toc.json -t output/rarities/eco_spl_w_toc.json --start-from-section 1
+        cmapr graph data/output/corpus/eco_spl_w_toc/corpus.json -t data/output/rarities/eco_spl_w_toc/rarities.json
+        cmapr graph data/output/corpus/eco_spl_w_toc/corpus.json -t data/output/rarities/eco_spl_w_toc/rarities.json --with-relations
+        cmapr graph data/output/corpus/eco_spl_w_toc/corpus.json -t data/output/rarities/eco_spl_w_toc/rarities.json --start-from-section 1
     """
     from concept_mapper.analysis.contextual_relations import ContextualRelationExtractor
     from concept_mapper.graph.builders import graph_from_contextual_relations
@@ -846,7 +850,7 @@ def graph(
             term_relations = extractor.extract_for_term(
                 search_term=term_entry.term,
                 match_lemma=lemma,
-                extract_relations=not no_relations,
+                extract_relations=with_relations,
                 top_n=top_n,
             )
             term_relations = _filter_relations(
@@ -906,9 +910,9 @@ def export(ctx, graph_file, format, output, title):
     Export graph to various formats.
 
     Examples:
-        cmapr export output/graphs/eco_spl.json --format html
-        cmapr export output/graphs/eco_spl.json --format graphml -o output/exports/eco_spl.graphml
-        cmapr export output/graphs/eco_spl.json --format csv -o output/exports/eco_spl/csv/
+        cmapr export data/output/graphs/eco_spl_w_toc/graph.json --format html
+        cmapr export data/output/graphs/eco_spl_w_toc/graph.json --format graphml -o data/output/exports/eco_spl_w_toc/eco_spl_w_toc.graphml
+        cmapr export data/output/graphs/eco_spl_w_toc/graph.json --format csv -o data/output/exports/eco_spl_w_toc/csv/
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -955,14 +959,20 @@ def export(ctx, graph_file, format, output, title):
         graph_path = Path(graph_file)
         term_identifier = derive_identifier(graph_path)
         parent_name = graph_path.parent.name
-        _known = {"graphs", "exports", "viz", "output", ".", ".."}
+        _known = {"graphs", "exports", "output", ".", ".."}
+        _canonical_graph_stems = {"graph"}
         if parent_name and parent_name not in _known:
             # Graph is in a work-namespaced subdir e.g. graphs/eco_spl_w_toc/semiotic.json
             work_identifier = derive_identifier(graph_path.parent)
-            base = output_dir / "viz" / work_identifier / term_identifier
+            if term_identifier in _canonical_graph_stems:
+                # Full-work graph (graph.json) — no term sub-level
+                base = output_dir / "exports" / work_identifier
+            else:
+                # Per-term graph (semiotic.json) — keep term sub-level
+                base = output_dir / "exports" / work_identifier / term_identifier
         else:
-            # Graph is directly in graphs/ e.g. graphs/sample.json
-            base = output_dir / "viz" / term_identifier
+            # Graph is directly in graphs/ e.g. graphs/eco_spl.json
+            base = output_dir / "exports" / term_identifier
 
         if format == "html":
             output_path = base
@@ -1501,6 +1511,7 @@ def _filter_relations(relations, start_section=None, exclude_pattern=None):
     if start_section is None and exclude_pattern is None:
         return relations
     from concept_mapper.corpus.models import SentenceLocation
+
     filtered = []
     for rel in relations:
         raw_loc = rel.evidence_locations[0] if rel.evidence_locations else None
@@ -1822,27 +1833,27 @@ def analyze(
     identifies grammatical relations between them.
 
     Examples:
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic"
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --top-n 10
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --threshold 0.5
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" -p nouns -p verbs
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --lemma
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --no-relations
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --format json -o relations.json
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --format csv -o relations.csv
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --format graph -o output/graphs/eco_spl/semiotic.json
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --group-by 2
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --show-structure
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --verbose
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" -w s0
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" -w s1
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" -w p0
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" --start-from-section 1
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" \
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic"
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" --top-n 10
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" --threshold 0.5
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" -p nouns -p verbs
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" --lemma
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" --no-relations
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" --format json -o relations.json
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" --format csv -o relations.csv
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" --format graph -o data/output/graphs/eco_spl_w_toc/semiotic.json
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" --group-by 2
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" --show-structure
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" --verbose
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" -w s0
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" -w s1
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" -w p0
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" --start-from-section 1
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" \
             --exclude-sections 'bibliography|references|index|appendix|appendices'
-        
+
         # working command:
-        cmapr analyze output/corpus/eco_spl_w_toc.json "semiotic" \
+        cmapr analyze data/output/corpus/eco_spl_w_toc/corpus.json "semiotic" \
             --start-from-section 1 \
             --exclude-sections 'bibliography|references|index|appendix|appendices' \
             -w s0
@@ -1851,6 +1862,7 @@ def analyze(
     import json
 
     verbose = ctx.obj["verbose"]
+    output_dir = ctx.obj["output_dir"]
 
     # Load corpus
     from concept_mapper.corpus.models import ProcessedDocument
@@ -2075,9 +2087,9 @@ def analyze(
         if output:
             output_path = Path(output)
         else:
-            corpus_stem = Path(corpus).stem
+            corpus_work = derive_identifier(Path(corpus).parent)
             term_slug = term.replace(" ", "_")
-            output_path = Path("output") / "graphs" / corpus_stem / f"{term_slug}.json"
+            output_path = output_dir / "graphs" / corpus_work / f"{term_slug}.json"
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -2118,16 +2130,16 @@ def replace(ctx, corpus, source, target, output, preview):
 
     Examples:
         # Single word replacement
-        cmapr replace output/corpus/eco_spl_w_toc.json "run" "sprint" -o output.txt
+        cmapr replace data/output/corpus/eco_spl_w_toc/corpus.json "run" "sprint" -o output.txt
 
         # Phrase to single word
-        cmapr replace output/corpus/eco_spl_w_toc.json "body,without,organs" "medium" -o output.txt
+        cmapr replace data/output/corpus/eco_spl_w_toc/corpus.json "body,without,organs" "medium" -o output.txt
 
         # Phrase to phrase
-        cmapr replace output/corpus/eco_spl_w_toc.json "body,without,organs" "blank,resistant,field" -o output.txt
+        cmapr replace data/output/corpus/eco_spl_w_toc/corpus.json "body,without,organs" "blank,resistant,field" -o output.txt
 
         # Preview changes
-        cmapr replace output/corpus/eco_spl_w_toc.json "run" "sprint" --preview
+        cmapr replace data/output/corpus/eco_spl_w_toc/corpus.json "run" "sprint" --preview
     """
     from .transformations.replacement import ReplacementSpec, SynonymReplacer
 
@@ -2265,10 +2277,10 @@ def run(
     Run the full workflow: ingest → rarities → graph → export.
 
     Examples:
-        cmapr run samples/eco_spl.txt
-        cmapr run samples/eco_spl.txt --toc samples/eco_spl_toc.txt --top-n 30
-        cmapr run samples/eco_spl.txt --no-relations --format graphml
-        cmapr run samples/eco_spl.txt --start-from-section 1 --exclude-sections 'index|bibliography'
+        cmapr run data/input/eco_spl.txt
+        cmapr run data/input/eco_spl.txt --toc data/input/eco_spl_toc.txt --top-n 30
+        cmapr run data/input/eco_spl.txt --no-relations --format graphml
+        cmapr run data/input/eco_spl.txt --start-from-section 1 --exclude-sections 'index|bibliography'
     """
     from concept_mapper.analysis.contextual_relations import analyze_context
     from concept_mapper.graph.builders import graph_from_contextual_relations
@@ -2421,7 +2433,7 @@ def run(
     click.echo(f"[4/4] Exporting ({format})...")
 
     viz_title = title or text_path.stem.replace("_", " ").title()
-    export_path = infer_output_path(text_path, output_dir, "exports")
+    export_path = output_dir / "exports" / derive_identifier(text_path)
 
     if format == "html":
         export_path.mkdir(parents=True, exist_ok=True)

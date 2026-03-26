@@ -390,10 +390,10 @@ class TestGraphCommand:
         assert "nodes" in data
         assert "links" in data
 
-    def test_graph_no_relations(
+    def test_graph_with_relations(
         self, runner, sample_corpus_json, sample_terms_json, tmp_path
     ):
-        """Test graph building with relations disabled (co-occurrence only)."""
+        """Test graph building with relations enabled."""
         output_file = tmp_path / "graph.json"
 
         result = runner.invoke(
@@ -403,7 +403,7 @@ class TestGraphCommand:
                 str(sample_corpus_json),
                 "--terms",
                 str(sample_terms_json),
-                "--no-relations",
+                "--with-relations",
                 "--output",
                 str(output_file),
             ],
@@ -615,8 +615,8 @@ class TestSourceDerivedFilenames:
         )
 
         assert result.exit_code == 0
-        # Should create sample.json (not corpus.json)
-        expected_corpus = output_dir / "corpus" / "sample.json"
+        # Should create corpus/sample/corpus.json (work dir named after source)
+        expected_corpus = output_dir / "corpus" / "sample" / "corpus.json"
         assert expected_corpus.exists()
         assert not (output_dir / "corpus" / "corpus.json").exists()
 
@@ -640,8 +640,8 @@ class TestSourceDerivedFilenames:
         )
 
         assert result.exit_code == 0
-        # Should create corpus.json (not terms.json) because corpus was named corpus.json
-        expected_terms = output_dir / "rarities" / "corpus.json"
+        # Should create rarities/corpus/rarities.json (work dir named after source)
+        expected_terms = output_dir / "rarities" / "corpus" / "rarities.json"
         assert expected_terms.exists()
         assert not (output_dir / "rarities" / "terms.json").exists()
 
@@ -681,8 +681,8 @@ class TestSourceDerivedFilenames:
         )
 
         assert result.exit_code == 0
-        # Should create corpus.json (not graph.json)
-        expected_graph = output_dir / "graphs" / "corpus.json"
+        # Should create graphs/corpus/graph.json (work dir named after source)
+        expected_graph = output_dir / "graphs" / "corpus" / "graph.json"
         assert expected_graph.exists()
         assert not (output_dir / "graphs" / "graph.json").exists()
 
@@ -722,8 +722,8 @@ class TestSourceDerivedFilenames:
         )
 
         assert result.exit_code == 0
-        # Should create corpus.json derived from corpus filename
-        expected_graph = output_dir / "graphs" / "corpus.json"
+        # Should create graphs/corpus/graph.json (work dir named after source)
+        expected_graph = output_dir / "graphs" / "corpus" / "graph.json"
         assert expected_graph.exists()
 
     def test_export_source_derived_naming(self, runner, tmp_path):
@@ -756,8 +756,8 @@ class TestSourceDerivedFilenames:
         )
 
         assert result.exit_code == 0
-        # Should create viz/eco_spl/ directory namespaced by term
-        expected_viz = output_dir / "viz" / "eco_spl" / "index.html"
+        # Should create exports/eco_spl/ directory namespaced by term
+        expected_viz = output_dir / "exports" / "eco_spl" / "index.html"
         assert expected_viz.exists()
 
     def test_multiple_texts_no_overwrite(self, runner, tmp_path):
@@ -784,7 +784,7 @@ class TestSourceDerivedFilenames:
         )
         assert result1.exit_code == 0
 
-        corpus1 = output_dir / "corpus" / "eco_spl.json"
+        corpus1 = output_dir / "corpus" / "eco_spl" / "corpus.json"
         assert corpus1.exists()
         corpus1_content = corpus1.read_text()
 
@@ -795,7 +795,7 @@ class TestSourceDerivedFilenames:
         )
         assert result2.exit_code == 0
 
-        corpus2 = output_dir / "corpus" / "eco_spl_alt.json"
+        corpus2 = output_dir / "corpus" / "eco_spl_alt" / "corpus.json"
         assert corpus2.exists()
 
         # Verify first corpus wasn't overwritten
@@ -830,7 +830,7 @@ class TestSourceDerivedFilenames:
         )
         assert result.exit_code == 0
 
-        corpus_file = output_dir / "corpus" / "sample.json"
+        corpus_file = output_dir / "corpus" / "sample" / "corpus.json"
         assert corpus_file.exists()
 
         # 2. Rarities
@@ -851,7 +851,7 @@ class TestSourceDerivedFilenames:
         )
         assert result.exit_code == 0
 
-        terms_file = output_dir / "rarities" / "sample.json"
+        terms_file = output_dir / "rarities" / "sample" / "rarities.json"
         assert terms_file.exists()
 
         # 3. Graph
@@ -868,7 +868,7 @@ class TestSourceDerivedFilenames:
         )
         assert result.exit_code == 0
 
-        graph_file = output_dir / "graphs" / "sample.json"
+        graph_file = output_dir / "graphs" / "sample" / "graph.json"
         assert graph_file.exists()
 
         # 4. Export
@@ -885,7 +885,7 @@ class TestSourceDerivedFilenames:
         )
         assert result.exit_code == 0
 
-        viz_file = output_dir / "viz" / "sample" / "index.html"
+        viz_file = output_dir / "exports" / "sample" / "index.html"
         assert viz_file.exists()
 
 
