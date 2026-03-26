@@ -43,7 +43,7 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 - [x] **Synonym replacement** — inflection-preserving term replacement. `transformations/`, `cmapr replace`. 59 tests. See `docs/replacement.md`.
 - [x] **Contextual relation extraction** — integrated SVO + co-occurrence workflow. `analysis/contextual_relations.py`, `cmapr analyze`. 38 tests.
 - [x] **Remove legacy pos_tagger.py** — Deleted 490 lines of legacy code. Updated Makefile.
-- [x] **Documentation consolidation** — README reduced 68% (764→241 lines). Created `docs/tutorial.md`.
+- [x] **Documentation consolidation** — Merged tutorial into README; deleted `docs/tutorial.md` and `scripts/workflow.sh`. Docs reduced to README + api-reference.
 - [x] **Infrastructure cleanup** — Removed 77MB of old venv, cache files, and unused directories.
 - [x] **Analyze window option** — `--window/-w` flag for `analyze`: shows significant terms in a sentence or paragraph window around each occurrence of the search term (e.g. `-w s0`, `-w s1`, `-w p0`). New `extract_terms_from_sentence_set()` in `search/extract.py`. 33 tests.
 - [x] **Analyze `-g` shorthand** — `-g` shorthand for `--group-by` on the `analyze` command.
@@ -68,7 +68,7 @@ Working implementations of tokenization, POS tagging, lemmatization, frequency a
 ## Phase 0: Project Scaffolding ✅ COMPLETE
 
 - [x] **0.1 Initialize project structure**
-  - [x] Create directory layout: `src/concept_mapper/`, `tests/`, `data/sample/`, `output/`
+  - [x] Create directory layout: `src/concept_mapper/`, `tests/`, `data/sample/`, `data/output/`
   - [x] Initialize git repository
   - [x] Create `pyproject.toml`
   - [x] Initial dependencies: `nltk`, `pytest`, `click`, `ruff`, `ipython`
@@ -156,7 +156,7 @@ JSON-backed `StorageBackend` ABC with `JSONBackend` as default, designed for fut
 
 - [x] **2.3 Reference corpus** (`src/concept_mapper/analysis/reference.py`)
   - [x] `load_reference_corpus(name: str = "brown") -> Counter`
-  - [x] Cache to disk after first computation (`output/cache/brown_corpus_freqs.json`)
+  - [x] Cache to disk after first computation (`data/output/cache/brown_corpus_freqs.json`)
   - [x] `get_reference_vocabulary()`, `get_reference_size()`
   - [x] Tests: verify Brown corpus loads, common words have high freq (21 tests passing)
 
@@ -438,9 +438,9 @@ Note: Pattern-based implementation using NLTK POS tagging. spaCy dependency pars
 ## Phase 11: Documentation & Polish ✅ COMPLETE
 
 - [x] **11.1 README** — project overview, installation, quick start, links to docs
-- [x] **11.2 Example workflow** — `examples/workflow.sh` (CLI), `examples/workflow.py` (Python API)
+- [x] **11.2 Example workflow** — covered in README workflow section and `cmapr run` command
 - [x] **11.3 API documentation** — `docs/api-reference.md`, docstrings, type hints throughout
-- [x] **11.4 Tutorial** — `docs/tutorial.md`, step-by-step workflow guide
+- [x] **11.4 Tutorial** — merged into README
 - [x] **11.5 Feature guides** — `docs/replacement.md` (synonym replacement)
 
 ---
