@@ -259,3 +259,10 @@ The graph is the primary end artifact. It is a standalone interactive HTML visua
 - **Edge show/hide**: toggle edge types (e.g. hide co-occurrence edges, show only definitional edges)
 - **Section subgraph navigation**: switch between section subgraphs
 - These are future requirements — the current priority is correct data and readable layout
+
+# dev workflow
+cmapr graph data/output/corpus/eco_spl1/corpus.json \
+    --terms data/output/rarities/eco_spl1/terms.json \
+    --output data/output/graphs/eco_spl1/graph.json && \
+cmapr export data/output/graphs/eco_spl1/graph.json --format html && \
+open data/output/viz/eco_spl1/index.html
