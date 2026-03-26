@@ -44,7 +44,7 @@ def generate_html(
         >>> graph.add_node("consciousness")
         >>> graph.add_node("being")
         >>> graph.add_edge("consciousness", "being", weight=0.85)
-        >>> html_path = generate_html(graph, Path("output/"))
+        >>> html_path = generate_html(graph, Path("data/output/"))
         >>> print(f"Open {html_path} in browser")
 
     Features:

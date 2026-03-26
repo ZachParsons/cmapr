@@ -1,0 +1,2260 @@
+{
+  "nodes": [
+    {
+      "id": "semiotic",
+      "label": "semiotic",
+      "size": 1.0,
+      "group": 2
+    },
+    {
+      "id": "signifier",
+      "label": "signifier",
+      "size": 1.0,
+      "group": 3
+    },
+    {
+      "id": "figurae",
+      "label": "figurae",
+      "size": 1.0,
+      "group": 2
+    },
+    {
+      "id": "differentia",
+      "label": "differentia",
+      "size": 1.0,
+      "group": 2
+    },
+    {
+      "id": "incorporeal",
+      "label": "incorporeal",
+      "size": 1.0,
+      "group": 2
+    },
+    {
+      "id": "sememe",
+      "label": "sememe",
+      "size": 1.0,
+      "group": 0
+    },
+    {
+      "id": "co-text",
+      "label": "co-text",
+      "size": 1.0,
+      "group": 3
+    },
+    {
+      "id": "interpretant",
+      "label": "interpretant",
+      "size": 1.0,
+      "group": 1
+    },
+    {
+      "id": "node",
+      "label": "node",
+      "size": 1.0,
+      "group": 0
+    },
+    {
+      "id": "rhizome",
+      "label": "rhizome",
+      "size": 1.0,
+      "group": 0
+    },
+    {
+      "id": "synecdoche",
+      "label": "synecdoche",
+      "size": 1.0,
+      "group": 1
+    },
+    {
+      "id": "trope",
+      "label": "trope",
+      "size": 1.0,
+      "group": 0
+    },
+    {
+      "id": "metonymy",
+      "label": "metonymy",
+      "size": 1.0,
+      "group": 1
+    },
+    {
+      "id": "seme",
+      "label": "seme",
+      "size": 1.0,
+      "group": 0
+    },
+    {
+      "id": "semantic",
+      "label": "semantic",
+      "size": 1.0,
+      "group": 2
+    },
+    {
+      "id": "predicate",
+      "label": "predicate",
+      "size": 1.0,
+      "group": 2
+    },
+    {
+      "id": "isotopy",
+      "label": "isotopy",
+      "size": 1.0,
+      "group": 1
+    },
+    {
+      "id": "hermeneutic",
+      "label": "hermeneutic",
+      "size": 1.0,
+      "group": 3
+    },
+    {
+      "id": "disjunction",
+      "label": "disjunction",
+      "size": 1.0,
+      "group": 1
+    },
+    {
+      "id": "discursive",
+      "label": "discursive",
+      "size": 1.0,
+      "group": 1
+    },
+    {
+      "id": "icon",
+      "label": "icon",
+      "size": 1.0,
+      "group": 2
+    },
+    {
+      "id": "designator",
+      "label": "designator",
+      "size": 1.0,
+      "group": 1
+    },
+    {
+      "id": "interpretability",
+      "label": "interpretability",
+      "size": 1.0,
+      "group": 1
+    },
+    {
+      "id": "catoptric",
+      "label": "catoptric",
+      "size": 1.0,
+      "group": 1
+    },
+    {
+      "id": "interpretive",
+      "label": "interpretive",
+      "size": 1.0,
+      "group": 1
+    },
+    {
+      "id": "porphyrian",
+      "label": "porphyrian",
+      "size": 1.0,
+      "group": 0
+    },
+    {
+      "id": "animal",
+      "label": "animal",
+      "size": 1.0,
+      "group": 2
+    },
+    {
+      "id": "s-code",
+      "label": "s-code",
+      "size": 1.0,
+      "group": 0
+    },
+    {
+      "id": "semiosic",
+      "label": "semiosic",
+      "size": 1.0,
+      "group": 3
+    },
+    {
+      "id": "semiosi",
+      "label": "semiosi",
+      "size": 1.0,
+      "group": 0
+    },
+    {
+      "id": "signification",
+      "label": "signification",
+      "size": 1.0,
+      "group": 3
+    },
+    {
+      "id": "rhetorical",
+      "label": "rhetorical",
+      "size": 1.0,
+      "group": 0
+    },
+    {
+      "id": "posit",
+      "label": "posit",
+      "size": 1.0,
+      "group": 0
+    },
+    {
+      "id": "contextual",
+      "label": "contextual",
+      "size": 1.0,
+      "group": 0
+    },
+    {
+      "id": "phonological",
+      "label": "phonological",
+      "size": 1.0,
+      "group": 3
+    },
+    {
+      "id": "correlational",
+      "label": "correlational",
+      "size": 1.0,
+      "group": 0
+    },
+    {
+      "id": "mage",
+      "label": "mage",
+      "size": 1.0,
+      "group": 3
+    },
+    {
+      "id": "componential",
+      "label": "componential",
+      "size": 1.0,
+      "group": 2
+    },
+    {
+      "id": "oneiric",
+      "label": "oneiric",
+      "size": 1.0,
+      "group": 3
+    },
+    {
+      "id": "syntagmatic",
+      "label": "syntagmatic",
+      "size": 1.0,
+      "group": 1
+    },
+    {
+      "id": "extensional",
+      "label": "extensional",
+      "size": 1.0,
+      "group": 1
+    },
+    {
+      "id": "epistemological",
+      "label": "epistemological",
+      "size": 1.0,
+      "group": 0
+    }
+  ],
+  "links": [
+    {
+      "source": "semiotic",
+      "target": "signifier",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semiotic",
+      "target": "synecdoche",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semiotic",
+      "target": "trope",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "signifier",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "signifier",
+      "target": "trope",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "semiotic",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "isotopy",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "semiosi",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "seme",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "signifier",
+      "weight": 5.057774641743975,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "trope",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "phonological",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "icon",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "hermeneutic",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "incorporeal",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "syntagmatic",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "figurae",
+      "target": "interpretability",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "differentia",
+      "target": "semiotic",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "differentia",
+      "target": "porphyrian",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "differentia",
+      "target": "incorporeal",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "differentia",
+      "target": "predicate",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "differentia",
+      "target": "node",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "differentia",
+      "target": "s-code",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "differentia",
+      "target": "semiosic",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "differentia",
+      "target": "animal",
+      "weight": 7.042605080099167,
+      "label": "prep",
+      "verb": "for"
+    },
+    {
+      "source": "differentia",
+      "target": "semiosi",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "differentia",
+      "target": "posit",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "differentia",
+      "target": "phonological",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "differentia",
+      "target": "icon",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "differentia",
+      "target": "semantic",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "incorporeal",
+      "target": "semiotic",
+      "weight": 4.196945209675717,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "incorporeal",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "incorporeal",
+      "target": "posit",
+      "weight": 4.196945209675717,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "incorporeal",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "incorporeal",
+      "target": "interpretability",
+      "weight": 4.196945209675717,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "sememe",
+      "target": "semiotic",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "sememe",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "prep",
+      "verb": "with"
+    },
+    {
+      "source": "sememe",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "semiotic",
+      "weight": 4.196945209675717,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "semiosi",
+      "weight": 4.196945209675717,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "contextual",
+      "weight": 4.196945209675717,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "discursive",
+      "weight": 4.196945209675717,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "oneiric",
+      "weight": 4.196945209675717,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "sememe",
+      "weight": 5.200148595748791,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "node",
+      "weight": 6.19194936943932,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "disjunction",
+      "weight": 5.331119937371064,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "isotopy",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "differentia",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "s-code",
+      "weight": 5.908430352403819,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "porphyrian",
+      "weight": 4.63589705493995,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "semiosic",
+      "weight": 1.7976244126627527,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "co-text",
+      "target": "mage",
+      "weight": 4.196945209675717,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretant",
+      "target": "semiotic",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretant",
+      "target": "semiosic",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretant",
+      "target": "signifier",
+      "weight": 5.057774641743975,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretant",
+      "target": "isotopy",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretant",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretant",
+      "target": "metonymy",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretant",
+      "target": "interpretive",
+      "weight": 1.1341747276953462,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretant",
+      "target": "semantic",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretant",
+      "target": "mage",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "node",
+      "target": "semiotic",
+      "weight": 6.19194936943932,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "node",
+      "target": "semiosi",
+      "weight": 6.19194936943932,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "node",
+      "target": "porphyrian",
+      "weight": 6.19194936943932,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "node",
+      "target": "posit",
+      "weight": 6.19194936943932,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "node",
+      "target": "rhizome",
+      "weight": 6.19194936943932,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "node",
+      "target": "sememe",
+      "weight": 6.19194936943932,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "node",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "rhizome",
+      "target": "semiotic",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "rhizome",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "rhizome",
+      "target": "s-code",
+      "weight": 5.908430352403819,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "rhizome",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "synecdoche",
+      "target": "trope",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "metonymy",
+      "target": "semiotic",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "metonymy",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "metonymy",
+      "target": "porphyrian",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "metonymy",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "svo",
+      "verb": "verified"
+    },
+    {
+      "source": "metonymy",
+      "target": "signifier",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "metonymy",
+      "target": "trope",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "metonymy",
+      "target": "sememe",
+      "weight": 5.200148595748791,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "metonymy",
+      "target": "rhetorical",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "metonymy",
+      "target": "semantic",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "seme",
+      "target": "semiotic",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "seme",
+      "target": "semiosi",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "seme",
+      "target": "sememe",
+      "weight": 6.433521467602702,
+      "label": "svo",
+      "verb": "stands"
+    },
+    {
+      "source": "seme",
+      "target": "synecdoche",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "seme",
+      "target": "trope",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "seme",
+      "target": "signification",
+      "weight": 5.99456962233847,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semantic",
+      "target": "semiotic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semantic",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semantic",
+      "target": "synecdoche",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semantic",
+      "target": "signification",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semantic",
+      "target": "trope",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semantic",
+      "target": "sememe",
+      "weight": 5.200148595748791,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semantic",
+      "target": "semiosic",
+      "weight": 1.7976244126627527,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "predicate",
+      "target": "semiotic",
+      "weight": 4.817892030829448,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "predicate",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "isotopy",
+      "target": "semiotic",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "isotopy",
+      "target": "seme",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "isotopy",
+      "target": "synecdoche",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "isotopy",
+      "target": "metonymy",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "isotopy",
+      "target": "trope",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "isotopy",
+      "target": "signifier",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "isotopy",
+      "target": "semiosi",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "isotopy",
+      "target": "porphyrian",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "isotopy",
+      "target": "posit",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "isotopy",
+      "target": "rhetorical",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "isotopy",
+      "target": "semantic",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "hermeneutic",
+      "target": "semiotic",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "hermeneutic",
+      "target": "isotopy",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "hermeneutic",
+      "target": "semiosi",
+      "weight": 3.184031004268873,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "hermeneutic",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "hermeneutic",
+      "target": "semiosic",
+      "weight": 3.184031004268873,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "hermeneutic",
+      "target": "signifier",
+      "weight": 5.057774641743975,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "hermeneutic",
+      "target": "trope",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "hermeneutic",
+      "target": "rhetorical",
+      "weight": 3.184031004268873,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "disjunction",
+      "target": "isotopy",
+      "weight": 5.331119937371064,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "disjunction",
+      "target": "posit",
+      "weight": 5.331119937371064,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "disjunction",
+      "target": "syntagmatic",
+      "weight": 5.331119937371064,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "disjunction",
+      "target": "extensional",
+      "weight": 5.331119937371064,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "isotopy",
+      "weight": 2.6334721647470483,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "porphyrian",
+      "weight": 2.6334721647470483,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "semiotic",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "disjunction",
+      "weight": 5.331119937371064,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "metonymy",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "icon",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "interpretability",
+      "weight": 4.065973868053445,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "interpretive",
+      "weight": 2.6334721647470483,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "interpretant",
+      "weight": 2.6334721647470483,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "semantic",
+      "weight": 2.6334721647470483,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "discursive",
+      "target": "extensional",
+      "weight": 2.6334721647470483,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "icon",
+      "target": "isotopy",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "icon",
+      "target": "porphyrian",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "icon",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "icon",
+      "target": "interpretant",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "icon",
+      "target": "interpretive",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "icon",
+      "target": "metonymy",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "icon",
+      "target": "semiotic",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "icon",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "icon",
+      "target": "incorporeal",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "icon",
+      "target": "interpretability",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "icon",
+      "target": "mage",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "designator",
+      "target": "isotopy",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "designator",
+      "target": "porphyrian",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "designator",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "designator",
+      "target": "discursive",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "designator",
+      "target": "interpretant",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "designator",
+      "target": "interpretive",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "designator",
+      "target": "metonymy",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "designator",
+      "target": "icon",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "designator",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "designator",
+      "target": "mage",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "designator",
+      "target": "interpretability",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "designator",
+      "target": "extensional",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretability",
+      "target": "isotopy",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretability",
+      "target": "semiosi",
+      "weight": 4.065973868053445,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretability",
+      "target": "porphyrian",
+      "weight": 4.065973868053445,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretability",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretability",
+      "target": "interpretant",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretability",
+      "target": "interpretive",
+      "weight": 4.065973868053445,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretability",
+      "target": "metonymy",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretability",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretability",
+      "target": "mage",
+      "weight": 4.065973868053445,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "isotopy",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "semiosi",
+      "weight": 3.767646892442395,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "porphyrian",
+      "weight": 3.7676468924423956,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "discursive",
+      "weight": 3.7676468924423956,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "interpretant",
+      "weight": 3.7676468924423956,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "interpretive",
+      "weight": 3.7676468924423956,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "mage",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "icon",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "semiosic",
+      "weight": 1.7976244126627527,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "metonymy",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "designator",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "interpretability",
+      "weight": 4.065973868053445,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "posit",
+      "weight": 3.7676468924423956,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "semantic",
+      "weight": 3.7676468924423956,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "catoptric",
+      "target": "extensional",
+      "weight": 3.7676468924423956,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretive",
+      "target": "isotopy",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretive",
+      "target": "porphyrian",
+      "weight": 1.1341747276953462,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretive",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretive",
+      "target": "posit",
+      "weight": 5.200148595748791,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretive",
+      "target": "trope",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretive",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretive",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretive",
+      "target": "metonymy",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "interpretive",
+      "target": "semiosic",
+      "weight": 0.5,
+      "label": "copular",
+      "verb": "are"
+    },
+    {
+      "source": "porphyrian",
+      "target": "semiosi",
+      "weight": 4.63589705493995,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "porphyrian",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "porphyrian",
+      "target": "posit",
+      "weight": 5.200148595748791,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "porphyrian",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "porphyrian",
+      "target": "sememe",
+      "weight": 5.200148595748791,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "porphyrian",
+      "target": "s-code",
+      "weight": 5.908430352403819,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "porphyrian",
+      "target": "semiosic",
+      "weight": 4.63589705493995,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "differentia",
+      "weight": 7.086241486220141,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "porphyrian",
+      "weight": 7.042605080099166,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "node",
+      "weight": 7.042605080099166,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "interpretive",
+      "weight": 7.042605080099166,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "catoptric",
+      "weight": 7.042605080099166,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "posit",
+      "weight": 7.042605080099166,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "predicate",
+      "weight": 7.042605080099166,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "icon",
+      "weight": 7.042605080099167,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "incorporeal",
+      "weight": 7.042605080099166,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "figurae",
+      "weight": 7.042605080099166,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "semantic",
+      "weight": 7.042605080099167,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "animal",
+      "target": "mage",
+      "weight": 7.042605080099166,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "s-code",
+      "target": "semiosi",
+      "weight": 5.908430352403819,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "s-code",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "s-code",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "s-code",
+      "target": "semiosic",
+      "weight": 5.908430352403819,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semiosi",
+      "target": "trope",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semiosi",
+      "target": "signifier",
+      "weight": 5.057774641743975,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semiosi",
+      "target": "semiosic",
+      "weight": 1.7976244126627527,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "semiosi",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "signification",
+      "target": "signifier",
+      "weight": 5.99456962233847,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "rhetorical",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "rhetorical",
+      "target": "s-code",
+      "weight": 5.908430352403819,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "rhetorical",
+      "target": "semiotic",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "rhetorical",
+      "target": "trope",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "rhetorical",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "rhetorical",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "rhetorical",
+      "target": "rhizome",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "posit",
+      "target": "trope",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "posit",
+      "target": "signifier",
+      "weight": 5.057774641743975,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "posit",
+      "target": "rhizome",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "posit",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "posit",
+      "target": "sememe",
+      "weight": 5.200148595748791,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "posit",
+      "target": "rhetorical",
+      "weight": 1.7976244126627527,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "figurae",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "semiotic",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "sememe",
+      "weight": 5.200148595748791,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "trope",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "rhetorical",
+      "weight": 1.7976244126627527,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "isotopy",
+      "weight": 7.567696195298048,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "disjunction",
+      "weight": 5.331119937371064,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "differentia",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "s-code",
+      "weight": 5.908430352403819,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "porphyrian",
+      "weight": 4.63589705493995,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "semiosic",
+      "weight": 1.7976244126627527,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "contextual",
+      "target": "posit",
+      "weight": 1.1341747276953462,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "phonological",
+      "target": "s-code",
+      "weight": 5.908430352403819,
+      "label": "copular",
+      "verb": "is"
+    },
+    {
+      "source": "phonological",
+      "target": "signifier",
+      "weight": 5.057774641743975,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "phonological",
+      "target": "signification",
+      "weight": 5.99456962233847,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "phonological",
+      "target": "porphyrian",
+      "weight": 4.63589705493995,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "phonological",
+      "target": "semiosic",
+      "weight": 1.7976244126627527,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "correlational",
+      "target": "s-code",
+      "weight": 5.908430352403819,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "correlational",
+      "target": "semiotic",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "mage",
+      "target": "trope",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "mage",
+      "target": "posit",
+      "weight": 5.200148595748791,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "mage",
+      "target": "oneiric",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "mage",
+      "target": "rhizome",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "mage",
+      "target": "signification",
+      "weight": 5.99456962233847,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "mage",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "mage",
+      "target": "semiotic",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "figurae",
+      "weight": 4.31820573196422,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "semiotic",
+      "weight": 7.416548663945076,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "sememe",
+      "weight": 5.200148595748791,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "interpretant",
+      "weight": 5.392873237988257,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "seme",
+      "weight": 6.433521467602702,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "disjunction",
+      "weight": 5.331119937371064,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "differentia",
+      "weight": 7.08624148622014,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "s-code",
+      "weight": 5.908430352403819,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "porphyrian",
+      "weight": 4.63589705493995,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "semiosic",
+      "weight": 1.7976244126627527,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "rhizome",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "componential",
+      "target": "rhetorical",
+      "weight": 1.7976244126627527,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "oneiric",
+      "target": "signification",
+      "weight": 5.99456962233847,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "extensional",
+      "target": "signification",
+      "weight": 5.99456962233847,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "extensional",
+      "target": "semantic",
+      "weight": 6.401119057189443,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "extensional",
+      "target": "synecdoche",
+      "weight": 6.1158301446269725,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "extensional",
+      "target": "metonymy",
+      "weight": 4.90182162013774,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "extensional",
+      "target": "icon",
+      "weight": 4.729423553020851,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "extensional",
+      "target": "interpretability",
+      "weight": 4.065973868053445,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "extensional",
+      "target": "interpretive",
+      "weight": 1.1341747276953462,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    },
+    {
+      "source": "epistemological",
+      "target": "posit",
+      "weight": 5.200148595748791,
+      "label": "cooccurrence",
+      "verb": "co-occurs with"
+    }
+  ]
+}

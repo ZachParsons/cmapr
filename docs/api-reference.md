@@ -46,7 +46,7 @@ Load a single file into a `Document` object. Supports `.txt` and `.pdf`.
 **Raises:** `FileNotFoundError` if file doesn't exist. `ImportError` for PDF if `pdfplumber` not installed.
 
 ```python
-doc = load_file("samples/eco_spl.txt")
+doc = load_file("data/input/eco_spl.txt")
 ```
 
 ---
@@ -126,7 +126,7 @@ Load word frequencies from a reference corpus (Brown corpus). Checks bundled dat
 |-------|------|---------|-------------|
 | `name` | `str` | `"brown"` | Corpus name; only `"brown"` supported |
 | `cache` | `bool` | `True` | Cache computed frequencies to disk |
-| `cache_dir` | `Path \| None` | `None` | Cache directory (default: `output/cache/`) |
+| `cache_dir` | `Path \| None` | `None` | Cache directory (default: `data/output/cache/`) |
 
 **Returns:** `Counter[str, int]` — word to frequency mapping (~1.16M words).
 
@@ -344,8 +344,8 @@ A curated collection of terms with lookup, CRUD, and persistence.
 ```python
 terms = TermList()
 terms.add(TermEntry(term="praxis", pos="NN", definition="Practical action informed by theory"))
-terms.save(Path("output/terms.json"))
-loaded = TermList.load(Path("output/terms.json"))
+terms.save(Path("data/output/terms.json"))
+loaded = TermList.load(Path("data/output/terms.json"))
 ```
 
 ---
@@ -765,7 +765,7 @@ Export graph to D3.js JSON format.
 **Raises:** `EmptyOutputError` if graph has no nodes.
 
 ```python
-export_d3_json(graph, Path("output/network.json"))
+export_d3_json(graph, Path("data/output/network.json"))
 ```
 
 ---
@@ -796,7 +796,7 @@ Generate a standalone interactive HTML visualization.
 Features: force-directed layout, node drag, zoom/pan, community color-coding, hover tooltips, edge width by weight.
 
 ```python
-html_path = generate_html(graph, Path("output/viz"), title="Lukács Concepts")
+html_path = generate_html(graph, Path("data/output/viz"), title="Lukács Concepts")
 ```
 
 ---
@@ -906,7 +906,7 @@ from concept_mapper.graph import graph_from_cooccurrence, centrality, detect_com
 from concept_mapper.export import generate_html, export_csv
 
 # 1. Load and preprocess
-doc = load_file("samples/eco_spl.txt")
+doc = load_file("data/input/eco_spl.txt")
 docs = [preprocess(doc)]
 
 # 2. Detect philosophical terms
@@ -932,7 +932,7 @@ scores = centrality(graph, method="betweenness")
 print(f"Most central: {max(scores, key=scores.get)}")
 
 # 6. Export
-output = Path("output/analysis")
+output = Path("data/output/analysis")
 html = generate_html(graph, output / "viz", title="Conceptual Network")
 export_csv(graph, output / "csv")
 print(f"Open {html} in a browser")

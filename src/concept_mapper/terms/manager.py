@@ -23,7 +23,7 @@ class TermManager:
     Example:
         >>> manager = TermManager(term_list)
         >>> manager.import_from_txt("terms.txt")
-        >>> manager.export_to_csv("output/terms.csv")
+        >>> manager.export_to_csv("data/output/terms.csv")
     """
 
     def __init__(self, term_list: Optional[TermList] = None):

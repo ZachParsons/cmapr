@@ -482,7 +482,7 @@ def save_cooccurrence_matrix(
 
     Example:
         >>> matrix = build_cooccurrence_matrix(terms, docs, method="pmi")
-        >>> save_cooccurrence_matrix(matrix, "output/cooccurrence_pmi.csv")
+        >>> save_cooccurrence_matrix(matrix, "data/output/cooccurrence_pmi.csv")
     """
     import csv
 

@@ -344,7 +344,7 @@ class TestRealCorpusAnalysis:
         """Load sample philosophical corpus."""
         from src.concept_mapper.corpus.loader import load_file
 
-        base = Path(__file__).parent.parent / "samples"
+        base = Path(__file__).parent.parent / "data" / "input"
         doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
 
@@ -645,7 +645,7 @@ class TestTFIDFOnRealCorpus:
         """Load sample philosophical corpus."""
         from src.concept_mapper.corpus.loader import load_file
 
-        base = Path(__file__).parent.parent / "samples"
+        base = Path(__file__).parent.parent / "data" / "input"
         doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
 
@@ -967,7 +967,7 @@ class TestWordNetOnRealCorpus:
         """Load sample philosophical corpus."""
         from src.concept_mapper.corpus.loader import load_file
 
-        base = Path(__file__).parent.parent / "samples"
+        base = Path(__file__).parent.parent / "data" / "input"
         doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
 
@@ -1333,7 +1333,7 @@ class TestDefinitionalContextsOnRealCorpus:
         """Load sample philosophical corpus."""
         from src.concept_mapper.corpus.loader import load_file
 
-        base = Path(__file__).parent.parent / "samples"
+        base = Path(__file__).parent.parent / "data" / "input"
         doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
 
@@ -1573,7 +1573,7 @@ class TestPOSFilteringOnRealCorpus:
         """Load sample philosophical corpus."""
         from src.concept_mapper.corpus.loader import load_file
 
-        base = Path(__file__).parent.parent / "samples"
+        base = Path(__file__).parent.parent / "data" / "input"
         doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
 
@@ -1947,7 +1947,7 @@ class TestHybridScorerOnRealCorpus:
         """Load sample philosophical corpus."""
         from src.concept_mapper.corpus.loader import load_file
 
-        base = Path(__file__).parent.parent / "samples"
+        base = Path(__file__).parent.parent / "data" / "input"
         doc = load_file(base / "eco_spl_small.txt")
         return [preprocess(doc)]
 

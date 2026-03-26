@@ -148,7 +148,7 @@ def save_diagram(text: str, output_path: Path, output_format: str = "ascii"):
     Example:
         >>> save_diagram(
         ...     "The cat sat on the mat.",
-        ...     Path("output/diagram.txt")
+        ...     Path("data/output/diagram.txt")
         ... )
     """
     diagram = diagram_sentence(text, output_format)

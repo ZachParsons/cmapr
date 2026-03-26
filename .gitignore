@@ -209,12 +209,10 @@ __marimo__/
 
 # Project specific
 venv.old/
-output/*
-!output/.gitkeep
-!output/corpus/.gitkeep
-!output/rarities/.gitkeep
-!output/graphs/.gitkeep
-!output/exports/.gitkeep
+data/input/
+data/output/corpus/
+data/output/exports/
+data/output/cache/
 *.pickle
 *.ps
 .DS_Store

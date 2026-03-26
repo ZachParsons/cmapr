@@ -73,7 +73,8 @@
       "Bash(.venv/bin/python:*)",
       "Bash(.venv/bin/pytest:*)",
       "WebSearch",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "Bash(du -sh /Users/zach/se/projects/nlp/cmapr/data/reference/*)"
     ]
   }
 }

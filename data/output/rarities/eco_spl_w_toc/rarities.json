@@ -1,0 +1,937 @@
+[
+  {
+    "term": "/man/",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5039677149368751
+    }
+  },
+  {
+    "term": "addressee",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5041365538703592
+    }
+  },
+  {
+    "term": "animal",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5057405237384576
+    }
+  },
+  {
+    "term": "archetype",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.506922396272846
+    }
+  },
+  {
+    "term": "catoptric",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.514351309346144
+    }
+  },
+  {
+    "term": "chapter_title",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.8910309699490526
+    }
+  },
+  {
+    "term": "co-reference",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5040298575444161
+    }
+  },
+  {
+    "term": "co-text",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5071533778138709
+    }
+  },
+  {
+    "term": "commonsense",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5058249432051997
+    }
+  },
+  {
+    "term": "componential",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5079354298737502
+    }
+  },
+  {
+    "term": "constitutive",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.503798876003391
+    }
+  },
+  {
+    "term": "contextual",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5177280880158249
+    }
+  },
+  {
+    "term": "correlational",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5110589501432051
+    }
+  },
+  {
+    "term": "deconstruction",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.55006074377802
+    }
+  },
+  {
+    "term": "definiendum",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5049983374269182
+    }
+  },
+  {
+    "term": "designator",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5088640440079124
+    }
+  },
+  {
+    "term": "differentia",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5377530905228233
+    }
+  },
+  {
+    "term": "discursive",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5195008968174074
+    }
+  },
+  {
+    "term": "disjunction",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5122408226775934
+    }
+  },
+  {
+    "term": "distorting",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5064158794723937
+    }
+  },
+  {
+    "term": "domitian",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5063314600056518
+    }
+  },
+  {
+    "term": "end_index",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5088640440079124
+    }
+  },
+  {
+    "term": "epistemological",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5047274901375534
+    }
+  },
+  {
+    "term": "extensional",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5140136314791759
+    }
+  },
+  {
+    "term": "figura",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.50377659914419
+    }
+  },
+  {
+    "term": "figurae",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5046430706708113
+    }
+  },
+  {
+    "term": "formalization",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5133382757452397
+    }
+  },
+  {
+    "term": "freeze",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5523400693800545
+    }
+  },
+  {
+    "term": "hermeneutic",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5056561042717156
+    }
+  },
+  {
+    "term": "human",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5040521344036172
+    }
+  },
+  {
+    "term": "icon",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5094327034159055
+    }
+  },
+  {
+    "term": "implicature",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5043898122705852
+    }
+  },
+  {
+    "term": "incorporeal",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5050651680045214
+    }
+  },
+  {
+    "term": "instructional",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5040521344036172
+    }
+  },
+  {
+    "term": "intension",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5051273106120624
+    }
+  },
+  {
+    "term": "interpretability",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5095569886309874
+    }
+  },
+  {
+    "term": "interpretant",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5132315794192966
+    }
+  },
+  {
+    "term": "interpretive",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5117343058771413
+    }
+  },
+  {
+    "term": "lacan",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5096636849569306
+    }
+  },
+  {
+    "term": "level_1",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5046430706708113
+    }
+  },
+  {
+    "term": "lithium",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5041764196186991
+    }
+  },
+  {
+    "term": "mage",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5063091831464507
+    }
+  },
+  {
+    "term": "metaphor",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5044742317373272
+    }
+  },
+  {
+    "term": "moke",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5041986964779
+    }
+  },
+  {
+    "term": "natural",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5041365538703592
+    }
+  },
+  {
+    "term": "nglish",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5046430706708113
+    }
+  },
+  {
+    "term": "node",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.517643668549083
+    }
+  },
+  {
+    "term": "of\\nthe",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5094549802751066
+    }
+  },
+  {
+    "term": "oneiric",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.507260074139814
+    }
+  },
+  {
+    "term": "open",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5120719837441093
+    }
+  },
+  {
+    "term": "parent_number",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5088640440079124
+    }
+  },
+  {
+    "term": "phoneme",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5052738726863454
+    }
+  },
+  {
+    "term": "phonological",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5073444936065561
+    }
+  },
+  {
+    "term": "porphyrian",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5378199211004265
+    }
+  },
+  {
+    "term": "posit",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5078510104070082
+    }
+  },
+  {
+    "term": "predicate",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.507491055680839
+    }
+  },
+  {
+    "term": "procatoptric",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5053184264047474
+    }
+  },
+  {
+    "term": "rational",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5038832954701331
+    }
+  },
+  {
+    "term": "rhetorical",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5078510104070082
+    }
+  },
+  {
+    "term": "rhizome",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5102944869724647
+    }
+  },
+  {
+    "term": "s-code",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5189721031577542
+    }
+  },
+  {
+    "term": "section_title",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.8910309699490526
+    }
+  },
+  {
+    "term": "semantic",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5045985169524092
+    }
+  },
+  {
+    "term": "seme",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5214202676932729
+    }
+  },
+  {
+    "term": "sememe",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5098548007496156
+    }
+  },
+  {
+    "term": "semiosi",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5232950848507363
+    }
+  },
+  {
+    "term": "semiosic",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5232774959615974
+    }
+  },
+  {
+    "term": "semiotic",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.6075281237701369
+    }
+  },
+  {
+    "term": "sender",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5053805690122884
+    }
+  },
+  {
+    "term": "sent_index",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.8910309699490526
+    }
+  },
+  {
+    "term": "sign-function",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5040521344036172
+    }
+  },
+  {
+    "term": "signification",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.522095623427209
+    }
+  },
+  {
+    "term": "signifier",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.7209034676046744
+    }
+  },
+  {
+    "term": "something",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5090669699539754
+    }
+  },
+  {
+    "term": "start_index",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5088640440079124
+    }
+  },
+  {
+    "term": "structu",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5040521344036172
+    }
+  },
+  {
+    "term": "subsection_title",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.8910309699490526
+    }
+  },
+  {
+    "term": "symbol",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5115141317501777
+    }
+  },
+  {
+    "term": "synecdoche",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5196474588916904
+    }
+  },
+  {
+    "term": "syntagmatic",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5044742317373272
+    }
+  },
+  {
+    "term": "theorist",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5043675354113841
+    }
+  },
+  {
+    "term": "tion",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5043053928038432
+    }
+  },
+  {
+    "term": "trope",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.514266889879402
+    }
+  },
+  {
+    "term": "uction",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.5042209733371011
+    }
+  },
+  {
+    "term": "vegetal",
+    "lemma": null,
+    "pos": null,
+    "definition": null,
+    "notes": null,
+    "examples": [],
+    "metadata": {
+      "score": 0.503798876003391
+    }
+  }
+]

@@ -1517,9 +1517,11 @@ class PhilosophicalTermScorer:
 
     def _compute_signals(self):
         """Precompute all detection signals for efficiency."""
+
         def _log(msg):
             if self.verbose:
                 import sys
+
                 print(msg, flush=True, file=sys.stderr)
 
         # Signal 1: Relative frequency ratios

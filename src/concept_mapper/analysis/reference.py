@@ -22,12 +22,12 @@ def load_reference_corpus(
     Load reference corpus word frequencies.
 
     Checks for bundled reference data first (data/reference/), then user cache
-    (output/cache/). If not found, computes from NLTK corpus and caches.
+    (data/output/cache/). If not found, computes from NLTK corpus and caches.
 
     Args:
         name: Reference corpus name ("brown" supported currently)
         cache: If True, cache frequencies to disk after first computation
-        cache_dir: Directory for cache files (default: output/cache/)
+        cache_dir: Directory for cache files (default: data/output/cache/)
 
     Returns:
         Counter mapping words to their frequencies in reference corpus
@@ -58,7 +58,7 @@ def load_reference_corpus(
     if cache:
         cache_path = get_cache_path(
             f"{name}_corpus_freqs.json",
-            base_dir=cache_dir or Path("output"),
+            base_dir=cache_dir or Path("data/output"),
             ensure_dir=True,
         )
 

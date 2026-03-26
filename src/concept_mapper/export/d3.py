@@ -169,7 +169,7 @@ def export_d3_json(
         >>> graph.add_node("consciousness", frequency=42)
         >>> graph.add_node("being", frequency=28)
         >>> graph.add_edge("consciousness", "being", weight=0.85)
-        >>> export_d3_json(graph, Path("output/graph.json"))
+        >>> export_d3_json(graph, Path("data/output/graph.json"))
 
     D3 JSON Schema:
         {
@@ -292,7 +292,7 @@ def load_d3_json(path: Path) -> Dict[str, List[Dict[str, Any]]]:
         Dictionary with "nodes" and "links" keys
 
     Example:
-        >>> data = load_d3_json(Path("output/graph.json"))
+        >>> data = load_d3_json(Path("data/output/graph.json"))
         >>> print(f"Nodes: {len(data['nodes'])}, Links: {len(data['links'])}")
     """
     path = Path(path)

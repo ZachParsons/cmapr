@@ -346,7 +346,10 @@ def extract_significant_terms(
                         lemmas_list = lemmatize_tagged(tagged)
                         for (token, pos), lemma in zip(tagged, lemmas_list):
                             lemma_lower = lemma.lower()
-                            if pos in pos_tags_to_extract and lemma_lower not in STOPWORDS:
+                            if (
+                                pos in pos_tags_to_extract
+                                and lemma_lower not in STOPWORDS
+                            ):
                                 all_terms.append(lemma_lower)
 
             term_freqs = Counter(all_terms)

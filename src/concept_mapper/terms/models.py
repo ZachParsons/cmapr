@@ -66,7 +66,7 @@ class TermList:
         >>> terms = TermList()
         >>> terms.add(TermEntry(term="intentionality", definition="..."))
         >>> entry = terms.get("intentionality")
-        >>> terms.save("output/terms.json")
+        >>> terms.save("data/output/terms.json")
     """
 
     def __init__(self, name: Optional[str] = None, description: Optional[str] = None):

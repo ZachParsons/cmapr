@@ -339,7 +339,7 @@ def analyze_context(
         >>> from concept_mapper.corpus.loader import load_file
         >>> from concept_mapper.preprocessing.pipeline import preprocess
         >>>
-        >>> doc = load_file("samples/eco_spl.txt")
+        >>> doc = load_file("data/input/eco_spl.txt")
         >>> processed = preprocess(doc)
         >>>
         >>> relations = analyze_context("sign", [processed], top_n=10)

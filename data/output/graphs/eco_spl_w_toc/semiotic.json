@@ -1,0 +1,1319 @@
+{
+  "nodes": [
+    {
+      "id": "perceive",
+      "label": "perceive"
+    },
+    {
+      "id": "enjoyment",
+      "label": "enjoyment"
+    },
+    {
+      "id": "act",
+      "label": "act"
+    },
+    {
+      "id": "isotopy",
+      "label": "isotopy"
+    },
+    {
+      "id": "suggest",
+      "label": "suggest"
+    },
+    {
+      "id": "identify",
+      "label": "identify"
+    },
+    {
+      "id": "lie",
+      "label": "lie"
+    },
+    {
+      "id": "information",
+      "label": "information"
+    },
+    {
+      "id": "lexicology",
+      "label": "lexicology"
+    },
+    {
+      "id": "view",
+      "label": "view"
+    },
+    {
+      "id": "relation",
+      "label": "relation"
+    },
+    {
+      "id": "state",
+      "label": "state"
+    },
+    {
+      "id": "device",
+      "label": "device"
+    },
+    {
+      "id": "imply",
+      "label": "imply"
+    },
+    {
+      "id": "unit",
+      "label": "unit"
+    },
+    {
+      "id": "boundary",
+      "label": "boundary"
+    },
+    {
+      "id": "consequent",
+      "label": "consequent"
+    },
+    {
+      "id": "habit",
+      "label": "habit"
+    },
+    {
+      "id": "figure",
+      "label": "figure"
+    },
+    {
+      "id": "c.",
+      "label": "c."
+    },
+    {
+      "id": "stage",
+      "label": "stage"
+    },
+    {
+      "id": "attempt",
+      "label": "attempt"
+    },
+    {
+      "id": "establish",
+      "label": "establish"
+    },
+    {
+      "id": "signification",
+      "label": "signification"
+    },
+    {
+      "id": "consider",
+      "label": "consider"
+    },
+    {
+      "id": "practice",
+      "label": "practice"
+    },
+    {
+      "id": "semiotic",
+      "label": "semiotic"
+    },
+    {
+      "id": "production",
+      "label": "production"
+    },
+    {
+      "id": "speak",
+      "label": "speak"
+    },
+    {
+      "id": "encyclopedia",
+      "label": "encyclopedia"
+    },
+    {
+      "id": "purpose",
+      "label": "purpose"
+    },
+    {
+      "id": "l",
+      "label": "l"
+    },
+    {
+      "id": "difference",
+      "label": "difference"
+    },
+    {
+      "id": "a.",
+      "label": "a."
+    },
+    {
+      "id": "activity",
+      "label": "activity"
+    },
+    {
+      "id": "line",
+      "label": "line"
+    },
+    {
+      "id": "expression-plane",
+      "label": "expression-plane"
+    },
+    {
+      "id": "referent",
+      "label": "referent"
+    },
+    {
+      "id": "harman",
+      "label": "harman"
+    },
+    {
+      "id": "jakobson",
+      "label": "jakobson"
+    },
+    {
+      "id": "criterion",
+      "label": "criterion"
+    },
+    {
+      "id": "interpretation",
+      "label": "interpretation"
+    },
+    {
+      "id": "universal",
+      "label": "universal"
+    },
+    {
+      "id": "possibility",
+      "label": "possibility"
+    },
+    {
+      "id": "representation",
+      "label": "representation"
+    },
+    {
+      "id": "j",
+      "label": "j"
+    },
+    {
+      "id": "event",
+      "label": "event"
+    },
+    {
+      "id": "characterize",
+      "label": "characterize"
+    },
+    {
+      "id": "challenge",
+      "label": "challenge"
+    },
+    {
+      "id": "pertain",
+      "label": "pertain"
+    },
+    {
+      "id": "relationship",
+      "label": "relationship"
+    },
+    {
+      "id": "t",
+      "label": "t"
+    },
+    {
+      "id": "notion",
+      "label": "notion"
+    },
+    {
+      "id": "property",
+      "label": "property"
+    },
+    {
+      "id": "express",
+      "label": "express"
+    },
+    {
+      "id": "tree",
+      "label": "tree"
+    },
+    {
+      "id": "produce",
+      "label": "produce"
+    },
+    {
+      "id": "apply",
+      "label": "apply"
+    },
+    {
+      "id": "analysis",
+      "label": "analysis"
+    },
+    {
+      "id": "/ekton",
+      "label": "/ekton"
+    },
+    {
+      "id": "g.",
+      "label": "g."
+    },
+    {
+      "id": "experience",
+      "label": "experience"
+    },
+    {
+      "id": "thought",
+      "label": "thought"
+    },
+    {
+      "id": "structure",
+      "label": "structure"
+    },
+    {
+      "id": "w.",
+      "label": "w."
+    },
+    {
+      "id": "foundation",
+      "label": "foundation"
+    },
+    {
+      "id": "century",
+      "label": "century"
+    },
+    {
+      "id": "specie",
+      "label": "specie"
+    },
+    {
+      "id": "appear",
+      "label": "appear"
+    },
+    {
+      "id": "context",
+      "label": "context"
+    },
+    {
+      "id": "imprint",
+      "label": "imprint"
+    },
+    {
+      "id": "image",
+      "label": "image"
+    },
+    {
+      "id": "entity",
+      "label": "entity"
+    },
+    {
+      "id": "game",
+      "label": "game"
+    },
+    {
+      "id": "symbol",
+      "label": "symbol"
+    },
+    {
+      "id": "strategy",
+      "label": "strategy"
+    },
+    {
+      "id": "genus",
+      "label": "genus"
+    },
+    {
+      "id": "exist",
+      "label": "exist"
+    },
+    {
+      "id": "type",
+      "label": "type"
+    },
+    {
+      "id": "similarity",
+      "label": "similarity"
+    },
+    {
+      "id": "hand",
+      "label": "hand"
+    },
+    {
+      "id": "metaphor",
+      "label": "metaphor"
+    },
+    {
+      "id": "function",
+      "label": "function"
+    },
+    {
+      "id": "definition",
+      "label": "definition"
+    },
+    {
+      "id": "require",
+      "label": "require"
+    },
+    {
+      "id": "lacan",
+      "label": "lacan"
+    },
+    {
+      "id": "course",
+      "label": "course"
+    },
+    {
+      "id": "b",
+      "label": "b"
+    },
+    {
+      "id": "perception",
+      "label": "perception"
+    },
+    {
+      "id": "world",
+      "label": "world"
+    },
+    {
+      "id": "code",
+      "label": "code"
+    },
+    {
+      "id": "maze",
+      "label": "maze"
+    },
+    {
+      "id": "channel",
+      "label": "channel"
+    },
+    {
+      "id": "symbolic",
+      "label": "symbolic"
+    },
+    {
+      "id": "define",
+      "label": "define"
+    },
+    {
+      "id": "component",
+      "label": "component"
+    },
+    {
+      "id": "necessity",
+      "label": "necessity"
+    },
+    {
+      "id": "pelc",
+      "label": "pelc"
+    },
+    {
+      "id": "interpret",
+      "label": "interpret"
+    },
+    {
+      "id": "competence",
+      "label": "competence"
+    },
+    {
+      "id": "element",
+      "label": "element"
+    },
+    {
+      "id": "compare",
+      "label": "compare"
+    },
+    {
+      "id": "sui",
+      "label": "sui"
+    },
+    {
+      "id": "postulate",
+      "label": "postulate"
+    },
+    {
+      "id": "correlate",
+      "label": "correlate"
+    },
+    {
+      "id": "lot",
+      "label": "lot"
+    },
+    {
+      "id": "dictionary",
+      "label": "dictionary"
+    },
+    {
+      "id": "stoic",
+      "label": "stoic"
+    },
+    {
+      "id": "e",
+      "label": "e"
+    },
+    {
+      "id": "cipher",
+      "label": "cipher"
+    },
+    {
+      "id": "discourse",
+      "label": "discourse"
+    },
+    {
+      "id": "characteristic",
+      "label": "characteristic"
+    },
+    {
+      "id": "reason",
+      "label": "reason"
+    },
+    {
+      "id": "represent",
+      "label": "represent"
+    },
+    {
+      "id": "network",
+      "label": "network"
+    },
+    {
+      "id": "inference",
+      "label": "inference"
+    },
+    {
+      "id": "person",
+      "label": "person"
+    },
+    {
+      "id": "correlation",
+      "label": "correlation"
+    },
+    {
+      "id": "base",
+      "label": "base"
+    },
+    {
+      "id": "j.",
+      "label": "j."
+    }
+  ],
+  "links": [
+    {
+      "source": "semiotic",
+      "target": "definition",
+      "relation_type": "cooccurrence",
+      "score": 7.8471998280972555,
+      "evidence_count": 3
+    },
+    {
+      "source": "semiotic",
+      "target": "define",
+      "relation_type": "cooccurrence",
+      "score": 7.326124097134668,
+      "evidence_count": 5
+    },
+    {
+      "source": "semiotic",
+      "target": "person",
+      "relation_type": "cooccurrence",
+      "score": 6.401119057189443,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "analysis",
+      "relation_type": "cooccurrence",
+      "score": 5.721224326711381,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "attempt",
+      "relation_type": "cooccurrence",
+      "score": 5.509799272297982,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "maze",
+      "relation_type": "cooccurrence",
+      "score": 3.7676468924423956,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "appear",
+      "relation_type": "cooccurrence",
+      "score": 6.615516443492201,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "act",
+      "relation_type": "cooccurrence",
+      "score": 6.368062008537746,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "symbol",
+      "relation_type": "cooccurrence",
+      "score": 8.810478341241128,
+      "evidence_count": 9
+    },
+    {
+      "source": "semiotic",
+      "target": "express",
+      "relation_type": "cooccurrence",
+      "score": 6.8304173744227645,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "state",
+      "relation_type": "cooccurrence",
+      "score": 6.496462621814821,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "/ekton",
+      "relation_type": "cooccurrence",
+      "score": 2.2683494553906924,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "consider",
+      "relation_type": "cooccurrence",
+      "score": 7.190497650651011,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "perception",
+      "relation_type": "cooccurrence",
+      "score": 5.509799272297982,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "inference",
+      "relation_type": "cooccurrence",
+      "score": 6.904246510330643,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "difference",
+      "relation_type": "cooccurrence",
+      "score": 7.468498051139484,
+      "evidence_count": 3
+    },
+    {
+      "source": "semiotic",
+      "target": "code",
+      "relation_type": "cooccurrence",
+      "score": 9.332918197547542,
+      "evidence_count": 24
+    },
+    {
+      "source": "semiotic",
+      "target": "hand",
+      "relation_type": "cooccurrence",
+      "score": 6.527047965683605,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "necessity",
+      "relation_type": "cooccurrence",
+      "score": 4.431096577409801,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "correlation",
+      "relation_type": "cooccurrence",
+      "score": 5.721224326711381,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "interpretation",
+      "relation_type": "cooccurrence",
+      "score": 8.026345402735306,
+      "evidence_count": 8
+    },
+    {
+      "source": "semiotic",
+      "target": "figure",
+      "relation_type": "cooccurrence",
+      "score": 8.014179783458474,
+      "evidence_count": 8
+    },
+    {
+      "source": "semiotic",
+      "target": "base",
+      "relation_type": "cooccurrence",
+      "score": 6.401119057189443,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "criterion",
+      "relation_type": "cooccurrence",
+      "score": 5.5652713051051474,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "habit",
+      "relation_type": "cooccurrence",
+      "score": 2.9317991403580987,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "world",
+      "relation_type": "cooccurrence",
+      "score": 7.7781487276886745,
+      "evidence_count": 3
+    },
+    {
+      "source": "semiotic",
+      "target": "dictionary",
+      "relation_type": "cooccurrence",
+      "score": 7.042605080099166,
+      "evidence_count": 4
+    },
+    {
+      "source": "semiotic",
+      "target": "identify",
+      "relation_type": "cooccurrence",
+      "score": 5.99456962233847,
+      "evidence_count": 4
+    },
+    {
+      "source": "semiotic",
+      "target": "tree",
+      "relation_type": "cooccurrence",
+      "score": 8.334741753232157,
+      "evidence_count": 4
+    },
+    {
+      "source": "semiotic",
+      "target": "produce",
+      "relation_type": "cooccurrence",
+      "score": 7.3074236849607335,
+      "evidence_count": 4
+    },
+    {
+      "source": "semiotic",
+      "target": "representation",
+      "relation_type": "cooccurrence",
+      "score": 7.170171075528433,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "interpret",
+      "relation_type": "cooccurrence",
+      "score": 7.250004872322318,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "device",
+      "relation_type": "cooccurrence",
+      "score": 5.5652713051051474,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "event",
+      "relation_type": "cooccurrence",
+      "score": 6.699446032800493,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "exist",
+      "relation_type": "cooccurrence",
+      "score": 6.671945078638888,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "encyclopedia",
+      "relation_type": "cooccurrence",
+      "score": 7.468498051139484,
+      "evidence_count": 4
+    },
+    {
+      "source": "semiotic",
+      "target": "e",
+      "relation_type": "cooccurrence",
+      "score": 7.344613200693965,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "structure",
+      "relation_type": "cooccurrence",
+      "score": 7.344613200693965,
+      "evidence_count": 4
+    },
+    {
+      "source": "semiotic",
+      "target": "represent",
+      "relation_type": "cooccurrence",
+      "score": 7.434049026006437,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "metaphor",
+      "relation_type": "cooccurrence",
+      "score": 9.260431090220246,
+      "evidence_count": 15
+    },
+    {
+      "source": "semiotic",
+      "target": "image",
+      "relation_type": "cooccurrence",
+      "score": 8.661266649516671,
+      "evidence_count": 12
+    },
+    {
+      "source": "semiotic",
+      "target": "property",
+      "relation_type": "cooccurrence",
+      "score": 8.693830276566855,
+      "evidence_count": 10
+    },
+    {
+      "source": "semiotic",
+      "target": "course",
+      "relation_type": "cooccurrence",
+      "score": 5.770071782635297,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "establish",
+      "relation_type": "cooccurrence",
+      "score": 6.779279829594378,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "postulate",
+      "relation_type": "cooccurrence",
+      "score": 5.770071782635297,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "similarity",
+      "relation_type": "cooccurrence",
+      "score": 4.90182162013774,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "b",
+      "relation_type": "cooccurrence",
+      "score": 7.451364195576497,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "network",
+      "relation_type": "cooccurrence",
+      "score": 5.331119937371064,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "speak",
+      "relation_type": "cooccurrence",
+      "score": 8.120545123724344,
+      "evidence_count": 7
+    },
+    {
+      "source": "semiotic",
+      "target": "production",
+      "relation_type": "cooccurrence",
+      "score": 5.331119937371064,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "genus",
+      "relation_type": "cooccurrence",
+      "score": 7.763981814471039,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "specie",
+      "relation_type": "cooccurrence",
+      "score": 7.567696195298048,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "symbolic",
+      "relation_type": "cooccurrence",
+      "score": 5.130509649723991,
+      "evidence_count": 4
+    },
+    {
+      "source": "semiotic",
+      "target": "thought",
+      "relation_type": "cooccurrence",
+      "score": 5.130509649723991,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "lacan",
+      "relation_type": "cooccurrence",
+      "score": 4.065973868053445,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "view",
+      "relation_type": "cooccurrence",
+      "score": 6.527047965683605,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "characterize",
+      "relation_type": "cooccurrence",
+      "score": 5.057774641743975,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "discourse",
+      "relation_type": "cooccurrence",
+      "score": 5.670873638476731,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "suggest",
+      "relation_type": "cooccurrence",
+      "score": 6.671945078638888,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "element",
+      "relation_type": "cooccurrence",
+      "score": 6.951677896711268,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "context",
+      "relation_type": "cooccurrence",
+      "score": 6.643973999993327,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "possibility",
+      "relation_type": "cooccurrence",
+      "score": 6.1158301446269725,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "practice",
+      "relation_type": "cooccurrence",
+      "score": 4.63589705493995,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "challenge",
+      "relation_type": "cooccurrence",
+      "score": 4.431096577409801,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "require",
+      "relation_type": "cooccurrence",
+      "score": 5.200148595748791,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "strategy",
+      "relation_type": "cooccurrence",
+      "score": 4.431096577409801,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "enjoyment",
+      "relation_type": "cooccurrence",
+      "score": 2.2683494553906924,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "function",
+      "relation_type": "cooccurrence",
+      "score": 7.38097621394459,
+      "evidence_count": 3
+    },
+    {
+      "source": "semiotic",
+      "target": "century",
+      "relation_type": "cooccurrence",
+      "score": 4.817892030829448,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "notion",
+      "relation_type": "cooccurrence",
+      "score": 7.08624148622014,
+      "evidence_count": 3
+    },
+    {
+      "source": "semiotic",
+      "target": "compare",
+      "relation_type": "cooccurrence",
+      "score": 5.130509649723991,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "entity",
+      "relation_type": "cooccurrence",
+      "score": 5.908430352403819,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "component",
+      "relation_type": "cooccurrence",
+      "score": 4.31820573196422,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "sui",
+      "relation_type": "cooccurrence",
+      "score": 2.6334721647470483,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "signification",
+      "relation_type": "cooccurrence",
+      "score": 5.99456962233847,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "jakobson",
+      "relation_type": "cooccurrence",
+      "score": 5.200148595748791,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "cipher",
+      "relation_type": "cooccurrence",
+      "score": 4.981655416931626,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "expression-plane",
+      "relation_type": "cooccurrence",
+      "score": 2.6334721647470483,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "unit",
+      "relation_type": "cooccurrence",
+      "score": 5.8635982807161975,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "imply",
+      "relation_type": "cooccurrence",
+      "score": 4.536698910781385,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "reason",
+      "relation_type": "cooccurrence",
+      "score": 6.228720990072553,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "activity",
+      "relation_type": "cooccurrence",
+      "score": 5.721224326711381,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "purpose",
+      "relation_type": "cooccurrence",
+      "score": 5.509799272297982,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "line",
+      "relation_type": "cooccurrence",
+      "score": 5.452380459659566,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "isotopy",
+      "relation_type": "cooccurrence",
+      "score": 7.567696195298048,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "j",
+      "relation_type": "cooccurrence",
+      "score": 6.433521467602702,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "experience",
+      "relation_type": "cooccurrence",
+      "score": 7.1287443500338155,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "universal",
+      "relation_type": "cooccurrence",
+      "score": 4.065973868053445,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "pertain",
+      "relation_type": "cooccurrence",
+      "score": 2.2683494553906924,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "stage",
+      "relation_type": "cooccurrence",
+      "score": 5.452380459659566,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "lot",
+      "relation_type": "cooccurrence",
+      "score": 3.5952488253255055,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "information",
+      "relation_type": "cooccurrence",
+      "score": 6.401119057189443,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "perceive",
+      "relation_type": "cooccurrence",
+      "score": 5.509799272297982,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "channel",
+      "relation_type": "cooccurrence",
+      "score": 6.1158301446269725,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "apply",
+      "relation_type": "cooccurrence",
+      "score": 5.618924251282324,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "consequent",
+      "relation_type": "cooccurrence",
+      "score": 5.670873638476731,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "stoic",
+      "relation_type": "cooccurrence",
+      "score": 6.465294665066411,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "relationship",
+      "relation_type": "cooccurrence",
+      "score": 6.433521467602702,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "correlate",
+      "relation_type": "cooccurrence",
+      "score": 5.200148595748791,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "type",
+      "relation_type": "cooccurrence",
+      "score": 7.567696195298048,
+      "evidence_count": 2
+    },
+    {
+      "source": "semiotic",
+      "target": "relation",
+      "relation_type": "cooccurrence",
+      "score": 7.250004872322318,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "game",
+      "relation_type": "cooccurrence",
+      "score": 4.981655416931626,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "referent",
+      "relation_type": "cooccurrence",
+      "score": 5.770071782635297,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "characteristic",
+      "relation_type": "cooccurrence",
+      "score": 5.392873237988257,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "competence",
+      "relation_type": "cooccurrence",
+      "score": 5.817503169015922,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "l",
+      "relation_type": "cooccurrence",
+      "score": 5.721224326711381,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "imprint",
+      "relation_type": "cooccurrence",
+      "score": 4.63589705493995,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "lie",
+      "relation_type": "cooccurrence",
+      "score": 6.2998742983110905,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "boundary",
+      "relation_type": "cooccurrence",
+      "score": 2.9317991403580987,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "w.",
+      "relation_type": "cooccurrence",
+      "score": 4.536698910781385,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "lexicology",
+      "relation_type": "cooccurrence",
+      "score": 2.2683494553906924,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "a.",
+      "relation_type": "cooccurrence",
+      "score": 5.721224326711381,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "t",
+      "relation_type": "cooccurrence",
+      "score": 5.670873638476731,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "g.",
+      "relation_type": "cooccurrence",
+      "score": 5.99456962233847,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "harman",
+      "relation_type": "cooccurrence",
+      "score": 3.5952488253255055,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "j.",
+      "relation_type": "cooccurrence",
+      "score": 6.496462621814821,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "foundation",
+      "relation_type": "cooccurrence",
+      "score": 2.9317991403580987,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "pelc",
+      "relation_type": "cooccurrence",
+      "score": 2.2683494553906924,
+      "evidence_count": 1
+    },
+    {
+      "source": "semiotic",
+      "target": "c.",
+      "relation_type": "cooccurrence",
+      "score": 6.1158301446269725,
+      "evidence_count": 1
+    }
+  ]
+}

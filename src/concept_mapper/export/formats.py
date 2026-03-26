@@ -34,7 +34,7 @@ def export_graphml(
         >>> graph = ConceptGraph()
         >>> graph.add_node("consciousness", frequency=42)
         >>> graph.add_edge("consciousness", "being", weight=0.85)
-        >>> export_graphml(graph, Path("output/graph.graphml"))
+        >>> export_graphml(graph, Path("data/output/graph.graphml"))
 
     Note:
         Evidence lists are converted to comma-separated strings for compatibility.
@@ -85,7 +85,7 @@ def export_dot(
         ImportError: If pydot is not installed
 
     Example:
-        >>> export_dot(graph, Path("output/graph.dot"))
+        >>> export_dot(graph, Path("data/output/graph.dot"))
         # Then render with: dot -Tpng graph.dot -o graph.png
 
     Layouts:
@@ -147,8 +147,8 @@ def export_csv(
         edges_filename: Filename for edges CSV (default: "edges.csv")
 
     Example:
-        >>> export_csv(graph, Path("output/"))
-        # Creates: output/nodes.csv, output/edges.csv
+        >>> export_csv(graph, Path("data/output/"))
+        # Creates: data/output/nodes.csv, output/edges.csv
 
     Nodes CSV format:
         id,label,frequency,pos,definition,community
@@ -237,7 +237,7 @@ def export_gexf(
         path: Output file path (.gexf)
 
     Example:
-        >>> export_gexf(graph, Path("output/graph.gexf"))
+        >>> export_gexf(graph, Path("data/output/graph.gexf"))
     """
     # Validate graph is not empty
     validate_concept_graph(graph, require_edges=False)
@@ -279,7 +279,7 @@ def export_json_graph(
         path: Output file path (.json)
 
     Example:
-        >>> export_json_graph(graph, Path("output/graph.json"))
+        >>> export_json_graph(graph, Path("data/output/graph.json"))
     """
     # Validate graph is not empty
     validate_concept_graph(graph, require_edges=False)
