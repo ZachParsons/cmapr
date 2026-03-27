@@ -87,6 +87,9 @@ class TextCleaner:
         if self.remove_page_numbers:
             text = self._remove_page_numbers(text)
 
+        # Rejoin hyphenated line breaks before any other processing
+        text = self._fix_hyphenated_linebreaks(text)
+
         if self.fix_spacing:
             text = self._fix_spacing(text)
 
@@ -104,6 +107,21 @@ class TextCleaner:
 
         return text
 
+    def _fix_hyphenated_linebreaks(self, text: str) -> str:
+        """
+        Rejoin words split across lines by a hyphen.
+
+        Targets soft-hyphen line breaks from PDF/typeset text:
+            'con-\\ntradictory' -> 'contradictory'
+            'Saus-\\nsure'      -> 'Saussure'
+
+        Only joins when the continuation starts with a lowercase letter,
+        preserving end-of-line hyphens before capitalised words.
+        Intentional mid-word hyphens (sign-function) are on one line
+        in typeset text and are unaffected.
+        """
+        return re.sub(r"-\n([a-z])", r"\1", text)
+
     def _remove_page_numbers(self, text: str) -> str:
         """
         Remove standalone page numbers and page headers.
@@ -112,7 +130,15 @@ class TextCleaner:
         - Lines with just page numbers: "42"
         - Lines with page numbers and simple headers: "Page 42", "42 | Chapter 1"
         - Clusters of numbers (TOC page listings)
+        - Bracketed page markers inline in text: "[14]", "Signs [15]", "[16] CHAPTER"
         """
+        # Remove bracketed page markers (inline, e.g. from typeset PDF text)
+        text = re.sub(r"\[\d+\]", "", text)
+        # Remove lines that are only a chapter/section header + bracketed number
+        # e.g. "Signs [15]" or "[16] SEMIOTICS AND THE PHILOSOPHY OF LANGUAGE"
+        text = re.sub(r"^[A-Z][^\n]*\[\d+\][^\n]*$", "", text, flags=re.MULTILINE)
+        text = re.sub(r"^\[\d+\][^\n]*$", "", text, flags=re.MULTILINE)
+
         lines = text.split("\n")
         cleaned_lines = []
 
@@ -189,19 +215,16 @@ class TextCleaner:
 
             # Don't join if either part is a common complete word
             common_words = {
-                "the",
-                "and",
-                "that",
-                "with",
-                "from",
-                "this",
-                "they",
-                "have",
-                "been",
-                "are",
-                "was",
-                "were",
-                "will",
+                # articles, prepositions, conjunctions, pronouns
+                "a", "an", "the",
+                "in", "on", "at", "to", "of", "by", "or", "as", "if", "one",
+                "for", "nor", "but", "yet", "so",
+                "he", "we", "it", "be", "do", "go", "is", "am",
+                "its", "his", "her", "our", "who", "all", "any",
+                # common verbs / auxiliaries
+                "and", "not", "had", "has", "was", "are", "can",
+                "were", "will", "been", "have",
+                "that", "with", "from", "this", "they",
                 "clean",
                 "clear",
                 "can",
@@ -218,9 +241,11 @@ class TextCleaner:
             if len(part1) > 4 and re.search(r"(ly|ed|ing|er)$", part1, re.IGNORECASE):
                 return match.group(0)
 
-            # Only join if first part is short (likely incomplete fragment)
-            # Longer first parts are probably complete words
-            if len(part1) > 6:
+            # Only join if first part is a short fragment (≤ 3 chars)
+            # Anything longer is likely a complete word. Hyphenated line-break
+            # splits (the main real-world cause) are handled by
+            # _fix_hyphenated_linebreaks before this runs.
+            if len(part1) > 3:
                 return match.group(0)
 
             # Join them
