@@ -241,12 +241,20 @@ class TextCleaner:
             if len(part1) > 4 and re.search(r"(ly|ed|ing|er)$", part1, re.IGNORECASE):
                 return match.group(0)
 
-            # Only join if first part is a short fragment (≤ 3 chars)
-            # Anything longer is likely a complete word. Hyphenated line-break
-            # splits (the main real-world cause) are handled by
-            # _fix_hyphenated_linebreaks before this runs.
-            if len(part1) > 3:
+            # Only join if first part is short (likely incomplete fragment)
+            if len(part1) > 6:
                 return match.group(0)
+
+            # Don't join if first part is a real English word in WordNet —
+            # it's a complete word, not a fragment. This prevents joining
+            # legitimate two-word phrases ('mental image', 'speech act')
+            # while still catching OCR splits ('obsti' + 'nacy').
+            try:
+                from nltk.corpus import wordnet as wn
+                if wn.synsets(part1.lower()):
+                    return match.group(0)
+            except Exception:
+                pass
 
             # Join them
             return part1 + part2
