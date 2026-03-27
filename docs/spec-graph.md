@@ -26,7 +26,7 @@ A node must pass **all** of the following:
 - **Not an abbreviation**: not all-caps with length ≤ 4 (e.g. *nn*, *dt*, *s-code* needs evaluation)
 - **Not a stopword**: not in the extended stopword list
 - **Minimum frequency**: appears at least 3 times in the corpus
-- **Not garbled**: passes a basic dictionary or morphological check (no OCR artifacts like *nglish*, *procatoptric*, *moke*)
+- **Not garbled**: fails WordNet lookup AND falls below corpus minimum frequency (3). A word absent from WordNet is not automatically rejected — philosophical neologisms (*semiosis*, *interpretant*, *Dasein*) are valid terms that won't appear in WordNet. Rejection requires both signals. Future: interactive per-work "special terms" dictionary where unknown words are explicitly accepted or rejected by the user (see future spec).
 
 ### What makes a node significant (ranking)
 
@@ -53,17 +53,28 @@ Each edge has:
 
 ### Edge types (semantic categories)
 
-| Type | Pattern | Example label |
-|------|---------|---------------|
-| `definition` | X is defined as Y; X means Y | *is*, *means*, *denotes* |
-| `kind-of` | X is a type/kind/species of Y | *is a kind of*, *is a type of* |
-| `property` | X is characterized by Y; X has Y | *has*, *involves*, *requires* |
-| `opposition` | X contrasts with / differs from Y | *contrasts with*, *differs from*, *opposes* |
-| `production` | X produces / generates / gives rise to Y | *produces*, *generates*, *implies* |
-| `dependence` | X presupposes / depends on Y | *presupposes*, *depends on*, *requires* |
-| `cooccurrence` | fallback: X appears near Y (no proposition found) | *(co-occurs with)* |
+| Type | Pattern | Example label | Status |
+|------|---------|---------------|--------|
+| `definition` | Explicit authorial definition: *by X I mean Y*, *X is defined as*, *X denotes Y* | *is defined as*, *means*, *denotes* | v1 |
+| `kind-of` | X is a type/kind/species of Y | *is a kind of*, *is a type of* | v1 |
+| `production` | X produces / generates / gives rise to Y | *produces*, *generates*, *implies* | v1 |
+| `dependence` | X presupposes / depends on Y | *presupposes*, *depends on*, *requires* | v1 |
+| `component` | A, B, C together form/constitute/compose X — A and B are co-components | *co-constitutes*, *together with* | v1 |
+| `cooccurrence` | fallback: X appears near Y (no proposition found) | *(co-occurs with)* | v1 |
+| `property` | X is characterized by Y; X has Y | *has*, *involves*, *requires* | deferred |
+| `opposition` | X contrasts with / differs from Y | *contrasts with*, *differs from*, *opposes* | deferred |
 
 `cooccurrence` edges are a **last resort fallback** — not the primary edge type. A graph composed mostly of cooccurrence edges is a failure state.
+
+**Note on `definition`:** The `definition` edge type is reserved for *explicit* metalinguistic definitions only — sentences where the author explicitly defines a term. The full conceptual definition of a term in the graph is emergent: it is the cluster of all typed edges pointing to and from that node (kind-of + production + dependence + property etc. together constitute what the term *means*). The node detail panel should surface this cluster as the term's working definition.
+
+**Copular disambiguation rules (v1):**
+1. Explicit marker (*by X I mean*, *X is defined as*, *X denotes*) → `definition`
+2. Kind marker (*X is a type/kind/sort/species of Y*) → `kind-of`
+3. Plain NP complement (*X is a vehicle*, *X is a process*) → `property` *(deferred; no edge extracted in v1)*
+4. AP complement (*X is important*, *X is abstract*) → `property` *(deferred; no edge extracted in v1)*
+
+Rule 3 is provisional — plain NP copular sentences may warrant reclassification as `definition` in some contexts. Revisit once real extraction results are available.
 
 ### Edge quality hierarchy
 
@@ -137,6 +148,31 @@ The current `analyze`-based approach (hub-and-spoke per search term) is wrong fo
 - If edge labels overlap: show labels only on hover
 - Minimum font size: 10px
 
+### v1 vs v2 scope
+
+**v1 (current priority):** static layout that is correct and readable. Force parameters tuned, edge labels visible, directed arrows, co-occurrence edges visually distinct. No new interactivity.
+
+**v2 (future):** node expand/collapse, node detail panel (definition, frequency, source location), edge type show/hide toggle, section subgraph navigation.
+
+---
+
+## Commands
+
+Two commands cover the graph workflow:
+
+- **`cmapr run`** — full pipeline from scratch: ingest → rarities → graph → export. One command when starting fresh.
+- **`cmapr graph`** — isolated graph step only, takes a pre-built corpus and terms file. Use this during development or when ingest/rarities are already done and only the graph needs to be regenerated.
+
+```
+# Full pipeline (run once or from scratch):
+cmapr run data/input/eco_ch1.txt --top-n 30
+
+# Isolated graph step (iterative development):
+cmapr graph data/output/corpus/eco_ch1/corpus.json \
+    --terms data/output/rarities/eco_ch1/terms.json \
+    --output data/output/graphs/eco_ch1/graph.json
+```
+
 ---
 
 ## Workflows
@@ -146,10 +182,10 @@ The current `analyze`-based approach (hub-and-spoke per search term) is wrong fo
 The user passes a significance threshold (and optionally a count) and the app selects the top-scoring rarities terms automatically, builds the graph from all of them.
 
 ```
-cmapr graph corpus.json --threshold 2.0 --count 50
+cmapr graph corpus.json --terms terms.json --threshold 2.0 --count 50
 ```
 
-This is the current `graph` command's model. The input is the rarities term list filtered by threshold.
+The `--terms` file is always required for `graph`. `--threshold` and `--count` filter it further. `cmapr run` generates the terms file automatically as part of the pipeline.
 
 ### B) Seed-word-driven (one or more starting words)
 
@@ -221,9 +257,9 @@ For workflow A (threshold-driven), the seed set is auto-populated from the rarit
 
 1. **Node filtering** — enforce inclusion criteria at graph construction time; reject fragments, abbreviations, OCR artifacts
 2. **Edge extraction** — replace co-occurrence-only edges with grammatical proposition extraction; make co-occurrence a fallback
-3. **Edge pruning** — enforce ~1:1 ratio; remove weakest edges when ratio exceeds threshold
+3. **Edge pruning** — enforce ~1:1 ratio; prune in order: (1) co-occurrence edges first regardless of weight, (2) then lowest-weight grammatical edges. Pruning threshold (target ratio) is a configurable parameter, default 2:1.
 4. **Visualization tuning** — D3 force parameters, edge labels, directed arrows, cooccurrence edge styling
-5. **Evidence surfacing** — make every edge traceable to source text in the tooltip
+5. **Evidence surfacing** — make every edge traceable to source text in the tooltip. *(Future spec needed: how many sentences to surface, how to rank/select the best evidence sentence when multiple exist. Defer to v2.)*
 
 ---
 
@@ -231,6 +267,10 @@ For workflow A (threshold-driven), the seed set is auto-populated from the rarit
 
 **1. Non-rarities terms as nodes**
 Yes. A term that is not in the rarities list may still appear as a node if it is reliably linked to an existing node — i.e. it appears as the target of a grammatical proposition (SVO object, copular complement, prepositional object) in a sentence containing a rarities term. The rarities list defines the seed vocabulary; the graph may expand beyond it through extraction.
+
+Two node roles:
+- **Seed node** — sourced from the rarities term list. Admission is by rarity score threshold.
+- **Extracted node** — sourced from grammatical extraction (object/complement of a seed node). Must pass the same inclusion criteria as seed nodes (length ≥ 4, frequency ≥ 3, not garbled, not a stopword, valid POS) before being admitted as a node. Future: consider a lower admission bar for extracted nodes that appear as the target of multiple independent extractions.
 
 **2. Multi-word terms**
 Multi-word terms (*body without organs*, *intentional stance*, *sign-function*) should be treated as single nodes. This requires noun-chunk or phrase detection at extraction time rather than single-token extraction. Currently unimplemented — requires spaCy or a chunking pass.
@@ -240,6 +280,8 @@ Edges should be directed when the data supports it. If node1 is the grammatical 
 
 **4. Co-occurrence as edge source**
 Co-occurrence (same sentence or same paragraph) is used to *discover* candidate term pairs — terms that may be related. Once a candidate pair is found via co-occurrence, attempt grammatical extraction to find a proposition. If a proposition is found, use it as the edge. If not, a co-occurrence edge is the fallback. Co-occurrence is a discovery mechanism, not a final edge type.
+
+**v1 scanning scope:** Only scan sentences where *both* terms appear together. **v2:** Also scan all sentences containing either term individually, then match extracted relations across terms. Document as future enhancement.
 
 **5. Seed words always appear as nodes**
 Yes. User-supplied seed words (workflow B) are always nodes regardless of rarities score. They are the fixed points the graph is built around.
@@ -251,6 +293,24 @@ Depth 0 = terms that appear in the same entity as the seed term, where the entit
 
 **7. Visualization grouping by section**
 Separate subgraphs per section — one D3 force layout per section (part, chapter, etc.), displayed as distinct panels or selectable views. Nodes that appear in multiple sections may appear in multiple subgraphs.
+
+**9. Multigraph edges**
+Multiple edges between the same source/target pair are allowed if they have different types. E.g. if "sign" both *is a kind of* and *produces* "meaning" (in different sentences), both edges are kept. Same-type duplicate edges are merged (aggregated into one with combined evidence and incremented weight).
+
+**10. Co-occurrence edges scope**
+Co-occurrence fallback edges are only added between two terms when those terms have a *direct* grammatical relation to each other (subject↔object, copular subject↔complement, etc.) and no typed proposition was found. Terms that merely appear in the same sentence but are not grammatically connected to each other (e.g. two subjects of the same verb, or two terms in a list) do NOT get a co-occurrence edge in v1.
+
+Exception: the **composition pattern** (see Decision 12). Future: consider adding non-composition indirect co-occurrence edges as a separate weak edge category with visual differentiation (grammatical = solid, co-occurrence = dashed/lighter) and toggle-ability.
+
+**12. Composition/constitution pattern**
+When a sentence matches the pattern *"A, B, and C form/constitute/compose/make up X"*, two things are extracted:
+1. Directed edges from each component to X: A → *constitutes* → X, B → *constitutes* → X, C → *constitutes* → X (edge type: `production` or `dependence` depending on context)
+2. Undirected `component` edges between all co-components: A ↔ B, A ↔ C, B ↔ C (edge label: *co-constitutes*)
+
+Rationale: co-components in a composition pattern are not merely co-occurring — they mutually define each other through their shared role in constituting a single entity (e.g. sign + interpretant + referent constituting semiosis in Peircean semiotics). This is semantically distinct from two terms that happen to share a sentence.
+
+**11. Visualization versions**
+v1: static force-directed layout, readable labels, correct data. No interactivity beyond what already exists (drag, zoom). v2: node expand/collapse, node detail panel, edge type toggle, section subgraph navigation.
 
 **8. Graph as end artifact**
 The graph is the primary end artifact. It is a standalone interactive HTML visualization. Future interactivity requirements:
