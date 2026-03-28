@@ -193,6 +193,35 @@ class TestFragmentCriterion:
         assert not ok
         assert "fragment" in reason
 
+    def test_suffix_fragment_rejected(self):
+        """'tion' is not in WordNet and 'proposition' ends with it → suffix fragment."""
+        f = NodeFilter(
+            corpus_vocab={"proposition"},
+            term_freqs=Counter({"tion": 10}),
+        )
+        ok, reason = f.is_valid("tion")
+        assert not ok
+        assert "fragment" in reason
+
+    def test_suffix_fragment_ence_rejected(self):
+        """'ence' is not in WordNet and 'evidence' ends with it → suffix fragment."""
+        f = NodeFilter(
+            corpus_vocab={"evidence"},
+            term_freqs=Counter({"ence": 8}),
+        )
+        ok, reason = f.is_valid("ence")
+        assert not ok
+        assert "fragment" in reason
+
+    def test_wordnet_suffix_not_fragment(self):
+        """'form' is in WordNet so it passes even though 'information' ends with it."""
+        f = NodeFilter(
+            corpus_vocab={"information", "formation"},
+            term_freqs=Counter({"form": 10}),
+        )
+        ok, _ = f.is_valid("form")
+        assert ok
+
 
 class TestInvalidCharacters:
     def test_slash_rejected(self):

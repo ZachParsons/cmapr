@@ -142,14 +142,20 @@ class NodeFilter:
         """
         True if the term looks like a fragment of another corpus word.
 
-        A term is a fragment when:
-          (a) it is NOT in WordNet  (real words like 'sign' are safe even
-              though 'signal' exists in the corpus), AND
-          (b) at least one longer corpus word starts with it
-              (e.g. 'structu' → 'structure').
+        A term is a fragment when it is NOT in WordNet AND either:
+          (a) at least one longer corpus word starts with it
+              (e.g. 'structu' → 'structure'), OR
+          (b) at least one longer corpus word ends with it
+              (e.g. 'tion' → 'proposition', 'ence' → 'evidence').
+
+        The WordNet guard preserves real words: 'sign' passes even though
+        'signal' starts with it; 'form' passes even though 'information'
+        ends with it.
         """
         if term in self._wordnet_words:
             return False
         return any(
             w.startswith(term) and len(w) > len(term) for w in self._corpus_lower
+        ) or any(
+            w.endswith(term) and len(w) > len(term) for w in self._corpus_lower
         )

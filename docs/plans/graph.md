@@ -7,12 +7,16 @@ Derived from `docs/specs/graph.md`. Each task is independently testable before t
 ## Dev loop
 
 ```bash
-# Run once (corpus + terms already built):
-cmapr graph data/output/corpus/eco_ch1/corpus.json \
-    --terms data/output/rarities/eco_ch1/terms.json \
-    --output data/output/graphs/eco_ch1/graph.json && \
-cmapr export data/output/graphs/eco_ch1/graph.json --format html && \
-open data/output/viz/eco_ch1/index.html
+# Rebuild corpus (once, or after input text changes):
+cmapr ingest data/input/eco_spl1.txt --clean-ocr \
+    --output data/output/corpus/eco_spl1/corpus.json
+
+# Iterate on graph (corpus + terms already built):
+cmapr graph data/output/corpus/eco_spl1/corpus.json \
+    --terms data/output/rarities/eco_spl1/terms.json \
+    --output data/output/graphs/eco_spl1/graph.json && \
+cmapr export data/output/graphs/eco_spl1/graph.json --format html && \
+open data/output/viz/eco_spl1/index.html
 ```
 
 ---
@@ -23,6 +27,15 @@ open data/output/viz/eco_ch1/index.html
 - Copy one chapter into `data/input/eco_ch1.txt`
 - Run ingest + rarities once; save outputs to `data/output/corpus/eco_ch1/` and `data/output/rarities/eco_ch1/`
 - Verify: rarities produces 30–80 terms, corpus loads cleanly
+
+**Verify:**
+```bash
+cmapr ingest data/input/eco_spl1.txt --clean-ocr \
+    --output data/output/corpus/eco_spl1/corpus.json
+cmapr rarities data/output/corpus/eco_spl1/corpus.json --top-n 50
+# Expect: 30–80 clean terms, no suffix fragments (tion, ence, lated, con-)
+python -c "import json; d=json.load(open('data/output/rarities/eco_spl1/terms.json')); print(len(d['terms']), 'terms')"
+```
 
 ---
 
@@ -45,6 +58,13 @@ Spec ref: *Nodes > Inclusion criteria*, *Decision 1 (node roles)*
 **2.2 Apply `NodeFilter` at graph construction time**
 - Both seed nodes (from rarities) and extracted nodes go through `NodeFilter`
 - Acceptance: graph command output contains no terms shorter than 4 chars, no all-caps abbreviations
+
+**Verify:**
+```bash
+python -m pytest tests/test_node_filter.py -v
+# Expect: all 36 tests pass, including suffix fragment tests (tion, ence rejected;
+# form, sign pass via WordNet guard)
+```
 
 ---
 
@@ -74,6 +94,12 @@ Spec ref: *Edges > Edge types*, *Copular disambiguation rules*, *Decision 4 (sca
 - Verify that a sentence with no matching pattern returns `None`
 - Test copular disambiguation: definition marker → `definition`; kind marker → `kind-of`; plain NP → `None` (property deferred)
 
+**Verify:**
+```bash
+python -m pytest tests/test_proposition_extractor.py -v
+# Expect: all tests pass, each edge type fires correctly, direction is correct
+```
+
 ---
 
 ## Phase 4 — Composition pattern extractor
@@ -88,6 +114,12 @@ Spec ref: *Decision 12*
   - One `production`/`dependence` edge per component → X (based on verb)
   - One `component` edge per co-component pair (undirected, label: *co-constitutes*)
 - Acceptance: sentence *"The sign, the interpretant, and the referent form a triadic relation"* → produces sign↔interpretant, sign↔referent, interpretant↔referent `component` edges plus directed edges to `relation`
+
+**Verify:**
+```bash
+python -m pytest tests/test_proposition_extractor.py -v -k "Composition"
+# Expect: component edges between all co-constituents, production edges to composed term
+```
 
 ---
 
@@ -113,6 +145,32 @@ Spec ref: *Graph model > How edges should be constructed*
 - Keep existing `--terms`, `--threshold`, `--count`, `--with-relations` options
 - Acceptance: `cmapr graph eco_ch1/corpus.json --terms eco_ch1/terms.json` completes and outputs edge types in summary
 
+**Verify:**
+```bash
+python -m pytest tests/test_graph.py -v
+# Unit tests for builders
+
+cmapr graph data/output/corpus/eco_spl1/corpus.json \
+    --terms data/output/rarities/eco_spl1/terms.json \
+    --output data/output/graphs/eco_spl1/graph.json
+# Expect: completes without error, prints edge type summary
+
+python -c "
+import json
+g = json.load(open('data/output/graphs/eco_spl1/graph.json'))
+edges = g['edges']
+types = {}
+for e in edges:
+    types[e.get('type','?')] = types.get(e.get('type','?'), 0) + 1
+ratio = len(edges) / max(len(g['nodes']), 1)
+print('nodes:', len(g['nodes']), '  edges:', len(edges), f'  ratio: {ratio:.1f}:1')
+print('edge types:', types)
+cooc = types.get('cooccurrence', 0)
+print(f'typed (non-cooc): {len(edges)-cooc}/{len(edges)} = {(len(edges)-cooc)/max(len(edges),1)*100:.0f}%')
+"
+# Expect: ratio ≤ 2:1, cooccurrence < 50% of edges
+```
+
 ---
 
 ## Phase 6 — Edge pruning
@@ -127,6 +185,25 @@ Spec ref: *Implementation priorities #3*
   2. Then remove lowest-weight grammatical edges until ratio ≤ `target_ratio`
   3. Never remove an edge that would isolate a node
 - Acceptance: graph with ratio 4:1 → after pruning ratio ≤ 2:1; no isolated nodes introduced
+
+**Verify:**
+```bash
+python -m pytest tests/test_graph_operations.py -v
+# Unit tests: ratio enforced, no isolated nodes
+
+python -c "
+import json
+g = json.load(open('data/output/graphs/eco_spl1/graph.json'))
+edges = g['edges']
+ratio = len(edges) / max(len(g['nodes']), 1)
+node_ids = {n['id'] for n in g['nodes']}
+connected = {e['source'] for e in edges} | {e['target'] for e in edges}
+isolated = node_ids - connected
+print(f'ratio: {ratio:.2f}:1  (target ≤ 2:1)')
+print(f'isolated nodes: {len(isolated)}  (target 0)')
+"
+# Expect: ratio ≤ 2.0, 0 isolated nodes
+```
 
 ---
 
@@ -157,6 +234,17 @@ Spec ref: *Visualization*, *v1 vs v2 scope*
 - Scale node radius: `r = 4 + score * 3` (adjustable)
 - Font size proportional to radius: `font-size = max(10, r * 1.2)`
 
+**Verify:**
+```bash
+cmapr graph data/output/corpus/eco_spl1/corpus.json \
+    --terms data/output/rarities/eco_spl1/terms.json \
+    --output data/output/graphs/eco_spl1/graph.json && \
+cmapr export data/output/graphs/eco_spl1/graph.json --format html && \
+open data/output/viz/eco_spl1/index.html
+# Visual check: edge labels visible, arrows on directed edges, cooccurrence edges dashed,
+# nodes sized by score, no JS console errors
+```
+
 ---
 
 ## Phase 8 — Integration test
@@ -172,6 +260,39 @@ Spec ref: *Visualization*, *v1 vs v2 scope*
 
 **8.2 Regression: existing tests still pass**
 - `make test` green after all changes
+
+**Verify:**
+```bash
+# Full pipeline end-to-end
+cmapr graph data/output/corpus/eco_spl1/corpus.json \
+    --terms data/output/rarities/eco_spl1/terms.json \
+    --output data/output/graphs/eco_spl1/graph.json && \
+cmapr export data/output/graphs/eco_spl1/graph.json --format html && \
+open data/output/viz/eco_spl1/index.html
+
+# Check all acceptance criteria
+python -c "
+import json
+g = json.load(open('data/output/graphs/eco_spl1/graph.json'))
+nodes, edges = g['nodes'], g['edges']
+ratio = len(edges) / max(len(nodes), 1)
+types = {}
+for e in edges:
+    types[e.get('type','?')] = types.get(e.get('type','?'), 0) + 1
+cooc = types.get('cooccurrence', 0)
+typed_pct = (len(edges) - cooc) / max(len(edges), 1) * 100
+short = [n for n in nodes if len(n['id']) < 4]
+print(f'nodes: {len(nodes)}  (target 30–150)')
+print(f'edges: {len(edges)}  ratio: {ratio:.1f}:1  (target ≤ 2:1)')
+print(f'typed edges: {typed_pct:.0f}%  (target ≥ 50%)')
+print(f'short nodes (<4): {short}  (target [])')
+print('edge types:', types)
+"
+
+# Regression
+python -m pytest -q
+# Expect: all tests pass
+```
 
 ---
 
