@@ -115,6 +115,7 @@ def to_d3_dict(
         # Add optional attributes
         if "relation_type" in edge_attrs:
             link_data["label"] = edge_attrs["relation_type"]
+            link_data["type"] = edge_attrs["relation_type"]
 
         metadata = edge_attrs.get("metadata", {})
         verb = (

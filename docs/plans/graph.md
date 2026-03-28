@@ -34,7 +34,7 @@ cmapr ingest data/input/eco_spl1.txt --clean-ocr \
     --output data/output/corpus/eco_spl1/corpus.json
 cmapr rarities data/output/corpus/eco_spl1/corpus.json --top-n 50
 # Expect: 30–80 clean terms, no suffix fragments (tion, ence, lated, con-)
-python -c "import json; d=json.load(open('data/output/rarities/eco_spl1/terms.json')); print(len(d['terms']), 'terms')"
+python -c "import json; d=json.load(open('data/output/rarities/eco_spl1/terms.json')); print(len(d), 'terms')"
 ```
 
 ---
@@ -158,17 +158,17 @@ cmapr graph data/output/corpus/eco_spl1/corpus.json \
 python -c "
 import json
 g = json.load(open('data/output/graphs/eco_spl1/graph.json'))
-edges = g['edges']
+links = g['links']
 types = {}
-for e in edges:
-    types[e.get('type','?')] = types.get(e.get('type','?'), 0) + 1
-ratio = len(edges) / max(len(g['nodes']), 1)
-print('nodes:', len(g['nodes']), '  edges:', len(edges), f'  ratio: {ratio:.1f}:1')
-print('edge types:', types)
+for e in links:
+    types[e.get('type','cooccurrence')] = types.get(e.get('type','cooccurrence'), 0) + 1
+ratio = len(links) / max(len(g['nodes']), 1)
+print('nodes:', len(g['nodes']), '  links:', len(links), f'  ratio: {ratio:.1f}:1')
+print('link types:', types)
 cooc = types.get('cooccurrence', 0)
-print(f'typed (non-cooc): {len(edges)-cooc}/{len(edges)} = {(len(edges)-cooc)/max(len(edges),1)*100:.0f}%')
+print(f'typed (non-cooc): {len(links)-cooc}/{len(links)} = {(len(links)-cooc)/max(len(links),1)*100:.0f}%')
 "
-# Expect: ratio ≤ 2:1, cooccurrence < 50% of edges
+# Expect: ratio ≤ 2:1, cooccurrence < 50% of links
 ```
 
 ---
@@ -194,10 +194,10 @@ python -m pytest tests/test_graph_operations.py -v
 python -c "
 import json
 g = json.load(open('data/output/graphs/eco_spl1/graph.json'))
-edges = g['edges']
-ratio = len(edges) / max(len(g['nodes']), 1)
+links = g['links']
+ratio = len(links) / max(len(g['nodes']), 1)
 node_ids = {n['id'] for n in g['nodes']}
-connected = {e['source'] for e in edges} | {e['target'] for e in edges}
+connected = {e['source'] for e in links} | {e['target'] for e in links}
 isolated = node_ids - connected
 print(f'ratio: {ratio:.2f}:1  (target ≤ 2:1)')
 print(f'isolated nodes: {len(isolated)}  (target 0)')
@@ -274,19 +274,19 @@ open data/output/viz/eco_spl1/index.html
 python -c "
 import json
 g = json.load(open('data/output/graphs/eco_spl1/graph.json'))
-nodes, edges = g['nodes'], g['edges']
-ratio = len(edges) / max(len(nodes), 1)
+nodes, links = g['nodes'], g['links']
+ratio = len(links) / max(len(nodes), 1)
 types = {}
-for e in edges:
-    types[e.get('type','?')] = types.get(e.get('type','?'), 0) + 1
+for e in links:
+    types[e.get('type','cooccurrence')] = types.get(e.get('type','cooccurrence'), 0) + 1
 cooc = types.get('cooccurrence', 0)
-typed_pct = (len(edges) - cooc) / max(len(edges), 1) * 100
-short = [n for n in nodes if len(n['id']) < 4]
+typed_pct = (len(links) - cooc) / max(len(links), 1) * 100
+short = [n['id'] for n in nodes if len(n['id']) < 4]
 print(f'nodes: {len(nodes)}  (target 30–150)')
-print(f'edges: {len(edges)}  ratio: {ratio:.1f}:1  (target ≤ 2:1)')
-print(f'typed edges: {typed_pct:.0f}%  (target ≥ 50%)')
+print(f'links: {len(links)}  ratio: {ratio:.1f}:1  (target ≤ 2:1)')
+print(f'typed links: {typed_pct:.0f}%  (target ≥ 50%)')
 print(f'short nodes (<4): {short}  (target [])')
-print('edge types:', types)
+print('link types:', types)
 "
 
 # Regression

@@ -19,23 +19,28 @@ def sample_text_file(tmp_path):
     """Create a sample text file with philosophical terminology."""
     text_file = tmp_path / "sample.txt"
     # Use a more substantial text that will produce detectable rare terms
+    # Text must be substantial enough for rarities detection AND have cross-term
+    # sentences so build_proposition_graph can extract typed edges between pairs.
     text_file.write_text(
         "Geist is a fundamental concept in Hegel's dialectical philosophy. "
         "Geist refers to the self-developing rationality that animates history and thought. "
-        "Aufhebung describes the dialectical movement of sublation and preservation. "
-        "Through Aufhebung, contradictions are both negated and preserved at a higher level. "
-        "Selbstbewusstsein characterizes the fundamental structure of self-consciousness. "
+        "Geist produces Aufhebung through the dialectical movement of sublation. "
+        "Aufhebung describes how Geist negates and preserves contradictions at a higher level. "
+        "Aufhebung is the defining operation of dialectical thought and historical development. "
+        "Through Aufhebung, Geist realises itself in concrete Sittlichkeit. "
+        "Selbstbewusstsein characterizes the fundamental structure of Geist in the world. "
         "Selbstbewusstsein cannot be understood apart from recognition by another consciousness. "
+        "Selbstbewusstsein depends on Anerkennung for its full realisation in the social world. "
         "The dialectical process grounds the entire structure of thought and reality. "
-        "The dialectic is not mere succession but the negation of negation. "
-        "Anerkennung distinguishes mutual recognition from mere acknowledgment. "
-        "Understanding Anerkennung is crucial for Hegel's social philosophy. "
-        "Sittlichkeit involves the actualization of ethical life through social institutions. "
-        "Sittlichkeit contrasts with abstract morality and immediate desire. "
-        "The Phenomenology investigates the structures of consciousness and spirit. "
-        "The phenomenological method involves the dialectical unfolding of shapes of consciousness. "
-        "Mediation plays a crucial role in the interpretation of concrete universals. "
-        "The dialectical circle describes how the end returns to the beginning enriched by development."
+        "The dialectic is not mere succession but the negation of negation itself. "
+        "Anerkennung distinguishes mutual recognition from mere acknowledgment of presence. "
+        "Anerkennung is a type of Sittlichkeit that grounds social and political philosophy. "
+        "Understanding Anerkennung is crucial for Sittlichkeit and ethical life. "
+        "Sittlichkeit involves the actualization of Geist in ethical life through social institutions. "
+        "Sittlichkeit contrasts with abstract morality and the immediacy of desire. "
+        "The Phenomenology investigates the structures of consciousness and Geist. "
+        "Mediation plays a crucial role in the interpretation of Aufhebung and concrete universals. "
+        "The dialectical circle describes how Geist returns to itself enriched by development."
     )
     return text_file
 
@@ -46,21 +51,30 @@ def sample_corpus_json(tmp_path):
     from concept_mapper.corpus.loader import load_file
     from concept_mapper.preprocessing.pipeline import preprocess
 
-    # Create a text file with philosophical terms that should be detected
+    # Text must be substantial enough for rarities detection AND include cross-term
+    # sentences so build_proposition_graph can extract typed edges between pairs.
     text_file = tmp_path / "source.txt"
     text_file.write_text(
         "Geist is a fundamental concept in Hegel's dialectical philosophy. "
         "Geist refers to the self-developing rationality that animates history. "
-        "Aufhebung describes the dialectical movement of sublation. "
-        "Through Aufhebung, contradictions are both negated and preserved. "
-        "Selbstbewusstsein characterizes the fundamental structure of self-consciousness. "
+        "Geist drives the movement of thought toward absolute knowledge. "
+        "Geist produces Aufhebung through the dialectical movement of sublation. "
+        "Aufhebung describes how Geist negates and preserves contradictions. "
+        "Aufhebung is the defining operation of dialectical thought. "
+        "Through Aufhebung, Geist realises itself in concrete Sittlichkeit. "
+        "Selbstbewusstsein characterizes the fundamental structure of Geist. "
         "Selbstbewusstsein cannot be understood apart from recognition. "
-        "The dialectical process grounds the entire structure of thought. "
-        "The dialectic is not mere succession but negation of negation. "
-        "Anerkennung distinguishes mutual recognition from acknowledgment. "
-        "Understanding Anerkennung is crucial for social philosophy. "
-        "Sittlichkeit involves the actualization of ethical life. "
-        "Sittlichkeit contrasts with abstract morality and immediate desire."
+        "Selbstbewusstsein depends on Anerkennung for its full realisation. "
+        "Anerkennung distinguishes mutual recognition from mere acknowledgment. "
+        "Anerkennung is a type of Sittlichkeit that grounds social philosophy. "
+        "Understanding Anerkennung is crucial for Sittlichkeit. "
+        "Sittlichkeit involves the actualization of Geist in ethical life. "
+        "Sittlichkeit contrasts with abstract morality and immediate desire. "
+        "The dialectical process grounds the entire structure of philosophical thought. "
+        "The dialectic is not mere succession but the negation of negation itself. "
+        "Hegel's system connects the individual subject to the universal Geist. "
+        "Reason develops through the historical realization of Geist in the world. "
+        "The concept of Aufhebung captures both negation and preservation simultaneously."
     )
 
     # Process it

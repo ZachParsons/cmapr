@@ -814,8 +814,9 @@ def graph(
         cmapr graph data/output/corpus/eco_spl_w_toc/corpus.json -t data/output/rarities/eco_spl_w_toc/rarities.json --with-relations
         cmapr graph data/output/corpus/eco_spl_w_toc/corpus.json -t data/output/rarities/eco_spl_w_toc/rarities.json --start-from-section 1
     """
-    from concept_mapper.analysis.contextual_relations import ContextualRelationExtractor
-    from concept_mapper.graph.builders import graph_from_contextual_relations
+    from collections import Counter
+    from concept_mapper.graph.builders import build_proposition_graph
+    from concept_mapper.graph.node_filter import NodeFilter
 
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -835,36 +836,41 @@ def graph(
     if verbose:
         click.echo(f"Loaded {len(term_list)} term(s)")
 
-    pos_types = list(pos) if pos else None
+    # Build NodeFilter: vocab from raw tokens, frequencies from lemmas so that
+    # inflected forms count toward their base (interpretant + interpretants → 3)
+    all_tokens = [tok.lower() for doc in docs for tok in doc.tokens]
+    all_lemmas = [lem.lower() for doc in docs for lem in doc.lemmas]
+    corpus_vocab = set(all_tokens)
+    term_freqs = Counter(all_lemmas)
+    node_filter = NodeFilter(corpus_vocab=corpus_vocab, term_freqs=term_freqs)
 
-    click.echo("Precomputing corpus frequencies...")
-    extractor = ContextualRelationExtractor(
+    # Filter seed terms through NodeFilter — same criteria as extracted nodes
+    # (Decision 1: both roles use identical inclusion criteria)
+    raw_seed_terms = [entry.term for entry in term_list]
+    seed_terms = node_filter.filter(raw_seed_terms)
+    rejected = node_filter.rejected(raw_seed_terms)
+    if rejected and verbose:
+        click.echo(f"Filtered {len(rejected)} seed term(s): {', '.join(rejected)}")
+    elif rejected:
+        click.echo(f"Filtered {len(rejected)} noisy seed term(s) from rarities list")
+
+    click.echo("Extracting typed propositions...")
+    concept_graph = build_proposition_graph(
         docs=docs,
-        significance_threshold=threshold,
-        pos_types=pos_types,
+        seed_terms=seed_terms,
+        node_filter=node_filter,
     )
 
-    all_relations = []
-    with click.progressbar(term_list, label="Analyzing") as bar:
-        for term_entry in bar:
-            term_relations = extractor.extract_for_term(
-                search_term=term_entry.term,
-                match_lemma=lemma,
-                extract_relations=with_relations,
-                top_n=top_n,
-            )
-            term_relations = _filter_relations(
-                term_relations, start_from_section, exclude_sections
-            )
-            all_relations.extend(term_relations)
-
-    if verbose:
-        click.echo(f"Collected {len(all_relations)} relations across all terms")
-
-    concept_graph = graph_from_contextual_relations(all_relations)
+    # Summarise edge types
+    type_counts: dict = {}
+    for src, tgt in concept_graph.edges():
+        t = concept_graph.get_edge(src, tgt).get("relation_type", "?")
+        type_counts[t] = type_counts.get(t, 0) + 1
+    type_summary = "  ".join(f"{t}:{n}" for t, n in sorted(type_counts.items()))
 
     click.echo(
-        f"\n✓ Graph: {concept_graph.node_count()} nodes, {concept_graph.edge_count()} edges"
+        f"\n✓ Graph: {concept_graph.node_count()} nodes, "
+        f"{concept_graph.edge_count()} edges\n  {type_summary}"
     )
 
     validate_concept_graph(concept_graph)

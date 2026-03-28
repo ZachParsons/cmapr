@@ -4,12 +4,142 @@ Graph construction from co-occurrence and relations.
 This module provides functions to build ConceptGraphs from analysis results.
 """
 
+import math
+from collections import Counter
 from typing import TYPE_CHECKING, Dict, List, Optional
 from concept_mapper.graph.model import ConceptGraph
 from concept_mapper.analysis.relations import Relation
 
 if TYPE_CHECKING:
     from concept_mapper.analysis.contextual_relations import ContextualRelation
+    from concept_mapper.graph.node_filter import NodeFilter
+
+
+def build_proposition_graph(
+    docs: list,
+    seed_terms: list,
+    node_filter: Optional["NodeFilter"] = None,
+    pmi_threshold: float = 1.0,
+) -> ConceptGraph:
+    """
+    Build a typed proposition graph from a document set and seed term list.
+
+    For each pair of seed terms that co-occur in at least one sentence, attempts
+    to extract a typed proposition (definition, kind-of, production, dependence,
+    component). Falls back to a cooccurrence edge when PMI ≥ pmi_threshold and
+    no typed proposition was found.
+
+    Multigraph note: ConceptGraph is backed by a DiGraph (one edge per directed
+    pair). When multiple proposition types exist for the same pair the
+    highest-priority type wins: definition > kind-of > production > dependence >
+    component > cooccurrence.
+
+    Args:
+        docs         : list of ProcessedDocument objects
+        seed_terms   : terms from the rarities list; all become nodes
+        node_filter  : optional NodeFilter; applied to extracted (non-seed) nodes
+        pmi_threshold: minimum PMI for a cooccurrence fallback edge (default 1.0)
+
+    Returns:
+        ConceptGraph with typed edges
+    """
+    from concept_mapper.graph.proposition_extractor import Proposition, PropositionExtractor
+
+    _TYPE_PRIORITY = {
+        "definition": 0,
+        "kind-of": 1,
+        "production": 2,
+        "dependence": 3,
+        "component": 4,
+        "cooccurrence": 5,
+    }
+
+    extractor = PropositionExtractor(docs)
+    all_sentences = extractor._sentences
+    n_total = max(len(all_sentences), 1)
+
+    seed_lower = [t.lower() for t in seed_terms]
+    seed_set = set(seed_lower)
+
+    # Per-term sentence counts for PMI
+    term_counts: Dict[str, int] = {
+        term: sum(1 for s in all_sentences if term in s.lower())
+        for term in seed_lower
+    }
+
+    # Accumulate best proposition per (source, target) pair
+    best: Dict[tuple, Proposition] = {}
+
+    def _keep(prop: Proposition) -> None:
+        """Store prop if it beats the current best for its (source, target) pair."""
+        key = (prop.source.lower(), prop.target.lower())
+        rkey = (prop.target.lower(), prop.source.lower())
+        current = best.get(key) or best.get(rkey)
+        if current is None or _TYPE_PRIORITY.get(prop.type, 9) < _TYPE_PRIORITY.get(current.type, 9):
+            # Remove reverse key if present so direction is updated
+            best.pop(rkey, None)
+            best[key] = prop
+
+    # Typed propositions for all seed pairs
+    for i, term_a in enumerate(seed_lower):
+        for term_b in seed_lower[i + 1:]:
+            for prop in extractor.extract(term_a, term_b):
+                _keep(prop)
+
+    # Composition pattern across full term list
+    for prop in extractor.extract_composition(seed_lower):
+        _keep(prop)
+
+    # Cooccurrence fallback for uncovered pairs
+    covered = {frozenset(k) for k in best}
+    for i, term_a in enumerate(seed_lower):
+        for term_b in seed_lower[i + 1:]:
+            if frozenset([term_a, term_b]) in covered:
+                continue
+            n_ab = sum(
+                1 for s in all_sentences
+                if term_a in s.lower() and term_b in s.lower()
+            )
+            if n_ab == 0:
+                continue
+            na, nb = term_counts.get(term_a, 0), term_counts.get(term_b, 0)
+            pmi = (
+                math.log2(n_ab * n_total / (na * nb))
+                if na > 0 and nb > 0
+                else 0.0
+            )
+            if pmi >= pmi_threshold:
+                _keep(Proposition(
+                    source=term_a, target=term_b,
+                    label="co-occurs with", type="cooccurrence",
+                    evidence="", directed=False, weight=n_ab,
+                ))
+
+    # Build graph
+    graph = ConceptGraph(directed=True)
+
+    for (source, target), prop in best.items():
+        # NodeFilter: reject extracted nodes that fail inclusion criteria
+        if node_filter is not None:
+            if any(
+                node not in seed_set and not node_filter.is_valid(node)[0]
+                for node in (source, target)
+            ):
+                continue
+
+        for node in (source, target):
+            if not graph.has_node(node):
+                graph.add_node(node, label=node)
+
+        graph.add_edge(
+            source, target,
+            relation_type=prop.type,
+            verb=prop.label,
+            weight=prop.weight,
+            evidence=[prop.evidence] if prop.evidence else [],
+        )
+
+    return graph
 
 
 def graph_from_cooccurrence(
