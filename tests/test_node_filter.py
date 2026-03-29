@@ -6,7 +6,6 @@ philosophical terms pass and known noise terms from the Eco corpus fail.
 
 from collections import Counter
 
-import pytest
 
 from concept_mapper.graph.node_filter import NodeFilter
 
@@ -14,6 +13,7 @@ from concept_mapper.graph.node_filter import NodeFilter
 # ---------------------------------------------------------------------------
 # Shared fixtures
 # ---------------------------------------------------------------------------
+
 
 def make_filter(vocab=None, freqs=None, min_freq=3):
     """Build a NodeFilter with controllable inputs."""
@@ -32,13 +32,14 @@ SAMPLE_FREQS = {
     "signal": 8,
     "structure": 7,
     "code": 6,
-    "structu": 3,   # artificial fragment entry
+    "structu": 3,  # artificial fragment entry
 }
 
 
 # ---------------------------------------------------------------------------
 # Individual criterion tests
 # ---------------------------------------------------------------------------
+
 
 class TestPOSCriterion:
     def test_noun_passes(self):
@@ -177,7 +178,7 @@ class TestFragmentCriterion:
         """'semiosi' is not in WordNet. If no longer corpus word starts with it,
         it is NOT a fragment (it may be a genuine neologism or foreign term)."""
         f = NodeFilter(
-            corpus_vocab={"sign", "code"},   # no word starting with 'semiosi'
+            corpus_vocab={"sign", "code"},  # no word starting with 'semiosi'
             term_freqs=Counter({"semiosi": 5}),
         )
         ok, _ = f.is_valid("semiosi")
@@ -247,6 +248,7 @@ class TestInvalidCharacters:
 # Bulk API tests
 # ---------------------------------------------------------------------------
 
+
 class TestFilterAndRejected:
     def setup_method(self):
         self.f = NodeFilter(
@@ -275,6 +277,7 @@ class TestFilterAndRejected:
 # Acceptance test: known good and bad terms from the Eco corpus
 # ---------------------------------------------------------------------------
 
+
 class TestEcoCorpusTerms:
     """
     Verify that terms from the eco_spl1 rarities output behave as expected.
@@ -283,24 +286,47 @@ class TestEcoCorpusTerms:
 
     def setup_method(self):
         vocab = {
-            "semiosis", "semiotic", "semiotics", "sign", "signs",
-            "signifier", "signification", "signify",
-            "interpretant", "interpretation",
-            "structure", "structuralism",
-            "lekton", "aliquid",
+            "semiosis",
+            "semiotic",
+            "semiotics",
+            "sign",
+            "signs",
+            "signifier",
+            "signification",
+            "signify",
+            "interpretant",
+            "interpretation",
+            "structure",
+            "structuralism",
+            "lekton",
+            "aliquid",
         }
-        freqs = Counter({
-            "semiotic": 30, "signifier": 12, "signification": 10,
-            "interpretant": 9, "sign": 25, "lekton": 5, "aliquid": 4,
-            "semiosi": 8,   # 'semiosis' is in vocab → should be fragment
-            "/man/": 6,     # invalid chars
-            "tion": 4,      # too short? no, 4 chars — but fragment of 'tion*'?
-            "structu": 3,   # fragment of 'structure'
-        })
+        freqs = Counter(
+            {
+                "semiotic": 30,
+                "signifier": 12,
+                "signification": 10,
+                "interpretant": 9,
+                "sign": 25,
+                "lekton": 5,
+                "aliquid": 4,
+                "semiosi": 8,  # 'semiosis' is in vocab → should be fragment
+                "/man/": 6,  # invalid chars
+                "tion": 4,  # too short? no, 4 chars — but fragment of 'tion*'?
+                "structu": 3,  # fragment of 'structure'
+            }
+        )
         self.f = NodeFilter(corpus_vocab=vocab, term_freqs=freqs, min_freq=3)
 
     def test_core_philosophical_terms_pass(self):
-        for term in ["semiotic", "signifier", "signification", "interpretant", "lekton", "aliquid"]:
+        for term in [
+            "semiotic",
+            "signifier",
+            "signification",
+            "interpretant",
+            "lekton",
+            "aliquid",
+        ]:
             ok, reason = self.f.is_valid(term)
             assert ok, f"Expected {term!r} to pass but got: {reason}"
 
