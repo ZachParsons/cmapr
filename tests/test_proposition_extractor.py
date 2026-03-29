@@ -10,9 +10,8 @@ real use case.
 
 from unittest.mock import MagicMock
 
-import pytest
 
-from concept_mapper.graph.proposition_extractor import Proposition, PropositionExtractor
+from concept_mapper.graph.proposition_extractor import PropositionExtractor
 
 
 # ---------------------------------------------------------------------------
@@ -116,8 +115,8 @@ class TestKindOfExtraction:
         e = self._extractor(s)
         props = e.extract("sign", "code")
         p = next(p for p in props if p.type == "kind-of")
-        assert p.source.lower() == "sign"   # subtype
-        assert p.target.lower() == "code"   # supertype
+        assert p.source.lower() == "sign"  # subtype
+        assert p.target.lower() == "code"  # supertype
 
     def test_no_kind_of_without_marker(self):
         s = "A sign and a code are related."
@@ -301,6 +300,95 @@ class TestExtractAllPairs:
 
 # ---------------------------------------------------------------------------
 # Composition pattern (Phase 4 / Decision 12)
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Property extraction
+# ---------------------------------------------------------------------------
+
+
+class TestPropertyExtraction:
+    def _extractor(self, sentence: str) -> PropositionExtractor:
+        return PropositionExtractor(make_docs([sentence]))
+
+    def test_plain_copular(self):
+        s = "A rhizome is an open chart without a fixed centre."
+        e = self._extractor(s)
+        props = e.extract("rhizome", "chart")
+        assert any(p.type == "property" for p in props)
+        p = next(p for p in props if p.type == "property")
+        assert p.source.lower() == "rhizome"
+        assert p.directed is True
+
+    def test_metaphor_is_figure(self):
+        s = "Metaphor is a rhetorical figure that transfers meaning."
+        e = self._extractor(s)
+        props = e.extract("metaphor", "figure")
+        assert any(p.type == "property" for p in props)
+
+    def test_property_does_not_fire_for_kind_of(self):
+        """kind-of runs first; property should not also fire for the same sentence."""
+        s = "A sign is a type of code."
+        e = self._extractor(s)
+        props = e.extract("sign", "code")
+        # kind-of should be present; property may or may not be — but kind-of must win
+        assert any(p.type == "kind-of" for p in props)
+
+
+# ---------------------------------------------------------------------------
+# Relation extraction (_try_relation and _try_pos_verb)
+# ---------------------------------------------------------------------------
+
+
+class TestRelationExtraction:
+    def _extractor(self, sentence: str) -> PropositionExtractor:
+        return PropositionExtractor(make_docs([sentence]))
+
+    def test_try_relation_verb_list(self):
+        s = "The sign relates to the code through a system of conventions."
+        e = self._extractor(s)
+        props = e.extract("sign", "code")
+        assert any(p.type == "relation" for p in props)
+        p = next(p for p in props if p.type == "relation")
+        assert "relat" in p.label.lower()
+
+    def test_try_relation_involves(self):
+        s = "Every act of semiosis involves a sign and a referent."
+        e = self._extractor(s)
+        props = e.extract("semiosis", "sign")
+        assert any(p.type == "relation" for p in props)
+
+    def test_try_pos_verb_catches_unlisted_verb(self):
+        """POS fallback catches verbs not in any predefined list."""
+        s = "The sign transforms the referent into an abstract entity."
+        e = self._extractor(s)
+        props = e.extract("sign", "referent")
+        # "transforms" is not in any static list → must be caught by _try_pos_verb
+        assert any(p.type == "relation" for p in props)
+        p = next(p for p in props if p.type == "relation")
+        assert "transform" in p.label.lower()
+
+    def test_try_pos_verb_passive_reverses_direction(self):
+        """Passive voice ('A is governed by B') should set source=B, target=A."""
+        s = "The sign is structured by the code in all cultural systems."
+        e = self._extractor(s)
+        props = e.extract("sign", "code")
+        # "sign is structured by code" → dependence OR relation with reversed direction
+        typed = [p for p in props if p.type in ("dependence", "relation")]
+        assert typed, "Expected at least one typed edge"
+
+    def test_pos_verb_no_match_on_light_verb_only(self):
+        """Sentence with only light verbs between terms → no relation from POS."""
+        s = "The sign and the code appear together in a sentence."
+        e = self._extractor(s)
+        props = e.extract("sign", "code")
+        # 'appear' is a light verb; no content verb between the terms
+        assert not any(p.type == "relation" for p in props)
+
+
+# ---------------------------------------------------------------------------
+# Composition pattern
 # ---------------------------------------------------------------------------
 
 

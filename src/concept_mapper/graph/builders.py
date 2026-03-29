@@ -5,7 +5,6 @@ This module provides functions to build ConceptGraphs from analysis results.
 """
 
 import math
-from collections import Counter
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from concept_mapper.graph.model import ConceptGraph
 from concept_mapper.analysis.relations import Relation
@@ -45,7 +44,10 @@ def build_proposition_graph(
     Returns:
         ConceptGraph with typed edges
     """
-    from concept_mapper.graph.proposition_extractor import Proposition, PropositionExtractor
+    from concept_mapper.graph.proposition_extractor import (
+        Proposition,
+        PropositionExtractor,
+    )
 
     _TYPE_PRIORITY = {
         "definition": 0,
@@ -65,8 +67,7 @@ def build_proposition_graph(
 
     # Per-term sentence counts for PMI
     term_counts: Dict[str, int] = {
-        term: sum(1 for s in all_sentences if term in s.lower())
-        for term in seed_lower
+        term: sum(1 for s in all_sentences if term in s.lower()) for term in seed_lower
     }
 
     # Accumulate best proposition per (source, target) pair
@@ -77,14 +78,16 @@ def build_proposition_graph(
         key = (prop.source.lower(), prop.target.lower())
         rkey = (prop.target.lower(), prop.source.lower())
         current = best.get(key) or best.get(rkey)
-        if current is None or _TYPE_PRIORITY.get(prop.type, 9) < _TYPE_PRIORITY.get(current.type, 9):
+        if current is None or _TYPE_PRIORITY.get(prop.type, 9) < _TYPE_PRIORITY.get(
+            current.type, 9
+        ):
             # Remove reverse key if present so direction is updated
             best.pop(rkey, None)
             best[key] = prop
 
     # Typed propositions for all seed pairs
     for i, term_a in enumerate(seed_lower):
-        for term_b in seed_lower[i + 1:]:
+        for term_b in seed_lower[i + 1 :]:
             for prop in extractor.extract(term_a, term_b):
                 _keep(prop)
 
@@ -95,27 +98,28 @@ def build_proposition_graph(
     # Cooccurrence fallback for uncovered pairs
     covered = {frozenset(k) for k in best}
     for i, term_a in enumerate(seed_lower):
-        for term_b in seed_lower[i + 1:]:
+        for term_b in seed_lower[i + 1 :]:
             if frozenset([term_a, term_b]) in covered:
                 continue
             n_ab = sum(
-                1 for s in all_sentences
-                if term_a in s.lower() and term_b in s.lower()
+                1 for s in all_sentences if term_a in s.lower() and term_b in s.lower()
             )
             if n_ab == 0:
                 continue
             na, nb = term_counts.get(term_a, 0), term_counts.get(term_b, 0)
-            pmi = (
-                math.log2(n_ab * n_total / (na * nb))
-                if na > 0 and nb > 0
-                else 0.0
-            )
+            pmi = math.log2(n_ab * n_total / (na * nb)) if na > 0 and nb > 0 else 0.0
             if pmi >= pmi_threshold:
-                _keep(Proposition(
-                    source=term_a, target=term_b,
-                    label="co-occurs with", type="cooccurrence",
-                    evidence="", directed=False, weight=n_ab,
-                ))
+                _keep(
+                    Proposition(
+                        source=term_a,
+                        target=term_b,
+                        label="co-occurs with",
+                        type="cooccurrence",
+                        evidence="",
+                        directed=False,
+                        weight=n_ab,
+                    )
+                )
 
     # Normalise term_scores keys to lowercase for lookup
     scores_lower: Dict[str, float] = (
@@ -142,7 +146,8 @@ def build_proposition_graph(
                 graph.add_node(node, **node_attrs)
 
         graph.add_edge(
-            source, target,
+            source,
+            target,
             relation_type=prop.type,
             verb=prop.label,
             weight=prop.weight,

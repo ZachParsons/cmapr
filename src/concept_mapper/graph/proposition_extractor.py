@@ -6,13 +6,13 @@ to classify the relation using pattern matching in priority order:
 
   1. definition  — explicit authorial definition markers
   2. kind-of     — copular + kind marker ('is a type of')
-  3. production  — A produces/generates/implies B
-  4. dependence  — A presupposes/requires/depends on B
-  5. component   — A, B, C together form X  (composition pattern)
+  3. production  — A produces/generates/implies/expresses/denotes B
+  4. dependence  — A presupposes/requires/derives from/governed by B
+  5. property    — A is [a/an] B (plain copular, no kind marker)
+  6. relation    — A <verb> B (any clear verb; label = actual verb from text)
+  7. component   — A, B, C together form X  (composition pattern)
 
 Falls back to cooccurrence (handled by caller) when no pattern matches.
-
-Edge types 'property' and 'opposition' are deferred (see spec).
 
 v1 scanning scope: only sentences where BOTH terms appear.
 v2: also scan individual-term sentences and cross-match extracted relations.
@@ -21,10 +21,9 @@ Spec ref: docs/specs/graph.md § Edges, § Decisions 4, 9, 10, 12
 """
 
 import re
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
-from concept_mapper.corpus.models import ProcessedDocument
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +96,21 @@ _PRODUCTION_VERBS = (
     r"determines?|determined|"
     r"brings?\s+about|brought\s+about|"
     r"gives?\s+rise\s+to|"
-    r"results?\s+in|resulted\s+in)"
+    r"results?\s+in|resulted\s+in|"
+    r"expresses?|expressed|"
+    r"denotes?|denoted|"
+    r"signifies?|signified|"
+    r"represents?|represented|"
+    r"refers?\s+to|referred\s+to|"
+    r"characterizes?|characterized|"
+    r"functions?\s+as|functioned\s+as|"
+    r"describes?|described|"
+    r"introduces?|introduced|"
+    r"encodes?|encoded|"
+    r"marks?|marked|"
+    r"activates?|activated|"
+    r"triggers?|triggered|"
+    r"defines?|defined)"
 )
 
 _DEPENDENCE_PHRASES = (
@@ -108,7 +121,47 @@ _DEPENDENCE_PHRASES = (
     r"is\s+based\s+on|was\s+based\s+on|"
     r"rests?\s+on|rested\s+on|"
     r"is\s+conditioned\s+by|was\s+conditioned\s+by|"
-    r"is\s+grounded\s+in|was\s+grounded\s+in)"
+    r"is\s+grounded\s+in|was\s+grounded\s+in|"
+    r"derives?\s+from|derived\s+from|"
+    r"governs?|governed\s+by|"
+    r"controls?\s+(?:the\s+)?|controlled\s+by|"
+    r"follows?\s+from|followed\s+from|"
+    r"arises?\s+from|arose\s+from|"
+    r"emerges?\s+from|emerged\s+from|"
+    r"is\s+influenced\s+by|was\s+influenced\s+by|"
+    r"is\s+shaped\s+by|was\s+shaped\s+by|"
+    r"is\s+structured\s+by|was\s+structured\s+by|"
+    r"is\s+determined\s+by|was\s+determined\s+by|"
+    r"is\s+constrained\s+by|was\s+constrained\s+by|"
+    r"applies?\s+to|applied\s+to)"
+)
+
+# Broad verb list for the relation fallback — captures any clearly verbal
+# connection between two terms that didn't match a more specific type above.
+# The actual verb is extracted and used as the edge label.
+_RELATION_VERBS = (
+    r"(?:relates?\s+to|related\s+to|"
+    r"connects?|connected\s+(?:to|with)|"
+    r"links?|linked\s+(?:to|with)|"
+    r"corresponds?\s+to|corresponded\s+to|"
+    r"involves?|involved|"
+    r"includes?|included|"
+    r"contains?|contained|"
+    r"comprises?|comprised|"
+    r"associates?\s+with|associated\s+with|"
+    r"maps?\s+(?:onto?|to)|mapped\s+(?:onto?|to)|"
+    r"points?\s+to|pointed\s+to|"
+    r"operates?\s+(?:on|through|in|via)|"
+    r"interacts?\s+with|interacted\s+with|"
+    r"combines?\s+with|combined\s+with|"
+    r"coexists?\s+with|co-exists?\s+with|"
+    r"parallels?|paralleled|"
+    r"instantiates?|instantiated|"
+    r"realizes?|realized|"
+    r"implements?|implemented|"
+    r"applies?\s+to|applied\s+to|"
+    r"modifies?|modified|"
+    r"restricts?|restricted)"
 )
 
 _COMPOSITION_VERBS = (
@@ -144,11 +197,99 @@ class PropositionExtractor:
     props = extractor.extract_composition(["sign", "interpretant", "referent"])
     """
 
+    # Verbs that carry no semantic content — skip these in POS extraction.
+    _LIGHT_VERBS = frozenset(
+        {
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "make",
+            "made",
+            "take",
+            "took",
+            "get",
+            "got",
+            "put",
+            "use",
+            "used",
+            "show",
+            "showed",
+            "find",
+            "found",
+            "give",
+            "gave",
+            "see",
+            "saw",
+            "know",
+            "knew",
+            "think",
+            "thought",
+            "say",
+            "said",
+            "tell",
+            "told",
+            "come",
+            "came",
+            "go",
+            "went",
+            "look",
+            "looked",
+            "work",
+            "worked",
+            "seem",
+            "seemed",
+            "appear",
+            "appeared",
+            "become",
+            "became",
+            "call",
+            "called",
+            "let",
+            "keep",
+            "kept",
+            "start",
+            "started",
+            "try",
+            "tried",
+            "turn",
+            "turned",
+            "set",
+            "allow",
+            "allowed",
+            "help",
+            "helped",
+            "move",
+            "moved",
+            "begin",
+            "began",
+            "began",
+            "note",
+            "noted",
+            "mean",
+            "meant",
+        }
+    )
+    # Copular verbs — handled by definition / kind-of / property
+    _COPULAR = frozenset(
+        {
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+        }
+    )
+
     def __init__(self, docs: list):
         self.docs = docs
-        self._sentences: list = [
-            sent for doc in docs for sent in doc.sentences
-        ]
+        self._sentences: list = [sent for doc in docs for sent in doc.sentences]
+        # Cache POS-tagged tokens per sentence to avoid re-tagging
+        self._pos_cache: Dict[str, Tuple[List[str], List[Tuple[str, str]]]] = {}
 
     # ------------------------------------------------------------------
     # Public API
@@ -203,9 +344,7 @@ class PropositionExtractor:
         seen: dict = {}
 
         for sentence in self._sentences:
-            for prop in self._extract_composition_from_sentence(
-                sentence, terms_set
-            ):
+            for prop in self._extract_composition_from_sentence(sentence, terms_set):
                 key = (prop.source.lower(), prop.target.lower(), prop.type)
                 if key in seen:
                     seen[key].weight += 1
@@ -231,16 +370,17 @@ class PropositionExtractor:
     # Per-sentence extraction
     # ------------------------------------------------------------------
 
-    def _extract_from_sentence(
-        self, sentence: str, term_a: str, term_b: str
-    ) -> list:
-        """Try all v1 extractors in priority order on one sentence."""
+    def _extract_from_sentence(self, sentence: str, term_a: str, term_b: str) -> list:
+        """Try all extractors in priority order on one sentence."""
         results = []
         for extractor in (
             self._try_definition,
             self._try_kind_of,
             self._try_production,
             self._try_dependence,
+            self._try_property,
+            self._try_relation,
+            self._try_pos_verb,  # v2: POS-based fallback, catches any verb
         ):
             p = extractor(sentence, term_a, term_b)
             if p is not None:
@@ -362,22 +502,195 @@ class PropositionExtractor:
                 )
         return None
 
+    def _try_property(
+        self, sentence: str, term_a: str, term_b: str
+    ) -> Optional[Proposition]:
+        """
+        Detect plain copular property: 'A is [a/an] B'.
+
+        Fires only when definition and kind-of patterns did not match
+        (they run earlier in the chain). Covers sentences like
+        'a rhizome is an open chart' or 'metaphor is a rhetorical figure'.
+
+        Copular disambiguation rule 3 (spec): plain NP complement → property.
+        """
+        for subject, complement in [(term_a, term_b), (term_b, term_a)]:
+            ta = re.escape(subject)
+            tb = re.escape(complement)
+            # Must NOT contain a kind marker (those are caught by _try_kind_of)
+            pattern = (
+                rf"\b{ta}\w*\b"
+                rf".{{0,40}}"
+                rf"\b(?:is|are|was|were)\b"
+                rf".{{0,40}}"  # allow articles, adjectives, modifiers
+                rf"(?!(?:{_KIND_MARKERS}))"  # negative lookahead for kind markers
+                rf"\b{tb}\w*\b"
+            )
+            if re.search(pattern, sentence, re.IGNORECASE):
+                return Proposition(
+                    source=subject,
+                    target=complement,
+                    label="is",
+                    type="property",
+                    evidence=sentence,
+                    directed=True,
+                )
+        return None
+
+    def _try_relation(
+        self, sentence: str, term_a: str, term_b: str
+    ) -> Optional[Proposition]:
+        """
+        Catch-all SVO extractor: 'A <verb> B' with any verb from a broad list.
+
+        Fires only after all more-specific extractors have run. Captures the
+        actual verb from the text as the edge label so the proposition is
+        readable ('relates to', 'involves', 'maps onto', etc.).
+        """
+        for source, target in [(term_a, term_b), (term_b, term_a)]:
+            ta = re.escape(source)
+            tb = re.escape(target)
+            pattern = (
+                rf"\b{ta}\w*\b.{{0,80}}"
+                rf"\b({_RELATION_VERBS})\b.{{0,80}}"
+                rf"\b{tb}\w*\b"
+            )
+            m = re.search(pattern, sentence, re.IGNORECASE)
+            if m:
+                label = m.group(1).lower().strip()
+                return Proposition(
+                    source=source,
+                    target=target,
+                    label=label,
+                    type="relation",
+                    evidence=sentence,
+                    directed=True,
+                )
+        return None
+
+    def _pos_tag(self, sentence: str) -> Tuple[List[str], List[Tuple[str, str]]]:
+        """Return (tokens, pos_tags) for sentence, cached."""
+        if sentence not in self._pos_cache:
+            import nltk
+
+            tokens = nltk.word_tokenize(sentence)
+            self._pos_cache[sentence] = (tokens, nltk.pos_tag(tokens))
+        return self._pos_cache[sentence]
+
+    def _try_pos_verb(
+        self, sentence: str, term_a: str, term_b: str
+    ) -> Optional[Proposition]:
+        """
+        V2: POS-based fallback — find any content verb between the two terms.
+
+        Fires after all pattern-list extractors.  Extracts the text between
+        the two terms, POS-tags it, and uses the first non-copular,
+        non-light verb found as the edge label (type = 'relation').
+
+        Passive voice ('A is VBN by B') is detected and direction reversed
+        so the actual agent is the source.
+
+        Max gap between terms: 120 characters (avoids spurious long-range
+        matches in run-on sentences).
+        """
+        MAX_GAP_TOKENS = 15  # skip pairs separated by too many tokens
+
+        # Use the full sentence for accurate POS context
+        tokens, tagged = self._pos_tag(sentence)
+        tokens_lower = [w.lower() for w, _ in tagged]
+
+        for source, target in [(term_a, term_b), (term_b, term_a)]:
+            src_word = source.lower()
+            tgt_word = target.lower()
+
+            # Find first token that starts with the source term
+            src_idx = next(
+                (
+                    i
+                    for i, w in enumerate(tokens_lower)
+                    if w.startswith(src_word[:4]) and src_word in w
+                ),
+                None,
+            )
+            if src_idx is None:
+                src_idx = next(
+                    (i for i, w in enumerate(tokens_lower) if w == src_word), None
+                )
+            if src_idx is None:
+                continue
+
+            # Find first token that starts with the target term, after src_idx
+            tgt_idx = next(
+                (
+                    i
+                    for i, w in enumerate(tokens_lower)
+                    if i > src_idx and w.startswith(tgt_word[:4]) and tgt_word in w
+                ),
+                None,
+            )
+            if tgt_idx is None:
+                tgt_idx = next(
+                    (
+                        i
+                        for i, w in enumerate(tokens_lower)
+                        if i > src_idx and w == tgt_word
+                    ),
+                    None,
+                )
+            if tgt_idx is None:
+                continue
+
+            gap_tagged = tagged[src_idx + 1 : tgt_idx]
+            if len(gap_tagged) > MAX_GAP_TOKENS:
+                continue
+
+            content_verbs = [
+                (w.lower(), pos)
+                for w, pos in gap_tagged
+                if pos.startswith("VB")
+                and w.lower() not in self._COPULAR
+                and w.lower() not in self._LIGHT_VERBS
+            ]
+            if not content_verbs:
+                continue
+
+            verb, vpos = content_verbs[0]
+
+            # Passive detection: copular token precedes VBN in the gap
+            if vpos == "VBN":
+                verb_gap_idx = next(
+                    i for i, (w, _) in enumerate(gap_tagged) if w.lower() == verb
+                )
+                is_passive = any(
+                    w.lower() in self._COPULAR for w, _ in gap_tagged[:verb_gap_idx]
+                )
+            else:
+                is_passive = False
+
+            act_src, act_tgt = (target, source) if is_passive else (source, target)
+            return Proposition(
+                source=act_src,
+                target=act_tgt,
+                label=verb,
+                type="relation",
+                evidence=sentence,
+                directed=True,
+            )
+
+        return None
+
     # ------------------------------------------------------------------
     # Composition pattern (Phase 4 / Decision 12)
     # ------------------------------------------------------------------
 
-    def _extract_composition_from_sentence(
-        self, sentence: str, terms_set: set
-    ) -> list:
+    def _extract_composition_from_sentence(self, sentence: str, terms_set: set) -> list:
         """
         Detect 'A, B, C form/constitute/compose X' pattern.
 
         Returns component edges between co-constituents and production
         edges from each constituent to the composed entity.
         """
-        verb_match = re.search(
-            rf"\b{_COMPOSITION_VERBS}\b", sentence, re.IGNORECASE
-        )
+        verb_match = re.search(rf"\b{_COMPOSITION_VERBS}\b", sentence, re.IGNORECASE)
         if not verb_match:
             return []
 
@@ -388,11 +701,13 @@ class PropositionExtractor:
         after = sentence[verb_start:]
 
         constituents = [
-            t for t in terms_set
+            t
+            for t in terms_set
             if re.search(r"\b" + re.escape(t) + r"\b", before, re.IGNORECASE)
         ]
         composed_terms = [
-            t for t in terms_set
+            t
+            for t in terms_set
             if re.search(r"\b" + re.escape(t) + r"\b", after, re.IGNORECASE)
             and t not in set(constituents)
         ]

@@ -241,6 +241,8 @@ def _generate_html_template(
         <div class="legend-row"><div class="legend-swatch" style="background:#59a14f"></div>kind-of</div>
         <div class="legend-row"><div class="legend-swatch" style="background:#f28e2b"></div>production</div>
         <div class="legend-row"><div class="legend-swatch" style="background:#e15759"></div>dependence</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#edc948"></div>property</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#76b7b2"></div>relation</div>
         <div class="legend-row"><div class="legend-swatch" style="background:#b07aa1"></div>component</div>
         <div class="legend-row"><div class="legend-swatch dashed"></div>co-occurrence</div>
     </div>
@@ -275,6 +277,8 @@ def _generate_html_template(
             "kind-of":      "#59a14f",
             "production":   "#f28e2b",
             "dependence":   "#e15759",
+            "property":     "#edc948",
+            "relation":     "#76b7b2",
             "component":    "#b07aa1",
             "cooccurrence": "#bbbbbb",
         }};
@@ -290,7 +294,7 @@ def _generate_html_template(
         const edgeColor = d => EDGE_COLORS[d.type] || EDGE_COLOR_DEFAULT;
 
         // Directed types (component and cooccurrence are undirected)
-        const DIRECTED_TYPES = new Set(["definition", "kind-of", "production", "dependence"]);
+        const DIRECTED_TYPES = new Set(["definition", "kind-of", "production", "dependence", "property", "relation"]);
 
         // Create SVG
         const svg = d3.select("#graph");
@@ -411,15 +415,22 @@ def _generate_html_template(
                     simulation.alphaTarget(0.1).restart();
                 }});
 
-            // Edge labels (always visible, show verb)
-            const linkLabel = g.append("g")
-                .attr("class", "link-labels")
-                .selectAll("text")
-                .data(data.links.filter(d => d.type !== "cooccurrence"))
-                .join("text")
-                .attr("class", "link-label")
-                .attr("fill", d => edgeColor(d))
-                .text(d => d.verb || d.label || "");
+            // Edge labels — always visible unless density exceeds 3 edges per 100×100 px,
+            // in which case fall back to hover-only (verb shown in tooltip).
+            const LABEL_DENSITY_THRESHOLD = 3; // edges per 10 000 px²
+            const edgeDensity = data.links.length / (width * height) * 10000;
+            const showLinkLabels = edgeDensity <= LABEL_DENSITY_THRESHOLD;
+
+            const linkLabel = showLinkLabels
+                ? g.append("g")
+                    .attr("class", "link-labels")
+                    .selectAll("text")
+                    .data(data.links.filter(d => d.type !== "cooccurrence"))
+                    .join("text")
+                    .attr("class", "link-label")
+                    .attr("fill", d => edgeColor(d))
+                    .text(d => d.verb || d.label || "")
+                : null;
 
             // Node labels — size proportional to score/radius
             const label = g.append("g")
@@ -456,7 +467,7 @@ def _generate_html_template(
 
                 node.attr("cx", d => d.x).attr("cy", d => d.y);
 
-                linkLabel
+                if (linkLabel) linkLabel
                     .attr("x", d => (d.source.x + d.target.x) / 2)
                     .attr("y", d => (d.source.y + d.target.y) / 2 - 4);
 
