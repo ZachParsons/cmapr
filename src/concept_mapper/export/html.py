@@ -404,7 +404,12 @@ def _generate_html_template(
                         .style("top", (event.clientY - 12) + "px")
                         .style("opacity", 1);
                 }})
-                .on("mouseout", () => tooltip.style("opacity", 0));
+                .on("mouseout", () => tooltip.style("opacity", 0))
+                .on("dblclick", (event, d) => {{
+                    d.fx = null;
+                    d.fy = null;
+                    simulation.alphaTarget(0.1).restart();
+                }});
 
             // Edge labels (always visible, show verb)
             const linkLabel = g.append("g")
@@ -475,8 +480,8 @@ def _generate_html_template(
                 }})
                 .on("end", (event) => {{
                     if (!event.active) simulation.alphaTarget(0);
-                    event.subject.fx = null;
-                    event.subject.fy = null;
+                    // fx/fy intentionally kept — node stays pinned where dropped.
+                    // Double-click the node to release it back to the simulation.
                 }});
         }}
 
