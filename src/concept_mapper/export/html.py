@@ -105,7 +105,7 @@ def _generate_html_template(
             height: 100%;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f5f5f5;
+            background: #ffffff;
         }}
 
         #graph {{
@@ -121,36 +121,32 @@ def _generate_html_template(
             stroke-width: 1.5px;
         }}
 
-        .link {{
-            stroke: #999;
-            stroke-opacity: 0.6;
-        }}
-
         .node-label {{
-            font-size: 10px;
             pointer-events: none;
             text-anchor: middle;
-            fill: #333;
+            fill: #222;
+            font-weight: 500;
         }}
 
         .link-label {{
             font-size: 9px;
             pointer-events: none;
             text-anchor: middle;
-            fill: #888;
+            fill: #555;
         }}
 
         .tooltip {{
             position: fixed;
             padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            border-radius: 4px;
+            background: rgba(20, 20, 20, 0.88);
+            color: #f0f0f0;
+            border-radius: 5px;
             font-size: 12px;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.2s;
-            max-width: 300px;
+            transition: opacity 0.15s;
+            max-width: 340px;
+            line-height: 1.5;
         }}
 
         #overlay {{
@@ -170,24 +166,24 @@ def _generate_html_template(
 
         button {{
             padding: 6px 14px;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.55);
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
         }}
 
         button:hover {{
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.75);
         }}
 
         .info {{
-            padding: 6px 10px;
-            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            background: rgba(0,0,0,0.45);
             border-radius: 4px;
-            font-size: 12px;
-            color: #eee;
+            font-size: 11px;
+            color: #ddd;
         }}
 
         h1 {{
@@ -195,15 +191,59 @@ def _generate_html_template(
             top: 12px;
             left: 16px;
             margin: 0;
-            font-size: 16px;
+            font-size: 15px;
             color: #333;
             pointer-events: none;
+        }}
+
+        #legend {{
+            position: fixed;
+            top: 12px;
+            right: 16px;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 11px;
+            color: #333;
+            line-height: 1.8;
+        }}
+
+        .legend-row {{
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }}
+
+        .legend-swatch {{
+            width: 28px;
+            height: 3px;
+            flex-shrink: 0;
+        }}
+
+        .legend-swatch.dashed {{
+            background: repeating-linear-gradient(
+                to right,
+                #bbb 0px, #bbb 5px,
+                transparent 5px, transparent 9px
+            );
+            height: 2px;
         }}
     </style>
 </head>
 <body>
     <h1>{title}</h1>
     <svg id="graph"></svg>
+
+    <div id="legend">
+        <div style="font-weight:600;margin-bottom:4px;">Edge types</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#4e79a7"></div>definition</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#59a14f"></div>kind-of</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#f28e2b"></div>production</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#e15759"></div>dependence</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#b07aa1"></div>component</div>
+        <div class="legend-row"><div class="legend-swatch dashed"></div>co-occurrence</div>
+    </div>
 
     <div id="overlay">
         <div class="info" id="info">Loading graph...</div>
@@ -229,31 +269,55 @@ def _generate_html_template(
             }}
         }});
 
-        // Color scale for communities
-        const color = d3.scaleOrdinal(d3.schemeCategory10);
+        // Edge type color palette
+        const EDGE_COLORS = {{
+            "definition":   "#4e79a7",
+            "kind-of":      "#59a14f",
+            "production":   "#f28e2b",
+            "dependence":   "#e15759",
+            "component":    "#b07aa1",
+            "cooccurrence": "#bbbbbb",
+        }};
+        const EDGE_COLOR_DEFAULT = "#aaaaaa";
+
+        // Community color scale
+        const communityColor = d3.scaleOrdinal(d3.schemeTableau10);
+
+        // Node radius: 6 baseline + bonus from rarity score (0–5 range)
+        const nodeRadius = d => Math.max(6, 6 + (d.score || 0) * 2.5);
+
+        // Edge color helper
+        const edgeColor = d => EDGE_COLORS[d.type] || EDGE_COLOR_DEFAULT;
+
+        // Directed types (component and cooccurrence are undirected)
+        const DIRECTED_TYPES = new Set(["definition", "kind-of", "production", "dependence"]);
 
         // Create SVG
         const svg = d3.select("#graph");
+        const defs = svg.append("defs");
 
-        // Arrowhead marker
-        svg.append("defs").append("marker")
-            .attr("id", "arrowhead")
-            .attr("viewBox", "0 -5 10 10")
-            .attr("refX", 10)
-            .attr("refY", 0)
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 6)
-            .attr("orient", "auto")
-            .append("path")
-            .attr("d", "M0,-5L10,0L0,5")
-            .attr("fill", "#999")
-            .attr("fill-opacity", 0.6);
+        // Per-type arrowhead markers
+        Object.entries(EDGE_COLORS).forEach(([type, color]) => {{
+            if (!DIRECTED_TYPES.has(type)) return;
+            defs.append("marker")
+                .attr("id", `arrow-${{type}}`)
+                .attr("viewBox", "0 -5 10 10")
+                .attr("refX", 10)
+                .attr("refY", 0)
+                .attr("markerWidth", 6)
+                .attr("markerHeight", 6)
+                .attr("orient", "auto")
+                .append("path")
+                .attr("d", "M0,-5L10,0L0,5")
+                .attr("fill", color)
+                .attr("fill-opacity", 0.85);
+        }});
 
         const g = svg.append("g");
 
-        // Add zoom behavior
+        // Zoom behavior
         const zoom = d3.zoom()
-            .scaleExtent([0.1, 10])
+            .scaleExtent([0.05, 12])
             .on("zoom", (event) => {{
                 g.attr("transform", event.transform);
             }});
@@ -263,160 +327,161 @@ def _generate_html_template(
         // Tooltip
         const tooltip = d3.select("#tooltip");
 
-        // Inlined graph data (avoids CORS issues with file:// URLs)
+        // Inlined graph data
         const data = {graph_data_json};
 
         // Initialize visualization
         (function() {{
-            // Update info
             d3.select("#info").html(
                 `Nodes: ${{data.nodes.length}} | Links: ${{data.links.length}}`
             );
 
-            // Create force simulation
+            // Force simulation — stronger repulsion, distance by weight
             const simulation = d3.forceSimulation(data.nodes)
                 .force("link", d3.forceLink(data.links)
                     .id(d => d.id)
-                    .distance(d => 100 / (d.weight || 1)))
-                .force("charge", d3.forceManyBody().strength(-300))
+                    .distance(d => 180 / Math.sqrt(d.weight || 1))
+                    .strength(0.6))
+                .force("charge", d3.forceManyBody()
+                    .strength(d => {{
+                        // Reduce attraction for very high-degree hubs
+                        const deg = data.links.filter(
+                            l => l.source === d || l.source.id === d.id ||
+                                 l.target === d || l.target.id === d.id
+                        ).length;
+                        return deg > 10 ? -600 : -400;
+                    }}))
                 .force("center", d3.forceCenter(width / 2, height / 2))
-                .force("collision", d3.forceCollide().radius(d => d.size * 5));
+                .force("collision", d3.forceCollide()
+                    .radius(d => nodeRadius(d) + (d.label || "").length * 3.8 + 4));
 
-            // Node radius lookup (matches circle r attr below)
-            const nodeRadius = d => Math.sqrt(d.size || 1) * 3 + 5;
-
-            // Create links
+            // Links
             const link = g.append("g")
+                .attr("class", "links")
                 .selectAll("line")
                 .data(data.links)
                 .join("line")
-                .attr("class", "link")
-                .attr("marker-end", "url(#arrowhead)")
-                .attr("stroke-width", d => Math.sqrt(d.weight || 1) * 2)
+                .attr("stroke", edgeColor)
+                .attr("stroke-opacity", d => d.type === "cooccurrence" ? 0.35 : 0.65)
+                .attr("stroke-width", d => d.type === "cooccurrence" ? 1 : Math.min(4, 1 + Math.sqrt(d.weight || 1)))
+                .attr("stroke-dasharray", d => d.type === "cooccurrence" ? "6,4" : null)
+                .attr("marker-end", d => DIRECTED_TYPES.has(d.type) ? `url(#arrow-${{d.type}})` : null)
                 .on("mouseover", (event, d) => {{
-                    let html = `<strong>${{d.source.id}} → ${{d.target.id}}</strong><br>`;
-                    html += `Weight: ${{d.weight.toFixed(3)}}<br>`;
-                    if (d.label) html += `Type: ${{d.label}}<br>`;
-                    if (d.evidence) {{
-                        html += `<br><em>${{d.evidence[0]}}</em>`;
+                    const src = d.source.id || d.source;
+                    const tgt = d.target.id || d.target;
+                    const arrow = DIRECTED_TYPES.has(d.type) ? "→" : "↔";
+                    let html = `<strong>${{src}} ${{arrow}} ${{tgt}}</strong><br>`;
+                    html += `<span style="color:#bbb">${{d.verb || d.type || "relates to"}}</span>`;
+                    if (d.weight && d.weight > 1) html += ` (×${{d.weight}})`;
+                    if (d.evidence && d.evidence.length) {{
+                        html += `<br><br><em style="color:#ccc">${{d.evidence[0]}}</em>`;
                     }}
                     tooltip.html(html)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 10) + "px")
+                        .style("left", (event.clientX + 12) + "px")
+                        .style("top", (event.clientY - 12) + "px")
                         .style("opacity", 1);
                 }})
-                .on("mouseout", () => {{
-                    tooltip.style("opacity", 0);
-                }});
+                .on("mouseout", () => tooltip.style("opacity", 0));
 
-            // Create nodes
+            // Nodes
             const node = g.append("g")
+                .attr("class", "nodes")
                 .selectAll("circle")
                 .data(data.nodes)
                 .join("circle")
                 .attr("class", "node")
-                .attr("r", d => Math.sqrt(d.size || 1) * 3 + 5)
-                .attr("fill", d => color(d.group || 0))
+                .attr("r", nodeRadius)
+                .attr("fill", d => communityColor(d.group || 0))
                 .call(drag(simulation))
                 .on("mouseover", (event, d) => {{
-                    let html = `<strong>${{d.label}}</strong><br>`;
-                    if (d.frequency) html += `Frequency: ${{d.frequency}}<br>`;
-                    if (d.pos) html += `POS: ${{d.pos}}<br>`;
-                    if (d.definition) html += `<br>${{d.definition}}`;
+                    let html = `<strong style="font-size:13px">${{d.label}}</strong>`;
+                    if (d.score) html += ` <span style="color:#bbb">(score: ${{d.score.toFixed(2)}})</span>`;
+                    if (d.frequency) html += `<br>Frequency: ${{d.frequency}}`;
+                    if (d.pos) html += `<br>POS: ${{d.pos}}`;
+                    if (d.definition) html += `<br><br>${{d.definition}}`;
                     tooltip.html(html)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 10) + "px")
+                        .style("left", (event.clientX + 12) + "px")
+                        .style("top", (event.clientY - 12) + "px")
                         .style("opacity", 1);
                 }})
-                .on("mouseout", () => {{
-                    tooltip.style("opacity", 0);
-                }});
+                .on("mouseout", () => tooltip.style("opacity", 0));
 
-            // Create edge labels
+            // Edge labels (always visible, show verb)
             const linkLabel = g.append("g")
+                .attr("class", "link-labels")
                 .selectAll("text")
-                .data(data.links)
+                .data(data.links.filter(d => d.type !== "cooccurrence"))
                 .join("text")
                 .attr("class", "link-label")
-                .text(d => d.verb || d.label || "relates to");
+                .attr("fill", d => edgeColor(d))
+                .text(d => d.verb || d.label || "");
 
-            // Create node labels
+            // Node labels — size proportional to score/radius
             const label = g.append("g")
+                .attr("class", "node-labels")
                 .selectAll("text")
                 .data(data.nodes)
                 .join("text")
                 .attr("class", "node-label")
                 .text(d => d.label)
-                .attr("dy", d => Math.sqrt(d.size || 1) * 3 + 20);
+                .attr("font-size", d => Math.max(10, nodeRadius(d) * 1.1))
+                .attr("dy", d => nodeRadius(d) + 13);
 
-            // Update positions on simulation tick
+            // Simulation tick
             simulation.on("tick", () => {{
                 link
                     .attr("x1", d => d.source.x)
                     .attr("y1", d => d.source.y)
                     .attr("x2", d => {{
+                        if (!DIRECTED_TYPES.has(d.type)) return d.target.x;
                         const dx = d.target.x - d.source.x;
                         const dy = d.target.y - d.source.y;
                         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                        const r = nodeRadius(d.target) + 8; // +8 for arrowhead
+                        const r = nodeRadius(d.target) + 9;
                         return d.target.x - (dx / dist) * r;
                     }})
                     .attr("y2", d => {{
+                        if (!DIRECTED_TYPES.has(d.type)) return d.target.y;
                         const dx = d.target.x - d.source.x;
                         const dy = d.target.y - d.source.y;
                         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                        const r = nodeRadius(d.target) + 8;
+                        const r = nodeRadius(d.target) + 9;
                         return d.target.y - (dy / dist) * r;
                     }});
 
-                node
-                    .attr("cx", d => d.x)
-                    .attr("cy", d => d.y);
+                node.attr("cx", d => d.x).attr("cy", d => d.y);
 
                 linkLabel
                     .attr("x", d => (d.source.x + d.target.x) / 2)
-                    .attr("y", d => (d.source.y + d.target.y) / 2);
+                    .attr("y", d => (d.source.y + d.target.y) / 2 - 4);
 
-                label
-                    .attr("x", d => d.x)
-                    .attr("y", d => d.y);
+                label.attr("x", d => d.x).attr("y", d => d.y);
             }});
 
-            // Store simulation for controls
             window.simulation = simulation;
-            window.label = label;
         }})();
 
         // Drag behavior
         function drag(simulation) {{
-            function dragstarted(event) {{
-                if (!event.active) simulation.alphaTarget(0.3).restart();
-                event.subject.fx = event.subject.x;
-                event.subject.fy = event.subject.y;
-            }}
-
-            function dragged(event) {{
-                event.subject.fx = event.x;
-                event.subject.fy = event.y;
-            }}
-
-            function dragended(event) {{
-                if (!event.active) simulation.alphaTarget(0);
-                event.subject.fx = null;
-                event.subject.fy = null;
-            }}
-
             return d3.drag()
-                .on("start", dragstarted)
-                .on("drag", dragged)
-                .on("end", dragended);
+                .on("start", (event) => {{
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    event.subject.fx = event.subject.x;
+                    event.subject.fy = event.subject.y;
+                }})
+                .on("drag", (event) => {{
+                    event.subject.fx = event.x;
+                    event.subject.fy = event.y;
+                }})
+                .on("end", (event) => {{
+                    if (!event.active) simulation.alphaTarget(0);
+                    event.subject.fx = null;
+                    event.subject.fy = null;
+                }});
         }}
 
-        // Control functions
         function resetZoom() {{
-            svg.transition()
-                .duration(750)
-                .call(zoom.transform, d3.zoomIdentity);
+            svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
         }}
 
         function restartSimulation() {{

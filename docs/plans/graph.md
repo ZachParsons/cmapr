@@ -218,6 +218,7 @@ Spec ref: *Visualization*, *v1 vs v2 scope*
   - Link distance: proportional to `1 / edge_weight`
   - Add collision detection (`d3.forceCollide`) with radius = node label length × font size estimate
   - If node degree > 10: reduce its link strength by 50%
+  - Pin dragged nodes: on `dragend`, set `node.fx = node.x` and `node.fy = node.y` so the node stays where placed; the simulation continues but the pinned node is held fixed
 
 **7.2 Edge label rendering**
 - Always show edge label on the link line (not just on hover) for v1

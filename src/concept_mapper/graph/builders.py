@@ -6,7 +6,7 @@ This module provides functions to build ConceptGraphs from analysis results.
 
 import math
 from collections import Counter
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from concept_mapper.graph.model import ConceptGraph
 from concept_mapper.analysis.relations import Relation
 
@@ -20,6 +20,7 @@ def build_proposition_graph(
     seed_terms: list,
     node_filter: Optional["NodeFilter"] = None,
     pmi_threshold: float = 1.0,
+    term_scores: Optional[Dict[str, float]] = None,
 ) -> ConceptGraph:
     """
     Build a typed proposition graph from a document set and seed term list.
@@ -39,6 +40,7 @@ def build_proposition_graph(
         seed_terms   : terms from the rarities list; all become nodes
         node_filter  : optional NodeFilter; applied to extracted (non-seed) nodes
         pmi_threshold: minimum PMI for a cooccurrence fallback edge (default 1.0)
+        term_scores  : optional dict mapping term → rarity score; stored as node attr
 
     Returns:
         ConceptGraph with typed edges
@@ -115,6 +117,11 @@ def build_proposition_graph(
                     evidence="", directed=False, weight=n_ab,
                 ))
 
+    # Normalise term_scores keys to lowercase for lookup
+    scores_lower: Dict[str, float] = (
+        {k.lower(): v for k, v in term_scores.items()} if term_scores else {}
+    )
+
     # Build graph
     graph = ConceptGraph(directed=True)
 
@@ -129,7 +136,10 @@ def build_proposition_graph(
 
         for node in (source, target):
             if not graph.has_node(node):
-                graph.add_node(node, label=node)
+                node_attrs: Dict[str, Any] = {"label": node}
+                if node in scores_lower:
+                    node_attrs["score"] = scores_lower[node]
+                graph.add_node(node, **node_attrs)
 
         graph.add_edge(
             source, target,

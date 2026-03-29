@@ -95,6 +95,8 @@ def to_d3_dict(
             node_data["pos"] = node_attrs["pos"]
         if "definition" in node_attrs:
             node_data["definition"] = node_attrs["definition"]
+        if "score" in node_attrs:
+            node_data["score"] = node_attrs["score"]
         if "community" in node_attrs:
             node_data["group"] = node_attrs["community"]
         else:
@@ -112,10 +114,12 @@ def to_d3_dict(
             "weight": edge_attrs.get("weight", 1.0),
         }
 
-        # Add optional attributes
-        if "relation_type" in edge_attrs:
-            link_data["label"] = edge_attrs["relation_type"]
-            link_data["type"] = edge_attrs["relation_type"]
+        # Add optional attributes — prefer relation_type (internal), fall back to
+        # type (round-tripped from D3 JSON where relation_type was already renamed)
+        rel_type = edge_attrs.get("relation_type") or edge_attrs.get("type")
+        if rel_type:
+            link_data["label"] = rel_type
+            link_data["type"] = rel_type
 
         metadata = edge_attrs.get("metadata", {})
         verb = (

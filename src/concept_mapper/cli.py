@@ -855,11 +855,19 @@ def graph(
     elif rejected:
         click.echo(f"Filtered {len(rejected)} noisy seed term(s) from rarities list")
 
+    # Build scores dict (term → rarity score) for node sizing in visualization
+    term_scores = {
+        entry.term.lower(): entry.metadata.get("score", 0.0)
+        for entry in term_list
+        if entry.metadata and "score" in entry.metadata
+    }
+
     click.echo("Extracting typed propositions...")
     concept_graph = build_proposition_graph(
         docs=docs,
         seed_terms=seed_terms,
         node_filter=node_filter,
+        term_scores=term_scores,
     )
 
     # Prune to target ratio
