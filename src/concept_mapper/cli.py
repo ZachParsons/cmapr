@@ -817,6 +817,7 @@ def graph(
     from collections import Counter
     from concept_mapper.graph.builders import build_proposition_graph
     from concept_mapper.graph.node_filter import NodeFilter
+    from concept_mapper.graph.operations import prune_to_ratio
 
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -861,16 +862,23 @@ def graph(
         node_filter=node_filter,
     )
 
+    # Prune to target ratio
+    before_edges = concept_graph.edge_count()
+    concept_graph = prune_to_ratio(concept_graph, target_ratio=3.0)
+    pruned = before_edges - concept_graph.edge_count()
+
     # Summarise edge types
     type_counts: dict = {}
     for src, tgt in concept_graph.edges():
         t = concept_graph.get_edge(src, tgt).get("relation_type", "?")
         type_counts[t] = type_counts.get(t, 0) + 1
     type_summary = "  ".join(f"{t}:{n}" for t, n in sorted(type_counts.items()))
+    ratio = concept_graph.edge_count() / max(concept_graph.node_count(), 1)
 
     click.echo(
         f"\n✓ Graph: {concept_graph.node_count()} nodes, "
-        f"{concept_graph.edge_count()} edges\n  {type_summary}"
+        f"{concept_graph.edge_count()} edges (pruned {pruned}), "
+        f"ratio {ratio:.1f}:1\n  {type_summary}"
     )
 
     validate_concept_graph(concept_graph)

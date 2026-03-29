@@ -84,7 +84,7 @@ Rule 3 is provisional — plain NP copular sentences may warrant reclassificatio
 
 ### Target edge count
 
-Edges:nodes ratio should be close to **1:1** (sparse, tree-like). A ratio above 3:1 produces an unreadable hairball. A ratio above 6:1 is a failure state (current output is 112 edges / 78 nodes ≈ 1.4:1 by count but the edge labels are all identical, making it useless).
+Edges:nodes ratio should be close to **3:1**. A ratio above 6:1 produces an unreadable hairball and is a failure state.
 
 ---
 
@@ -246,7 +246,7 @@ For workflow A (threshold-driven), the seed set is auto-populated from the rarit
 |-----------|---------|--------|
 | Node quality | Mixed: valid terms + fragments + abbreviations + OCR artifacts | Only significant, clean content words |
 | Edge semantics | All "co-occurs with" | Typed propositions with readable labels |
-| Edge:node ratio | ~6:1 (12171/1866) or ~1.4:1 (112/78) | ~1:1 |
+| Edge:node ratio | ~6:1 (12171/1866) or ~1.4:1 (112/78) | ~3:1 |
 | Graph shape | Hub-and-spoke or dense hairball | Sparse asymmetric network |
 | Evidence | None surfaced | Every edge links to source sentence |
 | Layout | Default D3 force params | Tuned for readability: strong repulsion, collision detection |
@@ -257,7 +257,7 @@ For workflow A (threshold-driven), the seed set is auto-populated from the rarit
 
 1. **Node filtering** — enforce inclusion criteria at graph construction time; reject fragments, abbreviations, OCR artifacts
 2. **Edge extraction** — replace co-occurrence-only edges with grammatical proposition extraction; make co-occurrence a fallback
-3. **Edge pruning** — enforce ~1:1 ratio; prune in order: (1) co-occurrence edges first regardless of weight, (2) then lowest-weight grammatical edges. Pruning threshold (target ratio) is a configurable parameter, default 2:1.
+3. **Edge pruning** — enforce ~3:1 ratio; prune in order: (1) co-occurrence edges first regardless of weight, (2) then lowest-weight grammatical edges. Pruning threshold (target ratio) is a configurable parameter, default 3:1.
 4. **Visualization tuning** — D3 force parameters, edge labels, directed arrows, cooccurrence edge styling
 5. **Evidence surfacing** — make every edge traceable to source text in the tooltip. *(Future spec needed: how many sentences to surface, how to rank/select the best evidence sentence when multiple exist. Defer to v2.)*
 

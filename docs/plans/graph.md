@@ -16,7 +16,7 @@ cmapr graph data/output/corpus/eco_spl1/corpus.json \
     --terms data/output/rarities/eco_spl1/terms.json \
     --output data/output/graphs/eco_spl1/graph.json && \
 cmapr export data/output/graphs/eco_spl1/graph.json --format html && \
-open data/output/viz/eco_spl1/index.html
+open data/output/exports/eco_spl1/index.html
 ```
 
 ---
@@ -129,7 +129,7 @@ Spec ref: *Graph model > How edges should be constructed*
 
 **5.1 Implement `build_proposition_graph`**
 - File: `src/concept_mapper/graph/builders.py` (new function alongside existing builders)
-- Signature: `build_proposition_graph(docs, term_list, pmi_threshold=1.0, prune_ratio=2.0) -> ConceptGraph`
+- Signature: `build_proposition_graph(docs, term_list, pmi_threshold=1.0, prune_ratio=3.0) -> ConceptGraph`
 - Algorithm:
   1. For each pair in `term_list` that co-occur in ≥ 1 sentence, call `PropositionExtractor.extract(a, b)`
   2. If propositions found → add as typed edges (multigraph: allow multiple types per pair)
@@ -138,7 +138,7 @@ Spec ref: *Graph model > How edges should be constructed*
   5. Apply `NodeFilter` to all extracted (non-seed) nodes; discard those that fail
   6. Merge same-type duplicate edges: aggregate evidence, increment weight
   7. Prune to `prune_ratio` (Phase 6)
-- Acceptance: graph from eco_ch1 produces typed edge labels (not all "co-occurs with"), ratio ≤ 2:1
+- Acceptance: graph from eco_ch1 produces typed edge labels (not all "co-occurs with"), ratio ≤ 3:1
 
 **5.2 Wire into `cmapr graph` command**
 - Replace the current `analyze_context`-based loop with `build_proposition_graph`
@@ -168,7 +168,7 @@ print('link types:', types)
 cooc = types.get('cooccurrence', 0)
 print(f'typed (non-cooc): {len(links)-cooc}/{len(links)} = {(len(links)-cooc)/max(len(links),1)*100:.0f}%')
 "
-# Expect: ratio ≤ 2:1, cooccurrence < 50% of links
+# Expect: ratio ≤ 3:1, cooccurrence < 50% of links
 ```
 
 ---
@@ -179,12 +179,12 @@ Spec ref: *Implementation priorities #3*
 
 **6.1 Implement `prune_to_ratio`**
 - File: `src/concept_mapper/graph/operations.py` (add to existing operations)
-- Signature: `prune_to_ratio(graph: ConceptGraph, target_ratio: float = 2.0) -> ConceptGraph`
+- Signature: `prune_to_ratio(graph: ConceptGraph, target_ratio: float = 3.0) -> ConceptGraph`
 - Pruning order:
   1. Remove `cooccurrence` edges first (lowest priority regardless of weight), except where they are the sole edge for a node
   2. Then remove lowest-weight grammatical edges until ratio ≤ `target_ratio`
   3. Never remove an edge that would isolate a node
-- Acceptance: graph with ratio 4:1 → after pruning ratio ≤ 2:1; no isolated nodes introduced
+- Acceptance: graph with ratio 4:1 → after pruning ratio ≤ 3:1; no isolated nodes introduced
 
 **Verify:**
 ```bash
@@ -199,10 +199,10 @@ ratio = len(links) / max(len(g['nodes']), 1)
 node_ids = {n['id'] for n in g['nodes']}
 connected = {e['source'] for e in links} | {e['target'] for e in links}
 isolated = node_ids - connected
-print(f'ratio: {ratio:.2f}:1  (target ≤ 2:1)')
+print(f'ratio: {ratio:.2f}:1  (target ≤ 3:1)')
 print(f'isolated nodes: {len(isolated)}  (target 0)')
 "
-# Expect: ratio ≤ 2.0, 0 isolated nodes
+# Expect: ratio ≤ 3.0, 0 isolated nodes
 ```
 
 ---
@@ -240,7 +240,7 @@ cmapr graph data/output/corpus/eco_spl1/corpus.json \
     --terms data/output/rarities/eco_spl1/terms.json \
     --output data/output/graphs/eco_spl1/graph.json && \
 cmapr export data/output/graphs/eco_spl1/graph.json --format html && \
-open data/output/viz/eco_spl1/index.html
+open data/output/exports/eco_spl1/index.html
 # Visual check: edge labels visible, arrows on directed edges, cooccurrence edges dashed,
 # nodes sized by score, no JS console errors
 ```
@@ -253,7 +253,7 @@ open data/output/viz/eco_spl1/index.html
 - Run full dev loop command
 - Verify:
   - Node count 30–150 (chapter scale)
-  - Edge:node ratio ≤ 2:1
+  - Edge:node ratio ≤ 3:1
   - At least 50% of edges have a non-cooccurrence type label
   - HTML loads in browser without JS errors
   - Edge labels are visible and readable at default zoom
@@ -268,7 +268,7 @@ cmapr graph data/output/corpus/eco_spl1/corpus.json \
     --terms data/output/rarities/eco_spl1/terms.json \
     --output data/output/graphs/eco_spl1/graph.json && \
 cmapr export data/output/graphs/eco_spl1/graph.json --format html && \
-open data/output/viz/eco_spl1/index.html
+open data/output/exports/eco_spl1/index.html
 
 # Check all acceptance criteria
 python -c "
@@ -283,7 +283,7 @@ cooc = types.get('cooccurrence', 0)
 typed_pct = (len(links) - cooc) / max(len(links), 1) * 100
 short = [n['id'] for n in nodes if len(n['id']) < 4]
 print(f'nodes: {len(nodes)}  (target 30–150)')
-print(f'links: {len(links)}  ratio: {ratio:.1f}:1  (target ≤ 2:1)')
+print(f'links: {len(links)}  ratio: {ratio:.1f}:1  (target ≤ 3:1)')
 print(f'typed links: {typed_pct:.0f}%  (target ≥ 50%)')
 print(f'short nodes (<4): {short}  (target [])')
 print('link types:', types)

@@ -337,6 +337,72 @@ def get_subgraph(graph: ConceptGraph, terms: Set[str]) -> ConceptGraph:
     return result
 
 
+def prune_to_ratio(
+    graph: ConceptGraph,
+    target_ratio: float = 3.0,
+) -> ConceptGraph:
+    """
+    Prune edges until edge:node ratio ≤ target_ratio.
+
+    Pruning order (spec § Implementation priorities #3):
+      1. Remove cooccurrence edges (lowest priority), except where they are
+         the sole connection for a node.
+      2. Remove lowest-weight non-cooccurrence edges, again protecting any
+         edge that is the last connection for either endpoint.
+
+    Operates on a copy; the original graph is not mutated.
+
+    Args:
+        graph       : ConceptGraph to prune
+        target_ratio: Maximum edges-per-node ratio to reach (default 3.0)
+
+    Returns:
+        Pruned ConceptGraph (same nodes, fewer edges)
+    """
+    result = graph.copy()
+
+    def _ratio(g: ConceptGraph) -> float:
+        n = g.node_count()
+        return g.edge_count() / n if n > 0 else 0.0
+
+    def _sole_connection(g: ConceptGraph, src: str, tgt: str) -> bool:
+        """True if removing this edge would isolate either endpoint."""
+        return g._graph.degree(src) <= 1 or g._graph.degree(tgt) <= 1
+
+    # --- Pass 1: remove cooccurrence edges (weakest first) ---
+    if _ratio(result) > target_ratio:
+        cooc_edges = sorted(
+            [
+                (src, tgt, result.get_edge(src, tgt).get("weight", 1))
+                for src, tgt in result.edges()
+                if result.get_edge(src, tgt).get("relation_type") == "cooccurrence"
+            ],
+            key=lambda x: x[2],  # ascending weight → remove weakest first
+        )
+        for src, tgt, _ in cooc_edges:
+            if _ratio(result) <= target_ratio:
+                break
+            if not _sole_connection(result, src, tgt):
+                result.remove_edge(src, tgt)
+
+    # --- Pass 2: remove lowest-weight typed edges if still over ratio ---
+    if _ratio(result) > target_ratio:
+        typed_edges = sorted(
+            [
+                (src, tgt, result.get_edge(src, tgt).get("weight", 1))
+                for src, tgt in result.edges()
+            ],
+            key=lambda x: x[2],
+        )
+        for src, tgt, _ in typed_edges:
+            if _ratio(result) <= target_ratio:
+                break
+            if not _sole_connection(result, src, tgt):
+                result.remove_edge(src, tgt)
+
+    return result
+
+
 def filter_by_relation_type(
     graph: ConceptGraph,
     relation_types: Set[str],
