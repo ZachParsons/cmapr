@@ -8,9 +8,10 @@ to classify the relation using pattern matching in priority order:
   2. kind-of     — copular + kind marker ('is a type of')
   3. production  — A produces/generates/implies/expresses/denotes B
   4. dependence  — A presupposes/requires/derives from/governed by B
-  5. property    — A is [a/an] B (plain copular, no kind marker)
-  6. relation    — A <verb> B (any clear verb; label = actual verb from text)
-  7. component   — A, B, C together form X  (composition pattern)
+  5. opposition  — A vs B, A as opposed to B, A contrasts with B
+  6. property    — A is [a/an] B (plain copular, no kind marker)
+  7. relation    — A <verb> B (any clear verb; label = actual verb from text)
+  8. component   — A, B, C together form X  (composition pattern)
 
 Falls back to cooccurrence (handled by caller) when no pattern matches.
 
@@ -23,7 +24,6 @@ Spec ref: docs/specs/graph.md § Edges, § Decisions 4, 9, 10, 12
 import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
-
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +163,27 @@ _RELATION_VERBS = (
     r"modifies?|modified|"
     r"restricts?|restricted)"
 )
+
+# Templates use __A__ and __B__ as placeholders (replaced at match time).
+# Quantifiers use single braces since these are plain strings, not f-strings.
+_OPPOSITION_PATTERNS = [
+    # "X vs Y" / "X versus Y" (allow articles/words between marker and term)
+    r"\b__A__\b.{0,20}\bvs\.?\b.{0,15}\b__B__\b",
+    r"\b__A__\b.{0,20}\bversus\b.{0,20}\b__B__\b",
+    # "X as opposed to Y"
+    r"\b__A__\b.{0,40}\bas\s+opposed\s+to\b.{0,40}\b__B__\b",
+    # "X rather than Y"
+    r"\b__A__\b.{0,40}\brather\s+than\b.{0,40}\b__B__\b",
+    # "X contrasts with Y" / "X is contrasted with Y"
+    r"\b__A__\b.{0,40}\bcontrasts?\s+with\b.{0,40}\b__B__\b",
+    r"\b__A__\b.{0,40}\bcontrasted\s+with\b.{0,40}\b__B__\b",
+    # "X is the opposite of Y"
+    r"\b__A__\b.{0,40}\bopposite\s+of\b.{0,40}\b__B__\b",
+    # "unlike X, Y"
+    r"\bunlike\b.{0,30}\b__A__\b.{0,60}\b__B__\b",
+    # "X, not Y" — tight window to avoid false positives on plain negation
+    r"\b__A__\b,?\s+not\b.{0,20}\b__B__\b",
+]
 
 _COMPOSITION_VERBS = (
     r"(?:forms?|constitutes?|composes?|makes?\s+up|comprises?|consists?\s+of)"
@@ -378,6 +399,7 @@ class PropositionExtractor:
             self._try_kind_of,
             self._try_production,
             self._try_dependence,
+            self._try_opposition,
             self._try_property,
             self._try_relation,
             self._try_pos_verb,  # v2: POS-based fallback, catches any verb
@@ -500,6 +522,32 @@ class PropositionExtractor:
                     evidence=sentence,
                     directed=True,
                 )
+        return None
+
+    def _try_opposition(
+        self, sentence: str, term_a: str, term_b: str
+    ) -> Optional[Proposition]:
+        """
+        Detect explicit contrast: 'A vs B', 'A as opposed to B', etc.
+
+        Opposition is symmetric — directed=False, label='opposes'.
+        """
+        ta = re.escape(term_a)
+        tb = re.escape(term_b)
+        for pattern_tmpl in _OPPOSITION_PATTERNS:
+            # Try A…B order
+            for a, b in [(ta, tb), (tb, ta)]:
+                pattern = pattern_tmpl.replace("__A__", a).replace("__B__", b)
+                if re.search(pattern, sentence, re.IGNORECASE):
+                    # Always store in canonical (term_a, term_b) order
+                    return Proposition(
+                        source=term_a,
+                        target=term_b,
+                        label="opposes",
+                        type="opposition",
+                        evidence=sentence,
+                        directed=False,
+                    )
         return None
 
     def _try_property(

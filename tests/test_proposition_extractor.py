@@ -223,6 +223,65 @@ class TestDependenceExtraction:
 
 
 # ---------------------------------------------------------------------------
+# Opposition extraction
+# ---------------------------------------------------------------------------
+
+
+class TestOppositionExtraction:
+    def _extractor(self, sentence: str) -> PropositionExtractor:
+        return PropositionExtractor(make_docs([sentence]))
+
+    def test_vs(self):
+        s = "The symbol vs the sign is a central debate in semiotics."
+        e = self._extractor(s)
+        props = e.extract("symbol", "sign")
+        assert any(p.type == "opposition" for p in props)
+
+    def test_versus(self):
+        s = "Saussure versus Peirce represents two traditions of semiotic thought."
+        e = self._extractor(s)
+        props = e.extract("saussure", "peirce")
+        assert any(p.type == "opposition" for p in props)
+
+    def test_as_opposed_to(self):
+        s = "The sign, as opposed to the signal, involves interpretation."
+        e = self._extractor(s)
+        props = e.extract("sign", "signal")
+        assert any(p.type == "opposition" for p in props)
+
+    def test_rather_than(self):
+        s = "Eco focuses on the code rather than the message in isolation."
+        e = self._extractor(s)
+        props = e.extract("code", "message")
+        assert any(p.type == "opposition" for p in props)
+
+    def test_contrasts_with(self):
+        s = "The symbol contrasts with the icon in its mode of signification."
+        e = self._extractor(s)
+        props = e.extract("symbol", "icon")
+        assert any(p.type == "opposition" for p in props)
+
+    def test_is_the_opposite_of(self):
+        s = "Denotation is the opposite of connotation in classical semiotics."
+        e = self._extractor(s)
+        props = e.extract("denotation", "connotation")
+        assert any(p.type == "opposition" for p in props)
+
+    def test_opposition_is_undirected(self):
+        s = "The symbol vs the sign is a central debate."
+        e = self._extractor(s)
+        props = e.extract("symbol", "sign")
+        p = next(p for p in props if p.type == "opposition")
+        assert p.directed is False
+
+    def test_no_opposition_without_marker(self):
+        s = "The sign and the symbol share a common structure."
+        e = self._extractor(s)
+        props = e.extract("sign", "symbol")
+        assert not any(p.type == "opposition" for p in props)
+
+
+# ---------------------------------------------------------------------------
 # No-match (cooccurrence fallback territory)
 # ---------------------------------------------------------------------------
 

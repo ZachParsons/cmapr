@@ -241,6 +241,7 @@ def _generate_html_template(
         <div class="legend-row"><div class="legend-swatch" style="background:#59a14f"></div>kind-of</div>
         <div class="legend-row"><div class="legend-swatch" style="background:#f28e2b"></div>production</div>
         <div class="legend-row"><div class="legend-swatch" style="background:#e15759"></div>dependence</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#d4a0a0"></div>opposition</div>
         <div class="legend-row"><div class="legend-swatch" style="background:#edc948"></div>property</div>
         <div class="legend-row"><div class="legend-swatch" style="background:#76b7b2"></div>relation</div>
         <div class="legend-row"><div class="legend-swatch" style="background:#b07aa1"></div>component</div>
@@ -277,6 +278,7 @@ def _generate_html_template(
             "kind-of":      "#59a14f",
             "production":   "#f28e2b",
             "dependence":   "#e15759",
+            "opposition":   "#d4a0a0",
             "property":     "#edc948",
             "relation":     "#76b7b2",
             "component":    "#b07aa1",
