@@ -115,7 +115,7 @@ def build_proposition_graph(
                         target=term_b,
                         label="co-occurs with",
                         type="cooccurrence",
-                        evidence="",
+                        evidence=[],
                         directed=False,
                         weight=n_ab,
                     )
@@ -151,7 +151,7 @@ def build_proposition_graph(
             relation_type=prop.type,
             verb=prop.label,
             weight=prop.weight,
-            evidence=[prop.evidence] if prop.evidence else [],
+            evidence=prop.evidence,
         )
 
     return graph

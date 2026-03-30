@@ -22,7 +22,7 @@ Spec ref: docs/specs/graph.md § Edges, § Decisions 4, 9, 10, 12
 """
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 
@@ -52,7 +52,7 @@ class Proposition:
     target: str
     label: str
     type: str
-    evidence: str
+    evidence: List[str] = field(default_factory=list)
     directed: bool = True
     weight: int = 1
 
@@ -191,6 +191,57 @@ _COMPOSITION_VERBS = (
 
 
 # ---------------------------------------------------------------------------
+# Evidence scoring
+# ---------------------------------------------------------------------------
+
+
+def _score_sentence(
+    sentence: str,
+    term_a: str,
+    term_b: str,
+    sent_idx: int,
+    n_sentences: int,
+) -> float:
+    """
+    Score a candidate evidence sentence; higher = better to surface in tooltip.
+
+    Heuristics (additive):
+      +10  contains an explicit definition marker
+      +5   both terms appear within 15 words of each other
+      -len/400  penalty for long sentences (prefer concise ones)
+      -idx/n    penalty for late sentences (prefer intro/early context)
+    """
+    score = 0.0
+
+    # 1. Definition marker
+    if re.search(
+        r"\b(?:defined?\s+as|by\b.{0,20}\bI\s+mean|denotes?|stands?\s+for)\b",
+        sentence,
+        re.IGNORECASE,
+    ):
+        score += 10.0
+
+    # 2. Proximity: both terms within 15 words
+    words = sentence.split()
+    ta_l, tb_l = term_a.lower(), term_b.lower()
+    ta_idx = [i for i, w in enumerate(words) if ta_l in w.lower()]
+    tb_idx = [i for i, w in enumerate(words) if tb_l in w.lower()]
+    if ta_idx and tb_idx:
+        min_gap = min(abs(ia - ib) for ia in ta_idx for ib in tb_idx)
+        if min_gap <= 15:
+            score += 5.0
+
+    # 3. Sentence length penalty (prefer under ~200 chars)
+    score -= len(sentence) / 400.0
+
+    # 4. Position penalty (prefer early sentences)
+    if n_sentences > 1:
+        score -= sent_idx / n_sentences
+
+    return score
+
+
+# ---------------------------------------------------------------------------
 # Extractor class
 # ---------------------------------------------------------------------------
 
@@ -320,19 +371,37 @@ class PropositionExtractor:
         """
         Return all typed propositions between term_a and term_b.
 
-        Same-type duplicates are merged (weight incremented).
-        Different-type propositions between the same pair are all kept
-        (multigraph, Decision 9).
+        Same-type duplicates are merged (weight incremented) and their
+        evidence sentences accumulated, ranked by quality, and trimmed to
+        the top 3.  Different-type propositions for the same pair are all
+        kept (multigraph, Decision 9).
         """
         seen: dict = {}
+        # scored_evidence[key] = list of (score, sentence)
+        scored_evidence: Dict[tuple, list] = {}
+        a_l, b_l = term_a.lower(), term_b.lower()
+        n_sents = len(self._sentences)
 
-        for sentence in self._sentences_with_both(term_a, term_b):
+        for sent_idx, sentence in enumerate(self._sentences):
+            sl = sentence.lower()
+            if a_l not in sl or b_l not in sl:
+                continue
             for prop in self._extract_from_sentence(sentence, term_a, term_b):
                 key = (prop.source.lower(), prop.target.lower(), prop.type)
                 if key in seen:
                     seen[key].weight += 1
                 else:
                     seen[key] = prop
+                    scored_evidence[key] = []
+                score = _score_sentence(
+                    sentence, prop.source, prop.target, sent_idx, n_sents
+                )
+                scored_evidence[key].append((score, sentence))
+
+        # Rank evidence and attach top-3 to each proposition
+        for key, prop in seen.items():
+            ranked = sorted(scored_evidence.get(key, []), key=lambda x: -x[0])
+            prop.evidence = [s for _, s in ranked[:3]]
 
         return list(seen.values())
 
@@ -439,7 +508,7 @@ class PropositionExtractor:
                         target=complement,
                         label=label,
                         type="definition",
-                        evidence=sentence,
+                        evidence=[sentence],
                         directed=True,
                     )
         return None
@@ -465,7 +534,7 @@ class PropositionExtractor:
                     target=supertype,
                     label="is a kind of",
                     type="kind-of",
-                    evidence=sentence,
+                    evidence=[sentence],
                     directed=True,
                 )
         return None
@@ -492,7 +561,7 @@ class PropositionExtractor:
                     target=target,
                     label=label,
                     type="production",
-                    evidence=sentence,
+                    evidence=[sentence],
                     directed=True,
                 )
         return None
@@ -519,7 +588,7 @@ class PropositionExtractor:
                     target=target,
                     label=label,
                     type="dependence",
-                    evidence=sentence,
+                    evidence=[sentence],
                     directed=True,
                 )
         return None
@@ -545,7 +614,7 @@ class PropositionExtractor:
                         target=term_b,
                         label="opposes",
                         type="opposition",
-                        evidence=sentence,
+                        evidence=[sentence],
                         directed=False,
                     )
         return None
@@ -580,7 +649,7 @@ class PropositionExtractor:
                     target=complement,
                     label="is",
                     type="property",
-                    evidence=sentence,
+                    evidence=[sentence],
                     directed=True,
                 )
         return None
@@ -611,7 +680,7 @@ class PropositionExtractor:
                     target=target,
                     label=label,
                     type="relation",
-                    evidence=sentence,
+                    evidence=[sentence],
                     directed=True,
                 )
         return None
@@ -721,7 +790,7 @@ class PropositionExtractor:
                 target=act_tgt,
                 label=verb,
                 type="relation",
-                evidence=sentence,
+                evidence=[sentence],
                 directed=True,
             )
 
@@ -774,7 +843,7 @@ class PropositionExtractor:
                         target=cb,
                         label="co-constitutes",
                         type="component",
-                        evidence=sentence,
+                        evidence=[sentence],
                         directed=False,
                     )
                 )
@@ -788,7 +857,7 @@ class PropositionExtractor:
                         target=composed,
                         label=verb_label,
                         type="production",
-                        evidence=sentence,
+                        evidence=[sentence],
                         directed=True,
                     )
                 )

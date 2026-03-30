@@ -900,7 +900,7 @@ def graph(
         click.echo(f"Output: {output_path}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    export_d3_json(concept_graph, output_path)
+    export_d3_json(concept_graph, output_path, include_evidence=True)
 
     click.echo(f"✓ Saved graph to {output_path}")
 

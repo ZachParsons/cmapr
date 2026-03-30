@@ -17,7 +17,7 @@ def generate_html(
     title: str = "Concept Network",
     width: int = 1200,
     height: int = 800,
-    include_evidence: bool = False,
+    include_evidence: bool = True,
 ) -> Path:
     """
     Generate standalone HTML visualization of the graph.
@@ -380,7 +380,9 @@ def _generate_html_template(
                     html += `<span style="color:#bbb">${{d.verb || d.type || "relates to"}}</span>`;
                     if (d.weight && d.weight > 1) html += ` (×${{d.weight}})`;
                     if (d.evidence && d.evidence.length) {{
-                        html += `<br><br><em style="color:#ccc">${{d.evidence[0]}}</em>`;
+                        html += d.evidence
+                            .map(s => `<br><hr style="border-color:#444;margin:4px 0"><em style="color:#ccc">${{s}}</em>`)
+                            .join("");
                     }}
                     tooltip.html(html)
                         .style("left", (event.clientX + 12) + "px")

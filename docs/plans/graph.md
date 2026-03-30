@@ -297,12 +297,180 @@ python -m pytest -q
 
 ---
 
-## Deferred (not in this plan)
+## Deferred — now in scope
 
-- `property` and `opposition` edge types
-- v2 scanning scope (scan all sentences for either term)
-- Interactive special-terms dictionary (per-work unknown word vetting)
-- Evidence selection spec (which sentence to surface in tooltip)
-- v2 interactivity (node expand/collapse, detail panel, edge type toggle)
-- Multi-word term support (requires spaCy)
-- Seed-word workflow B options (B1–B5: POS filter, count limit, group-by section, depth limit)
+---
+
+## Phase 9 — Opposition edge type
+
+Spec ref: *Edges > Edge types* (deferred from v1)
+
+**9.1 Implement `_try_opposition` in `PropositionExtractor`**
+- Pattern: explicit contrast markers between two terms
+  - *X vs Y*, *X versus Y*
+  - *X as opposed to Y*, *X rather than Y*
+  - *X not Y*, *unlike X, Y*
+  - *X is the opposite of Y*, *X contrasts with Y*
+- Label: `"opposes"`, type: `"opposition"`, directed: `False` (contrast is symmetric)
+- Insert in `_extract_from_sentence` chain after `_try_dependence`, before `_try_property`
+
+**9.2 Add to HTML legend and color palette**
+- Color: `#d4a0a0` (muted rose) — distinct from dependence red
+- Undirected (no arrowhead), solid stroke
+
+**9.3 Unit tests**
+- `"X vs Y"`, `"X as opposed to Y"`, `"X is the opposite of Y"` → `opposition`
+- Verify `directed=False`
+
+**Verify:**
+```bash
+python -m pytest tests/test_proposition_extractor.py -v -k "opposition"
+```
+
+---
+
+## Phase 10 — Evidence selection
+
+Spec ref: *Evidence selection spec* (deferred from v1)
+
+**10.1 Score and rank evidence sentences per edge**
+- File: `src/concept_mapper/graph/proposition_extractor.py`
+- When merging duplicate (source, target, type) edges, keep the best evidence sentence, not just the first
+- Scoring heuristics (in priority order):
+  1. Sentence contains a definition marker → highest score
+  2. Sentence contains both terms within 15 words of each other → bonus
+  3. Shorter sentences preferred (more precise)
+  4. Sentences from early in the document preferred (introductions define terms)
+- Store top-3 sentences as `evidence` list on the edge
+
+**10.2 Surface evidence in tooltip**
+- `html.py`: tooltip already renders `d.evidence[0]`; show all stored sentences (up to 3), separated by `<hr>`
+
+**Verify:**
+```bash
+cmapr graph data/output/corpus/eco_spl1/corpus.json \
+    --terms data/output/rarities/eco_spl1/terms.json \
+    --output data/output/graphs/eco_spl1/graph.json && \
+cmapr export data/output/graphs/eco_spl1/graph.json --format html --include-evidence && \
+open data/output/exports/eco_spl1/index.html
+# Hover over edges: tooltip should show 1–3 ranked evidence sentences
+```
+
+---
+
+## Phase 11 — v2 interactivity
+
+Spec ref: *v2 interactivity* (deferred from v1)
+
+**11.1 Edge type toggle**
+- Add checkboxes to the legend (one per edge type)
+- Toggling a type hides/shows all edges of that type and their labels
+- Isolated nodes (all edges hidden) are also hidden
+
+**11.2 Node detail panel**
+- Clicking a node opens a side panel (right side, 280px wide)
+- Panel shows: term, POS, frequency, rarity score, community, all connected edges with their type and verb label
+- Clicking elsewhere closes it
+
+**11.3 Node expand/collapse** *(stretch)*
+- Double-click currently releases pin; repurpose to expand: show only this node's neighbourhood
+- Second double-click collapses back to full graph
+- Requires storing full graph state and filtering displayed nodes/links
+
+**Verify:**
+```bash
+open data/output/exports/eco_spl1/index.html
+# Manual checks:
+# - Uncheck "cooccurrence" → dashed edges disappear, isolated nodes hide
+# - Click node → detail panel appears with edge list
+# - Click elsewhere → panel closes
+```
+
+---
+
+## Phase 12 — Special-terms dictionary
+
+Spec ref: *Interactive special-terms dictionary* (deferred from v1)
+
+**12.1 Per-work vetting file**
+- File: `data/input/<corpus_name>.terms.json` (optional, user-maintained)
+- Format: `{"accept": ["lekton", "aliquid"], "reject": ["tion", "structu"]}`
+- `cmapr rarities` reads this file if present and applies accept/reject before output
+
+**12.2 CLI flag**
+- `cmapr rarities --vet` — interactive mode: print each candidate term, prompt y/n/s (yes/no/skip), save to vetting file
+
+**12.3 Apply at graph time**
+- `cmapr graph --terms` already filters by rarities output; vetting file is applied upstream at rarities stage
+
+**Verify:**
+```bash
+cmapr rarities data/output/corpus/eco_spl1/corpus.json --vet
+# Expect: interactive prompt per term; saves to data/input/eco_spl1.terms.json
+cmapr rarities data/output/corpus/eco_spl1/corpus.json
+# Expect: accepted/rejected terms already applied from vetting file
+```
+
+---
+
+## Phase 13 — Multi-word term support
+
+Spec ref: *Multi-word term support (requires spaCy)* (deferred from v1)
+
+**13.1 spaCy integration**
+- Add `spacy` as optional dependency (`pip install cmapr[spacy]`)
+- `cmapr ingest --spacy` flag: use spaCy pipeline instead of NLTK for tokenisation and POS
+- Extract noun chunks as candidate multi-word terms (e.g. *sign vehicle*, *unlimited semiosis*, *triadic relation*)
+
+**13.2 Multi-word term handling in graph**
+- `NodeFilter`: skip length check for multi-word terms (already ≥2 words)
+- `PropositionExtractor`: substring matching already works for multi-word terms; no change needed
+- Graph node IDs: use the full phrase (e.g. `"sign vehicle"`)
+
+**13.3 Rarities: multi-word candidate scoring**
+- Score by TF-IDF of the full phrase across documents
+- Merge single-word and multi-word candidates into one ranked list
+
+**Verify:**
+```bash
+cmapr ingest data/input/eco_spl1.txt --clean-ocr --spacy \
+    --output data/output/corpus/eco_spl1_spacy/corpus.json
+cmapr rarities data/output/corpus/eco_spl1_spacy/corpus.json --top-n 60
+# Expect: list includes multi-word terms like "sign vehicle", "sign system"
+```
+
+---
+
+## Phase 14 — Seed-word workflow B options
+
+Spec ref: *Seed-word workflow B options (B1–B5)* (deferred from v1)
+
+**B1 — POS filter flag**
+- `cmapr rarities --pos noun,verb` — restrict candidates to specified POS tags
+- Default: all POS (current behaviour)
+
+**B2 — Count limit**
+- `cmapr rarities --top-n N` already implemented; ensure it interacts correctly with POS filter
+
+**B3 — Group by section**
+- `cmapr rarities --by-section` — output terms grouped by document section (requires section metadata from ingest)
+- Section metadata: `ProcessedDocument.metadata["section"]`
+
+**B4 — Depth limit**
+- `cmapr graph --depth N` — only include nodes reachable within N hops from the highest-scoring seed node
+- Useful for focusing on a term's immediate conceptual neighbourhood
+
+**B5 — Neighbourhood export**
+- `cmapr graph --focus <term>` — build graph centred on one term, include all nodes connected to it
+
+**Verify:**
+```bash
+cmapr rarities data/output/corpus/eco_spl1/corpus.json --pos noun --top-n 40
+# Expect: only noun terms
+
+cmapr graph data/output/corpus/eco_spl1/corpus.json \
+    --terms data/output/rarities/eco_spl1/terms.json \
+    --focus sign --depth 2 \
+    --output data/output/graphs/eco_spl1/sign_neighbourhood.json
+# Expect: small graph centred on 'sign'
+```
