@@ -85,18 +85,28 @@ class NodeFilter:
             is enforced; when None the check is skipped (caller guarantees it).
         """
         t = term.lower().strip()
+        is_multiword = " " in t
 
-        if pos is not None and pos not in CONTENT_POS_TAGS:
-            return False, f"wrong POS ({pos})"
+        # Multi-word terms (noun phrases from spaCy) skip single-token checks:
+        # length, character validity, and fragment detection don't apply.
+        if not is_multiword:
+            if pos is not None and pos not in CONTENT_POS_TAGS:
+                return False, f"wrong POS ({pos})"
 
-        if len(t) < 4:
-            return False, f"too short ({len(t)} chars)"
+            if len(t) < 4:
+                return False, f"too short ({len(t)} chars)"
 
-        if not _valid_chars(term):
-            return False, "invalid characters"
+            if not _valid_chars(term):
+                return False, "invalid characters"
 
-        if term.isupper() and len(term) <= 4:
-            return False, "abbreviation (all-caps ≤ 4)"
+            if term.isupper() and len(term) <= 4:
+                return False, "abbreviation (all-caps ≤ 4)"
+
+            if self._is_fragment(t):
+                return False, "fragment (prefix of longer corpus word)"
+        else:
+            if pos is not None and pos not in CONTENT_POS_TAGS:
+                return False, f"wrong POS ({pos})"
 
         if t in self._stopwords:
             return False, "stopword"
@@ -104,9 +114,6 @@ class NodeFilter:
         freq = self._term_freqs.get(t, 0)
         if freq < self._min_freq:
             return False, f"low frequency ({freq} < {self._min_freq})"
-
-        if self._is_fragment(t):
-            return False, "fragment (prefix of longer corpus word)"
 
         return True, ""
 

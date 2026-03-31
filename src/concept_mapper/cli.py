@@ -93,8 +93,18 @@ def cli(ctx, verbose, output_dir):
     type=click.Path(exists=True),
     help="Table of contents file for guided structure detection",
 )
+@click.option(
+    "--spacy",
+    "use_spacy",
+    is_flag=True,
+    default=False,
+    help=(
+        "Extract multi-word noun chunks via spaCy (requires spacy + en_core_web_sm). "
+        "Chunks are stored in the corpus and surfaced by 'cmapr rarities'."
+    ),
+)
 @click.pass_context
-def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc):
+def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy):
     """
     Load and preprocess documents.
 
@@ -107,10 +117,15 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc):
     Use --toc to provide a table of contents file for accurate structure
     detection when automatic detection fails or is unreliable.
 
+    Use --spacy to extract multi-word noun phrases (e.g. "sign vehicle",
+    "unlimited semiosis") alongside single-word tokens. These will appear in
+    cmapr rarities output when the corpus is analysed.
+
     Examples:
         cmapr ingest data/input/eco_spl.txt
         cmapr ingest data/input/eco_spl.txt --clean-ocr
         cmapr ingest data/input/eco_spl.txt --toc data/input/eco_spl_toc.txt
+        cmapr ingest data/input/eco_spl.txt --spacy
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -153,7 +168,9 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc):
     processed = []
     with click.progressbar(docs, label="Processing") as bar:
         for doc in bar:
-            processed.append(preprocess(doc, clean_ocr=clean_ocr, toc_file=toc_file))
+            processed.append(
+                preprocess(doc, clean_ocr=clean_ocr, toc_file=toc_file, use_spacy=use_spacy)
+            )
 
     # Save
     if output:
@@ -222,6 +239,17 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc):
     default=False,
     help="Disable filtering of word fragments from dirty input (e.g. 'ust' from 'j ust', 'prosthesi' from 'prosthesis'). By default, terms shorter than 4 chars or that are a prefix of a real word are removed.",
 )
+@click.option(
+    "--vet",
+    is_flag=True,
+    default=False,
+    help=(
+        "Interactively vet each candidate term. "
+        "For each unvetted term you are prompted: y=accept, n=reject, s/Enter=skip. "
+        "Decisions are saved to a vetting.json file next to the terms output and "
+        "applied automatically on subsequent runs."
+    ),
+)
 @click.pass_context
 def rarities(
     ctx,
@@ -233,6 +261,7 @@ def rarities(
     no_lemmatize,
     no_filter_names,
     no_filter_fragments,
+    vet,
 ):
     """
     Detect rare/philosophical terms in corpus.
@@ -248,6 +277,26 @@ def rarities(
     """
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
+
+    # Resolve output path early — needed for vetting file location
+    if output:
+        output_path = Path(output)
+    else:
+        output_path = infer_output_path(Path(corpus), output_dir, "rarities")
+
+    # Load vetting file (accept/reject decisions from previous runs)
+    vetting_path = output_path.parent / "vetting.json"
+    vetting_accepted: set = set()
+    vetting_rejected: set = set()
+    if vetting_path.exists():
+        with open(vetting_path, "r", encoding="utf-8") as _vf:
+            _vd = json.load(_vf)
+        vetting_accepted = {t.lower() for t in _vd.get("accept", [])}
+        vetting_rejected = {t.lower() for t in _vd.get("reject", [])}
+        click.echo(
+            f"Loaded vetting file: {len(vetting_accepted)} accepted, "
+            f"{len(vetting_rejected)} rejected"
+        )
 
     # Load corpus
     if verbose:
@@ -284,6 +333,38 @@ def rarities(
         for term, score, components in candidates
         if term.strip(_QUOTES)
     ]
+    # Snapshot before name/fragment/top-n filters — used to re-include accepted terms
+    raw_candidates = list(candidates)
+
+    # Multi-word noun chunks (present when corpus was ingested with --spacy)
+    _mw_chunks: list = []
+    for _doc in docs:
+        _mw_chunks.extend(_doc.metadata.get("noun_chunks", []))
+    if _mw_chunks:
+        from collections import Counter as _Counter
+        from math import log as _log
+
+        _chunk_freq = _Counter(_mw_chunks)
+        _doc_chunk_sets = [set(_d.metadata.get("noun_chunks", [])) for _d in docs]
+        _n_docs = max(len(docs), 1)
+        _mw_scored = []
+        for _chunk, _freq in _chunk_freq.items():
+            if _freq < 2:
+                continue
+            _df = sum(1 for _dc in _doc_chunk_sets if _chunk in _dc)
+            _idf = _log((_n_docs + 1) / (_df + 1))
+            # log-frequency weighted by IDF; scale into a range comparable with
+            # the philosophical-term scorer (typical top terms score 1–4)
+            _score = _log(1 + _freq) * (1 + _idf)
+            _mw_scored.append((_chunk, _score, {"tfidf": _score, "total": _score}))
+        if _mw_scored:
+            candidates = sorted(
+                candidates + _mw_scored, key=lambda x: x[1], reverse=True
+            )
+            raw_candidates = list(candidates)
+            click.echo(
+                f"Added {len(_mw_scored)} multi-word candidate(s) from noun chunks"
+            )
 
     if not no_filter_names:
         from concept_mapper.analysis.rarity import proper_noun_ratios
@@ -382,6 +463,26 @@ def rarities(
                 f"(use --no-filter-fragments to keep them)"
             )
 
+    # Apply vetting: remove rejected terms
+    if vetting_rejected:
+        before = len(candidates)
+        candidates = [
+            (t, s, c) for t, s, c in candidates if t.lower() not in vetting_rejected
+        ]
+        removed = before - len(candidates)
+        if removed:
+            click.echo(f"Vetting: excluded {removed} rejected term(s)")
+
+    # Apply vetting: re-include explicitly accepted terms cut by top-n / filters
+    if vetting_accepted:
+        current_terms = {t.lower() for t, _, _ in candidates}
+        for term, score, components in raw_candidates:
+            if term.lower() in vetting_accepted and term.lower() not in current_terms:
+                candidates.append((term, score, components))
+                current_terms.add(term.lower())
+        # Re-sort after potential additions
+        candidates = sorted(candidates, key=lambda x: x[1], reverse=True)
+
     # Check if any terms were found
     if not candidates:
         click.echo("\nNo rare terms detected. Try:")
@@ -391,19 +492,71 @@ def rarities(
         click.echo("  - Verifying the text is in English")
         sys.exit(1)
 
+    # Interactive vetting mode
+    if vet:
+        click.echo("\n--- Vetting mode (y=accept  n=reject  s/Enter=skip) ---\n")
+        new_accepted = set(vetting_accepted)
+        new_rejected = set(vetting_rejected)
+        vetted_candidates = []
+
+        for term, score, components in candidates:
+            t_lower = term.lower()
+            if t_lower in new_accepted:
+                status = " (already accepted)"
+                vetted_candidates.append((term, score, components))
+            elif t_lower in new_rejected:
+                # Should not appear (filtered above), but handle gracefully
+                continue
+            else:
+                status = ""
+
+            if t_lower in new_accepted:
+                click.echo(f"  {term:30} {score:6.2f}{status}")
+                continue
+
+            choice = (
+                click.prompt(
+                    f"  {term:30} {score:6.2f}",
+                    default="s",
+                    prompt_suffix="  [y/n/s] ",
+                    show_default=False,
+                )
+                .strip()
+                .lower()
+            )
+
+            if choice == "n":
+                new_rejected.add(t_lower)
+                new_accepted.discard(t_lower)
+            elif choice == "y":
+                new_accepted.add(t_lower)
+                new_rejected.discard(t_lower)
+                vetted_candidates.append((term, score, components))
+            else:
+                vetted_candidates.append((term, score, components))
+
+        candidates = vetted_candidates
+
+        # Save updated vetting file
+        vetting_data = {
+            "accept": sorted(new_accepted),
+            "reject": sorted(new_rejected),
+        }
+        vetting_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(vetting_path, "w", encoding="utf-8") as _vf:
+            json.dump(vetting_data, _vf, indent=2, ensure_ascii=False)
+        click.echo(f"\n✓ Saved vetting decisions to {vetting_path}")
+        click.echo(f"  {len(new_accepted)} accepted, {len(new_rejected)} rejected")
+
     # Display results
     click.echo(f"\nTop {len(candidates)} rare terms:")
     click.echo("-" * 60)
 
     for term, score, components in candidates:
-        click.echo(f"{term:30} {score:6.2f}")
-
-    # Save if requested
-    if output:
-        output_path = Path(output)
-    else:
-        # NEW: Derive output filename from corpus filename
-        output_path = infer_output_path(Path(corpus), output_dir, "rarities")
+        tag = ""
+        if vetting_accepted and term.lower() in vetting_accepted:
+            tag = " ✓"
+        click.echo(f"{term:30} {score:6.2f}{tag}")
 
     if verbose:
         identifier = derive_identifier(Path(corpus))

@@ -17,6 +17,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+spacy = [
+    "spacy>=3.8",             # Multi-word noun chunk extraction
+]
 dev = [
     # Essential dev tools
     "pytest>=8.3",        # Tests ⭐
