@@ -229,6 +229,78 @@ def _generate_html_template(
             );
             height: 2px;
         }}
+
+        .legend-row input[type=checkbox] {{
+            width: 13px;
+            height: 13px;
+            cursor: pointer;
+            flex-shrink: 0;
+            accent-color: #555;
+        }}
+
+        #detail-panel {{
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 280px;
+            height: 100%;
+            background: rgba(255,255,255,0.97);
+            border-left: 1px solid #ddd;
+            padding: 16px 16px 32px;
+            overflow-y: auto;
+            transform: translateX(100%);
+            transition: transform 0.2s ease;
+            z-index: 200;
+            box-sizing: border-box;
+            font-size: 12px;
+        }}
+
+        #detail-panel.open {{
+            transform: translateX(0);
+        }}
+
+        #detail-panel h2 {{
+            margin: 0 24px 10px 0;
+            font-size: 15px;
+            color: #222;
+            word-break: break-all;
+        }}
+
+        #detail-panel .close-btn {{
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: #888;
+            padding: 2px 6px;
+        }}
+
+        #detail-panel .close-btn:hover {{
+            color: #333;
+            background: #eee;
+            border-radius: 3px;
+        }}
+
+        .panel-meta {{
+            color: #555;
+            margin: 2px 0;
+        }}
+
+        .panel-edge {{
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+            margin: 5px 0;
+            line-height: 1.4;
+        }}
+
+        .panel-edge-type {{
+            font-size: 10px;
+            color: #888;
+        }}
     </style>
 </head>
 <body>
@@ -236,16 +308,13 @@ def _generate_html_template(
     <svg id="graph"></svg>
 
     <div id="legend">
-        <div style="font-weight:600;margin-bottom:4px;">Edge types</div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#4e79a7"></div>definition</div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#59a14f"></div>kind-of</div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#f28e2b"></div>production</div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#e15759"></div>dependence</div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#d4a0a0"></div>opposition</div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#edc948"></div>property</div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#76b7b2"></div>relation</div>
-        <div class="legend-row"><div class="legend-swatch" style="background:#b07aa1"></div>component</div>
-        <div class="legend-row"><div class="legend-swatch dashed"></div>co-occurrence</div>
+        <div style="font-weight:600;margin-bottom:6px;">Edge types</div>
+        <!-- rows injected by JS so checkboxes share closure with D3 selections -->
+    </div>
+
+    <div id="detail-panel">
+        <button class="close-btn" onclick="closeDetailPanel()">✕</button>
+        <div id="detail-panel-content"></div>
     </div>
 
     <div id="overlay">
@@ -330,6 +399,9 @@ def _generate_html_template(
 
         svg.call(zoom);
 
+        // Close detail panel when clicking on empty canvas
+        svg.on("click", () => closeDetailPanel());
+
         // Tooltip
         const tooltip = d3.select("#tooltip");
 
@@ -413,7 +485,12 @@ def _generate_html_template(
                         .style("opacity", 1);
                 }})
                 .on("mouseout", () => tooltip.style("opacity", 0))
+                .on("click", (event, d) => {{
+                    event.stopPropagation();
+                    showDetailPanel(d);
+                }})
                 .on("dblclick", (event, d) => {{
+                    event.stopPropagation();
                     d.fx = null;
                     d.fy = null;
                     simulation.alphaTarget(0.1).restart();
@@ -479,6 +556,111 @@ def _generate_html_template(
             }});
 
             window.simulation = simulation;
+
+            // ----------------------------------------------------------------
+            // 11.1 — Edge type toggle
+            // ----------------------------------------------------------------
+            const hiddenTypes = new Set();
+
+            function applyTypeFilter() {{
+                link.style("display", d => hiddenTypes.has(d.type) ? "none" : null);
+                if (linkLabel) linkLabel.style("display", d => hiddenTypes.has(d.type) ? "none" : null);
+
+                // Hide nodes whose every incident edge is hidden
+                const visibleIds = new Set();
+                data.links.forEach(l => {{
+                    if (!hiddenTypes.has(l.type)) {{
+                        visibleIds.add(l.source.id !== undefined ? l.source.id : l.source);
+                        visibleIds.add(l.target.id !== undefined ? l.target.id : l.target);
+                    }}
+                }});
+                node.style("display",  d => visibleIds.has(d.id) ? null : "none");
+                label.style("display", d => visibleIds.has(d.id) ? null : "none");
+            }}
+
+            // Build legend rows with checkboxes (inside IIFE for closure)
+            const LEGEND_TYPES = [
+                {{ type: "definition",   color: "#4e79a7", dashed: false }},
+                {{ type: "kind-of",      color: "#59a14f", dashed: false }},
+                {{ type: "production",   color: "#f28e2b", dashed: false }},
+                {{ type: "dependence",   color: "#e15759", dashed: false }},
+                {{ type: "opposition",   color: "#d4a0a0", dashed: false }},
+                {{ type: "property",     color: "#edc948", dashed: false }},
+                {{ type: "relation",     color: "#76b7b2", dashed: false }},
+                {{ type: "component",    color: "#b07aa1", dashed: false }},
+                {{ type: "cooccurrence", color: "#bbbbbb", dashed: true  }},
+            ];
+            const legendEl = document.getElementById("legend");
+            LEGEND_TYPES.forEach(({{ type, color, dashed }}) => {{
+                // Only show types that appear in the data
+                const hasType = data.links.some(l => l.type === type);
+                if (!hasType) return;
+
+                const row = document.createElement("div");
+                row.className = "legend-row";
+
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.checked = true;
+                cb.title = `Show/hide ${{type}} edges`;
+                cb.addEventListener("change", () => {{
+                    if (cb.checked) hiddenTypes.delete(type);
+                    else hiddenTypes.add(type);
+                    applyTypeFilter();
+                }});
+
+                const swatch = document.createElement("div");
+                swatch.className = "legend-swatch" + (dashed ? " dashed" : "");
+                if (!dashed) swatch.style.background = color;
+
+                const lbl = document.createElement("span");
+                lbl.textContent = type;
+
+                row.appendChild(cb);
+                row.appendChild(swatch);
+                row.appendChild(lbl);
+                legendEl.appendChild(row);
+            }});
+
+            // ----------------------------------------------------------------
+            // 11.2 — Node detail panel
+            // ----------------------------------------------------------------
+            function showDetailPanel(d) {{
+                const nodeId = d.id;
+                const edges = data.links.filter(l => {{
+                    const src = l.source.id !== undefined ? l.source.id : l.source;
+                    const tgt = l.target.id !== undefined ? l.target.id : l.target;
+                    return src === nodeId || tgt === nodeId;
+                }});
+
+                let html = `<h2>${{d.label}}</h2>`;
+                if (d.score    != null) html += `<div class="panel-meta">Rarity score: ${{d.score.toFixed(2)}}</div>`;
+                if (d.frequency != null) html += `<div class="panel-meta">Frequency: ${{d.frequency}}</div>`;
+                if (d.pos)              html += `<div class="panel-meta">POS: ${{d.pos}}</div>`;
+                if (d.definition)       html += `<div class="panel-meta" style="margin-top:6px">${{d.definition}}</div>`;
+
+                html += `<hr style="margin:10px 0"><div style="font-weight:600;margin-bottom:6px">Connections (${{edges.length}})</div>`;
+
+                edges.forEach(l => {{
+                    const src = l.source.id !== undefined ? l.source.id : l.source;
+                    const tgt = l.target.id !== undefined ? l.target.id : l.target;
+                    const other = src === nodeId ? tgt : src;
+                    const isSource = src === nodeId;
+                    const directed = DIRECTED_TYPES.has(l.type);
+                    const arrow = directed ? (isSource ? "→" : "←") : "↔";
+                    const color = EDGE_COLORS[l.type] || EDGE_COLOR_DEFAULT;
+                    html += `<div class="panel-edge">
+                        <span style="color:${{color}};font-size:14px">■</span>
+                        <span>${{arrow}} <strong>${{other}}</strong></span>
+                        <span class="panel-edge-type">${{l.verb || l.type}}</span>
+                    </div>`;
+                }});
+
+                document.getElementById("detail-panel-content").innerHTML = html;
+                document.getElementById("detail-panel").classList.add("open");
+            }}
+
+            window.showDetailPanel = showDetailPanel;
         }})();
 
         // Drag behavior
@@ -506,6 +688,10 @@ def _generate_html_template(
 
         function restartSimulation() {{
             window.simulation.alpha(1).restart();
+        }}
+
+        function closeDetailPanel() {{
+            document.getElementById("detail-panel").classList.remove("open");
         }}
     </script>
 </body>
