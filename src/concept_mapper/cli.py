@@ -240,6 +240,25 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy):
     help="Disable filtering of word fragments from dirty input (e.g. 'ust' from 'j ust', 'prosthesi' from 'prosthesis'). By default, terms shorter than 4 chars or that are a prefix of a real word are removed.",
 )
 @click.option(
+    "--pos",
+    type=str,
+    default=None,
+    help=(
+        "Restrict candidates to POS categories (comma-separated): "
+        "noun, verb, adj, adv. E.g. --pos noun or --pos noun,verb. "
+        "Multi-word noun chunks always pass regardless."
+    ),
+)
+@click.option(
+    "--by-section",
+    is_flag=True,
+    default=False,
+    help=(
+        "Group output terms by document section. "
+        "Saves an additional terms_by_section.json alongside terms.json."
+    ),
+)
+@click.option(
     "--vet",
     is_flag=True,
     default=False,
@@ -261,6 +280,8 @@ def rarities(
     no_lemmatize,
     no_filter_names,
     no_filter_fragments,
+    pos,
+    by_section,
     vet,
 ):
     """
@@ -463,6 +484,39 @@ def rarities(
                 f"(use --no-filter-fragments to keep them)"
             )
 
+    # B1 — POS filter
+    if pos:
+        _POS_CATEGORY_MAP = {
+            "noun": {"NN", "NNS", "NNP", "NNPS"},
+            "verb": {"VB", "VBD", "VBG", "VBN", "VBP", "VBZ"},
+            "adj":  {"JJ", "JJR", "JJS"},
+            "adv":  {"RB", "RBR", "RBS"},
+        }
+        from concept_mapper.analysis.rarity import filter_by_pos_tags
+
+        requested_tags: set = set()
+        for _cat in pos.split(","):
+            _cat = _cat.strip().lower()
+            if _cat not in _POS_CATEGORY_MAP:
+                click.echo(
+                    f"Warning: unknown POS category '{_cat}'. "
+                    f"Valid: {', '.join(_POS_CATEGORY_MAP)}",
+                    err=True,
+                )
+            requested_tags.update(_POS_CATEGORY_MAP.get(_cat, set()))
+
+        if requested_tags:
+            allowed = filter_by_pos_tags(docs, include_tags=requested_tags, exclude_tags=None)
+            before = len(candidates)
+            candidates = [
+                (t, s, c)
+                for t, s, c in candidates
+                # multi-word noun chunks (contain space) always pass
+                if " " in t or t.lower() in allowed
+            ]
+            if verbose and len(candidates) < before:
+                click.echo(f"POS filter ({pos}): kept {len(candidates)}/{before} terms")
+
     # Apply vetting: remove rejected terms
     if vetting_rejected:
         before = len(candidates)
@@ -548,15 +602,55 @@ def rarities(
         click.echo(f"\n✓ Saved vetting decisions to {vetting_path}")
         click.echo(f"  {len(new_accepted)} accepted, {len(new_rejected)} rejected")
 
-    # Display results
-    click.echo(f"\nTop {len(candidates)} rare terms:")
-    click.echo("-" * 60)
+    # B3 — section assignment (used for both display and grouped output)
+    term_section_map: dict = {}
+    if by_section:
+        # Build (doc_idx, sent_idx) → section label from sentence_locations
+        _sent_label: dict = {}
+        for _di, _doc in enumerate(docs):
+            for _loc in _doc.sentence_locations:
+                _label = (
+                    _loc.chapter_title
+                    or _loc.section_title
+                    or (_loc.subsection_title if hasattr(_loc, "subsection_title") else None)
+                    or (f"Paragraph {_loc.paragraph}" if _loc.paragraph else None)
+                    or "Document"
+                )
+                _sent_label[(_di, _loc.sent_index)] = _label
 
-    for term, score, components in candidates:
-        tag = ""
-        if vetting_accepted and term.lower() in vetting_accepted:
-            tag = " ✓"
-        click.echo(f"{term:30} {score:6.2f}{tag}")
+        for term, _score, _ in candidates:
+            _counts: dict = {}
+            for _di, _doc in enumerate(docs):
+                for _si, _sent in enumerate(_doc.sentences):
+                    if term.lower() in _sent.lower():
+                        _sec = _sent_label.get((_di, _si), "Document")
+                        _counts[_sec] = _counts.get(_sec, 0) + 1
+            term_section_map[term] = (
+                max(_counts, key=_counts.get) if _counts else "Document"
+            )
+
+    # Display results
+    if by_section and term_section_map:
+        from collections import defaultdict as _defaultdict
+
+        _grouped: dict = _defaultdict(list)
+        for term, score, _ in candidates:
+            _grouped[term_section_map[term]].append((term, score))
+
+        click.echo(f"\nTop {len(candidates)} rare terms by section:")
+        for _sec, _terms in _grouped.items():
+            click.echo(f"\n  --- {_sec} ---")
+            for _t, _s in _terms:
+                _tag = " ✓" if vetting_accepted and _t.lower() in vetting_accepted else ""
+                click.echo(f"  {_t:30} {_s:6.2f}{_tag}")
+    else:
+        click.echo(f"\nTop {len(candidates)} rare terms:")
+        click.echo("-" * 60)
+        for term, score, components in candidates:
+            tag = ""
+            if vetting_accepted and term.lower() in vetting_accepted:
+                tag = " ✓"
+            click.echo(f"{term:30} {score:6.2f}{tag}")
 
     if verbose:
         identifier = derive_identifier(Path(corpus))
@@ -565,7 +659,7 @@ def rarities(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Create term list
+    # Create term list (flat, always saved — needed by cmapr graph)
     term_data = [
         {"term": term, "metadata": {"score": score}} for term, score, _ in candidates
     ]
@@ -578,6 +672,26 @@ def rarities(
     manager.export_to_json(output_path)
 
     click.echo(f"\n✓ Saved {len(candidates)} terms to {output_path}")
+
+    # B3 — save grouped-by-section file alongside flat terms.json
+    if by_section:
+        from collections import defaultdict as _defaultdict2
+
+        _sec_groups: dict = _defaultdict2(list)
+        for term, score, _ in candidates:
+            _sec = term_section_map.get(term, "Document")
+            _sec_groups[_sec].append({"term": term, "metadata": {"score": score}})
+
+        _by_sec_path = output_path.parent / (output_path.stem + "_by_section.json")
+        _by_sec_data = {
+            "sections": [
+                {"section": _sec, "terms": _terms}
+                for _sec, _terms in _sec_groups.items()
+            ]
+        }
+        with open(_by_sec_path, "w", encoding="utf-8") as _f:
+            json.dump(_by_sec_data, _f, indent=2, ensure_ascii=False)
+        click.echo(f"✓ Saved section grouping ({len(_sec_groups)} section(s)) to {_by_sec_path}")
 
 
 # ============================================================================
@@ -942,6 +1056,21 @@ def search(
     help="Exclude sections whose title matches this regex (e.g. 'index|bibliography').",
 )
 @click.option("--output", "-o", type=click.Path(), help="Output graph file")
+@click.option(
+    "--depth",
+    type=int,
+    default=None,
+    help=(
+        "Limit graph to nodes within N hops of the highest-scoring seed node "
+        "(or the --focus term when both are given)."
+    ),
+)
+@click.option(
+    "--focus",
+    type=str,
+    default=None,
+    help="Centre graph on this term, including only nodes directly connected to it.",
+)
 @click.pass_context
 def graph(
     ctx,
@@ -955,6 +1084,8 @@ def graph(
     start_from_section,
     exclude_sections,
     output,
+    depth,
+    focus,
 ):
     """
     Build concept graph by running analyze on each term in a terms file.
@@ -966,6 +1097,7 @@ def graph(
         cmapr graph data/output/corpus/eco_spl_w_toc/corpus.json -t data/output/rarities/eco_spl_w_toc/rarities.json
         cmapr graph data/output/corpus/eco_spl_w_toc/corpus.json -t data/output/rarities/eco_spl_w_toc/rarities.json --with-relations
         cmapr graph data/output/corpus/eco_spl_w_toc/corpus.json -t data/output/rarities/eco_spl_w_toc/rarities.json --start-from-section 1
+        cmapr graph data/output/corpus/eco_spl_w_toc/corpus.json -t data/output/rarities/eco_spl_w_toc/rarities.json --focus sign --depth 2
     """
     from collections import Counter
     from concept_mapper.graph.builders import build_proposition_graph
@@ -1027,6 +1159,50 @@ def graph(
     before_edges = concept_graph.edge_count()
     concept_graph = prune_to_ratio(concept_graph, target_ratio=3.0)
     pruned = before_edges - concept_graph.edge_count()
+
+    # B4/B5 — depth limit and/or focus-term neighbourhood
+    if focus is not None or depth is not None:
+        import networkx as nx
+        from concept_mapper.graph.model import ConceptGraph as _CG
+
+        _g = concept_graph.graph
+
+        # Resolve centre node
+        if focus is not None:
+            _centre = focus.lower()
+            if _centre not in _g:
+                _matches = [n for n in _g.nodes() if n.lower() == _centre]
+                _centre = _matches[0] if _matches else None
+            if _centre is None:
+                click.echo(
+                    f"Warning: focus term '{focus}' not found in graph — "
+                    "ignoring --focus",
+                    err=True,
+                )
+        else:
+            # Highest-scoring seed node
+            _scored = [
+                (n, _g.nodes[n].get("score", 0.0))
+                for n in _g.nodes()
+                if _g.nodes[n].get("score", 0.0) > 0
+            ]
+            _centre = max(_scored, key=lambda x: x[1])[0] if _scored else (
+                next(iter(_g.nodes()), None)
+            )
+
+        if _centre is not None:
+            _radius = depth if depth is not None else (1 if focus is not None else 2)
+            _sub = nx.ego_graph(_g, _centre, radius=_radius, undirected=True)
+            _new = _CG(directed=concept_graph.directed)
+            for _n, _attrs in _sub.nodes(data=True):
+                _new.add_node(_n, **_attrs)
+            for _s, _t, _attrs in _sub.edges(data=True):
+                _new.add_edge(_s, _t, **_attrs)
+            concept_graph = _new
+            click.echo(
+                f"Neighbourhood of '{_centre}' (depth={_radius}): "
+                f"{concept_graph.node_count()} nodes, {concept_graph.edge_count()} edges"
+            )
 
     # Summarise edge types
     type_counts: dict = {}
