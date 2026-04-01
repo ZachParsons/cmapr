@@ -24,8 +24,20 @@ _SPACY_NLP = None
 
 _LEADING_DETS = frozenset(
     {
-        "the", "a", "an", "this", "that", "these", "those",
-        "its", "their", "our", "your", "my", "his", "her",
+        "the",
+        "a",
+        "an",
+        "this",
+        "that",
+        "these",
+        "those",
+        "its",
+        "their",
+        "our",
+        "your",
+        "my",
+        "his",
+        "her",
     }
 )
 

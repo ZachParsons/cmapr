@@ -169,7 +169,9 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy):
     with click.progressbar(docs, label="Processing") as bar:
         for doc in bar:
             processed.append(
-                preprocess(doc, clean_ocr=clean_ocr, toc_file=toc_file, use_spacy=use_spacy)
+                preprocess(
+                    doc, clean_ocr=clean_ocr, toc_file=toc_file, use_spacy=use_spacy
+                )
             )
 
     # Save
@@ -489,8 +491,8 @@ def rarities(
         _POS_CATEGORY_MAP = {
             "noun": {"NN", "NNS", "NNP", "NNPS"},
             "verb": {"VB", "VBD", "VBG", "VBN", "VBP", "VBZ"},
-            "adj":  {"JJ", "JJR", "JJS"},
-            "adv":  {"RB", "RBR", "RBS"},
+            "adj": {"JJ", "JJR", "JJS"},
+            "adv": {"RB", "RBR", "RBS"},
         }
         from concept_mapper.analysis.rarity import filter_by_pos_tags
 
@@ -506,7 +508,9 @@ def rarities(
             requested_tags.update(_POS_CATEGORY_MAP.get(_cat, set()))
 
         if requested_tags:
-            allowed = filter_by_pos_tags(docs, include_tags=requested_tags, exclude_tags=None)
+            allowed = filter_by_pos_tags(
+                docs, include_tags=requested_tags, exclude_tags=None
+            )
             before = len(candidates)
             candidates = [
                 (t, s, c)
@@ -612,7 +616,11 @@ def rarities(
                 _label = (
                     _loc.chapter_title
                     or _loc.section_title
-                    or (_loc.subsection_title if hasattr(_loc, "subsection_title") else None)
+                    or (
+                        _loc.subsection_title
+                        if hasattr(_loc, "subsection_title")
+                        else None
+                    )
                     or (f"Paragraph {_loc.paragraph}" if _loc.paragraph else None)
                     or "Document"
                 )
@@ -641,7 +649,9 @@ def rarities(
         for _sec, _terms in _grouped.items():
             click.echo(f"\n  --- {_sec} ---")
             for _t, _s in _terms:
-                _tag = " ✓" if vetting_accepted and _t.lower() in vetting_accepted else ""
+                _tag = (
+                    " ✓" if vetting_accepted and _t.lower() in vetting_accepted else ""
+                )
                 click.echo(f"  {_t:30} {_s:6.2f}{_tag}")
     else:
         click.echo(f"\nTop {len(candidates)} rare terms:")
@@ -691,7 +701,9 @@ def rarities(
         }
         with open(_by_sec_path, "w", encoding="utf-8") as _f:
             json.dump(_by_sec_data, _f, indent=2, ensure_ascii=False)
-        click.echo(f"✓ Saved section grouping ({len(_sec_groups)} section(s)) to {_by_sec_path}")
+        click.echo(
+            f"✓ Saved section grouping ({len(_sec_groups)} section(s)) to {_by_sec_path}"
+        )
 
 
 # ============================================================================
@@ -1186,8 +1198,10 @@ def graph(
                 for n in _g.nodes()
                 if _g.nodes[n].get("score", 0.0) > 0
             ]
-            _centre = max(_scored, key=lambda x: x[1])[0] if _scored else (
-                next(iter(_g.nodes()), None)
+            _centre = (
+                max(_scored, key=lambda x: x[1])[0]
+                if _scored
+                else (next(iter(_g.nodes()), None))
             )
 
         if _centre is not None:
