@@ -505,3 +505,131 @@ class TestCompositionPattern:
         matches = [p for p in comp if frozenset([p.source, p.target]) == pair]
         assert len(matches) == 1
         assert matches[0].weight == 2
+
+
+# ============================================================================
+# Test EvidenceScoring (Phase 10)
+# ============================================================================
+
+from concept_mapper.graph.proposition_extractor import _score_sentence
+
+
+class TestEvidenceScoring:
+    """_score_sentence assigns higher scores to more informative evidence sentences."""
+
+    def test_definition_marker_raises_score(self):
+        """A sentence with a definition marker scores higher than one without."""
+        with_marker = "By 'sign' I mean any vehicle that stands for something else."
+        without_marker = "Sign and vehicle appear together in the same chapter."
+        score_with = _score_sentence(with_marker, "sign", "vehicle", 5, 20)
+        score_without = _score_sentence(without_marker, "sign", "vehicle", 5, 20)
+        assert score_with > score_without, (
+            "Expected definition-marker sentence to score higher than plain co-occurrence"
+        )
+
+    def test_denotes_marker_raises_score(self):
+        """A sentence using 'denotes' scores higher than one without the marker."""
+        with_denotes = "The sign denotes an interpretant in the semiotic process."
+        without_denotes = "Sign and interpretant appear in the same passage."
+        score_with = _score_sentence(with_denotes, "sign", "interpretant", 0, 10)
+        score_without = _score_sentence(without_denotes, "sign", "interpretant", 0, 10)
+        assert score_with > score_without, (
+            "Expected 'denotes' sentence to score higher than plain co-occurrence"
+        )
+
+    def test_proximity_bonus_applied(self):
+        """A sentence where the terms are close scores higher than one where they are far."""
+        close = "Sign produces interpretant."
+        # Build a sentence with more than 15 words between "sign" and "interpretant"
+        filler = " ".join(["which", "is", "a", "complex", "relational", "structure",
+                           "in", "Peircean", "philosophy", "may", "under", "certain",
+                           "conditions", "realise", "its", "full", "potential",
+                           "and", "finally", "produce", "its"])
+        far = f"Sign {filler} interpretant."
+        score_close = _score_sentence(close, "sign", "interpretant", 0, 10)
+        score_far = _score_sentence(far, "sign", "interpretant", 0, 10)
+        assert score_close > score_far, (
+            "Expected proximity bonus to raise score when terms are within 15 words"
+        )
+
+    def test_longer_sentences_penalised(self):
+        """A longer sentence scores lower than a shorter sentence with the same meaning."""
+        short = "Sign produces interpretant."
+        long = (
+            "Sign, as a triadic relation in Peirce's semiotic philosophy, "
+            "produces its corresponding interpretant through a process of mediation "
+            "involving object, representamen, and ground in the semiotic system."
+        )
+        score_short = _score_sentence(short, "sign", "interpretant", 0, 10)
+        score_long = _score_sentence(long, "sign", "interpretant", 0, 10)
+        assert score_short > score_long, (
+            "Expected shorter sentence to score higher due to length penalty"
+        )
+
+    def test_early_sentences_preferred(self):
+        """The same sentence at index 0 scores higher than at index 99."""
+        s = "Sign produces interpretant."
+        early = _score_sentence(s, "sign", "interpretant", sent_idx=0, n_sentences=100)
+        late = _score_sentence(s, "sign", "interpretant", sent_idx=99, n_sentences=100)
+        assert early > late, (
+            "Expected early sentence (idx=0) to score higher than late sentence (idx=99)"
+        )
+
+    def test_returns_float(self):
+        """_score_sentence always returns a float."""
+        result = _score_sentence(
+            "Sign is an interpretant.", "sign", "interpretant", 0, 1
+        )
+        assert isinstance(result, float), (
+            f"Expected float return type, got {type(result).__name__}"
+        )
+
+    def test_evidence_is_list_on_proposition(self):
+        """Proposition.evidence is a list after extraction."""
+        sentences = [
+            "Semiosis is defined as the process by which signs produce interpretants.",
+        ]
+        e = PropositionExtractor(make_docs(sentences))
+        props = e.extract("semiosis", "interpretants")
+        if props:
+            assert isinstance(props[0].evidence, list), (
+                "Expected Proposition.evidence to be a list"
+            )
+
+    def test_top3_evidence_max_length(self):
+        """Proposition.evidence contains at most 3 entries."""
+        sentences = [
+            "Sign and interpretant appear in the text.",
+            "The sign relates to the interpretant through a code.",
+            "Both sign and interpretant are central to semiosis.",
+            "The sign is fundamentally related to the interpretant.",
+            "Sign mediates between object and interpretant.",
+            "Interpretant is produced by sign in a triadic relation.",
+        ]
+        e = PropositionExtractor(make_docs(sentences))
+        props = e.extract("sign", "interpretant")
+        assert props, "Expected at least one proposition to be extracted"
+        assert len(props[0].evidence) <= 3, (
+            f"Expected at most 3 evidence entries, got {len(props[0].evidence)}"
+        )
+
+    def test_definition_sentence_ranked_first(self):
+        """The definition proposition's evidence[0] is the sentence with the marker."""
+        sentences = [
+            "Sign and interpretant appear together in semiotic theory.",
+            "By 'sign' I mean interpretant-producing vehicle in Peirce's model.",
+            "Sign and interpretant are both central to the semiotic process.",
+            "Sign and interpretant co-occur in every act of communication.",
+        ]
+        e = PropositionExtractor(make_docs(sentences))
+        props = e.extract("sign", "interpretant")
+        assert props, "Expected at least one proposition to be extracted"
+        # The definition proposition's evidence should rank the marker sentence first
+        defn_props = [p for p in props if p.type == "definition"]
+        assert defn_props, "Expected a definition proposition to be extracted"
+        defn_p = defn_props[0]
+        assert defn_p.evidence, "Expected non-empty evidence list on definition proposition"
+        assert "I mean" in defn_p.evidence[0], (
+            f"Expected definition-marker sentence to rank first in definition evidence, "
+            f"got: {defn_p.evidence[0]!r}"
+        )

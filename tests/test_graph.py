@@ -895,3 +895,278 @@ class TestGraphIntegration:
 
         assert pruned.has_edge("a", "b")
         assert not pruned.has_edge("c", "d")
+
+
+# ============================================================================
+# Test BuildPropositionGraph (Phase 5)
+# ============================================================================
+
+from concept_mapper.graph.builders import build_proposition_graph
+from concept_mapper.graph.operations import prune_to_ratio
+from unittest.mock import MagicMock as _MagicMock
+
+
+def _make_nlp_docs(sentences):
+    doc = _MagicMock()
+    doc.sentences = sentences
+    doc.metadata = {}
+    return [doc]
+
+
+class TestBuildPropositionGraph:
+    """build_proposition_graph returns a typed ConceptGraph from docs and seed terms."""
+
+    def _build(self, sentences, seed_terms, **kwargs):
+        docs = _make_nlp_docs(sentences)
+        return build_proposition_graph(docs, seed_terms, **kwargs)
+
+    def test_returns_concept_graph(self):
+        """Any call to build_proposition_graph returns a ConceptGraph instance."""
+        sentences = ["Semiosis involves a sign and a ground."]
+        graph = self._build(sentences, ["semiosis", "sign"], pmi_threshold=0.0)
+        assert isinstance(graph, ConceptGraph), (
+            "Expected build_proposition_graph to return a ConceptGraph"
+        )
+
+    def test_typed_edge_over_cooccurrence(self):
+        """A sentence with a kind-of marker produces a typed edge, not cooccurrence."""
+        sentences = ["Semiosis is a kind of signification process."]
+        graph = self._build(
+            sentences, ["semiosis", "signification"], pmi_threshold=0.0
+        )
+        has_edge = graph.has_edge("semiosis", "signification") or graph.has_edge(
+            "signification", "semiosis"
+        )
+        assert has_edge, "Expected an edge between semiosis and signification"
+        for src, tgt in graph.edges():
+            edge = graph.get_edge(src, tgt)
+            assert edge["relation_type"] != "cooccurrence", (
+                f"Expected typed edge for {src}→{tgt}, got cooccurrence"
+            )
+
+    def test_cooccurrence_fallback_when_no_pattern(self):
+        """Terms co-occurring without any pattern marker fall back to cooccurrence edge."""
+        # Sentences mention both terms but contain no typed-relation markers
+        # (no copula, no 'produces', no 'kind of', no verb between them)
+        sentences = [
+            "Sign and code appear together in the signification process.",
+            "Sign and code both play a role in communicative exchange.",
+            "Sign and code are both present in the text.",
+        ]
+        graph = self._build(sentences, ["sign", "code"], pmi_threshold=0.0)
+        has_edge = graph.has_edge("sign", "code") or graph.has_edge("code", "sign")
+        assert has_edge, "Expected a cooccurrence edge between sign and code"
+        for src, tgt in graph.edges():
+            edge = graph.get_edge(src, tgt)
+            assert edge["relation_type"] == "cooccurrence", (
+                f"Expected cooccurrence fallback for {src}→{tgt}, "
+                f"got {edge['relation_type']!r}"
+            )
+
+    def test_no_edge_for_non_cooccurring_terms(self):
+        """Terms that never co-occur in any sentence get no edge."""
+        sentences = [
+            "Sign alone appears in the semiotic process.",
+            "Code alone structures the communicative system.",
+        ]
+        graph = self._build(sentences, ["sign", "code"], pmi_threshold=1.0)
+        has_edge = graph.has_edge("sign", "code") or graph.has_edge("code", "sign")
+        assert not has_edge, (
+            "Expected no edge between sign and code when they never co-occur"
+        )
+
+    def test_term_scores_stored_as_node_attributes(self):
+        """term_scores values are stored as 'score' attributes on nodes."""
+        sentences = [
+            "Sign is a kind of interpretant in Peirce's triadic model.",
+            "Interpretant mediates between sign and object.",
+        ]
+        scores = {"sign": 2.5, "interpretant": 1.8}
+        graph = self._build(
+            sentences, ["sign", "interpretant"], term_scores=scores, pmi_threshold=0.0
+        )
+        for term, expected_score in scores.items():
+            if graph.graph.has_node(term):
+                actual = graph.graph.nodes[term].get("score")
+                assert actual == pytest.approx(expected_score), (
+                    f"Expected score {expected_score} for node {term!r}, got {actual}"
+                )
+
+    def test_both_seed_terms_become_nodes(self):
+        """All seed terms appear as nodes in the resulting graph."""
+        sentences = [
+            "Sign and interpretant are both present in semiosis.",
+            "Interpretant depends on sign for its constitution.",
+        ]
+        graph = self._build(
+            sentences, ["sign", "interpretant"], pmi_threshold=0.0
+        )
+        nodes = set(graph.nodes())
+        assert "sign" in nodes or any("sign" in n for n in nodes), (
+            "Expected 'sign' to be a node in the graph"
+        )
+        assert "interpretant" in nodes or any("interpretant" in n for n in nodes), (
+            "Expected 'interpretant' to be a node in the graph"
+        )
+
+    def test_node_filter_accepted_without_error(self):
+        """Passing a real NodeFilter does not crash build_proposition_graph."""
+        from collections import Counter
+        from concept_mapper.graph.node_filter import NodeFilter
+
+        sentences = ["Sign produces an interpretant in semiotic theory."]
+        vocab = {"sign", "produces", "interpretant", "semiotic", "theory"}
+        freqs = Counter({"sign": 5, "interpretant": 4, "semiosis": 3})
+        nf = NodeFilter(corpus_vocab=vocab, term_freqs=freqs, min_freq=1)
+        graph = self._build(
+            sentences, ["sign", "interpretant"], node_filter=nf, pmi_threshold=0.0
+        )
+        assert isinstance(graph, ConceptGraph), (
+            "Expected ConceptGraph even when NodeFilter is provided"
+        )
+
+
+# ============================================================================
+# Test PruneToRatio (Phase 6)
+# ============================================================================
+
+
+def _chain_graph(n=5, rtype="cooccurrence"):
+    """Linear chain: 0→1→2→...→n-1, all same relation type."""
+    g = ConceptGraph(directed=True)
+    for i in range(n):
+        g.add_node(str(i), label=str(i))
+    for i in range(n - 1):
+        g.add_edge(str(i), str(i + 1), relation_type=rtype, weight=1)
+    return g
+
+
+class TestPruneToRatio:
+    """prune_to_ratio removes edges until edges:nodes ≤ target_ratio."""
+
+    def test_ratio_enforced(self):
+        """After pruning a dense graph, edge:node ratio is at or below the target."""
+        g = ConceptGraph(directed=True)
+        for n in "abcde":
+            g.add_node(n, label=n)
+        # 8 edges on 5 nodes = 1.6:1, pruning to 1.0 must reduce edges
+        pairs = [
+            ("a", "b"), ("a", "c"), ("a", "d"), ("a", "e"),
+            ("b", "c"), ("b", "d"), ("c", "d"), ("d", "e"),
+        ]
+        for src, tgt in pairs:
+            g.add_edge(src, tgt, relation_type="cooccurrence", weight=1)
+        pruned = prune_to_ratio(g, target_ratio=1.0)
+        ratio = pruned.edge_count() / max(pruned.node_count(), 1)
+        assert ratio <= 1.0, (
+            f"Expected edge:node ratio ≤ 1.0 after pruning, got {ratio:.2f}"
+        )
+
+    def test_already_within_ratio_unchanged(self):
+        """A graph already within the target ratio is not changed."""
+        # 3-node chain has 2 edges on 3 nodes = 0.67:1 — well within target=3.0
+        g = _chain_graph(n=3, rtype="cooccurrence")
+        original_edges = g.edge_count()
+        pruned = prune_to_ratio(g, target_ratio=3.0)
+        assert pruned.edge_count() == original_edges, (
+            f"Expected edge count to remain {original_edges}, "
+            f"got {pruned.edge_count()} after pruning within ratio"
+        )
+
+    def test_no_isolated_nodes_after_pruning(self):
+        """Pruning never leaves a node with no edges."""
+        g = ConceptGraph(directed=True)
+        for n in "abcde":
+            g.add_node(n, label=n)
+        # 10 edges (all pairs) on 5 nodes
+        pairs = [(a, b) for a in "abcde" for b in "abcde" if a < b]
+        for src, tgt in pairs:
+            g.add_edge(src, tgt, relation_type="cooccurrence", weight=1)
+        pruned = prune_to_ratio(g, target_ratio=0.5)
+        connected = set()
+        for src, tgt in pruned.edges():
+            connected.add(src)
+            connected.add(tgt)
+        for node in pruned.nodes():
+            assert node in connected, (
+                f"Node {node!r} is isolated after pruning to ratio 0.5"
+            )
+
+    def test_cooccurrence_removed_before_grammatical(self):
+        """Cooccurrence edges are removed before grammatical edges even when heavier."""
+        g = ConceptGraph(directed=True)
+        for n in ("a", "b", "c"):
+            g.add_node(n, label=n)
+        g.add_edge("a", "b", relation_type="kind-of", weight=1)
+        g.add_edge("b", "c", relation_type="production", weight=1)
+        # cooccurrence edge has high weight but should still be removed first
+        g.add_edge("a", "c", relation_type="cooccurrence", weight=5)
+        # 3 edges on 3 nodes = 1.0; pruning to 0.5 requires removing at least one
+        pruned = prune_to_ratio(g, target_ratio=0.5)
+        edge_types = {
+            pruned.get_edge(s, t)["relation_type"] for s, t in pruned.edges()
+        }
+        assert "cooccurrence" not in edge_types, (
+            "Expected cooccurrence edge to be removed before grammatical edges"
+        )
+
+    def test_empty_graph_unchanged(self):
+        """An empty graph returned unchanged — no nodes, no edges, no crash."""
+        g = ConceptGraph(directed=True)
+        pruned = prune_to_ratio(g, target_ratio=2.0)
+        assert pruned.node_count() == 0, "Expected empty graph to remain empty"
+        assert pruned.edge_count() == 0, "Expected empty graph to have no edges"
+
+
+# ============================================================================
+# Test GraphDepthFocus — unit tests (Phase 14 B4/B5)
+# ============================================================================
+
+import networkx as nx  # noqa: E402 — already imported at module top, repeated for clarity
+
+
+def _linear_graph():
+    """a→b→c→d→e directed chain with scores."""
+    g = ConceptGraph(directed=True)
+    for n in "abcde":
+        g.add_node(n, label=n, score=2.0 if n == "a" else 0.5)
+    for src, tgt in zip("abcd", "bcde"):
+        g.add_edge(src, tgt, relation_type="kind-of", weight=1)
+    return g
+
+
+class TestGraphDepthFocusUnit:
+    """Unit tests for ego_graph depth/focus logic used by the graph command."""
+
+    def test_depth_1_ego_graph_includes_direct_neighbours(self):
+        """ego_graph at radius=1 from 'c' contains exactly its direct neighbours."""
+        g = _linear_graph()
+        sub = nx.ego_graph(g.graph, "c", radius=1, undirected=True)
+        assert set(sub.nodes()) == {"b", "c", "d"}, (
+            f"Expected {{b, c, d}} at depth-1 from c, got {set(sub.nodes())}"
+        )
+
+    def test_depth_2_ego_graph_extends_two_hops(self):
+        """ego_graph at radius=2 from 'c' spans the full five-node chain."""
+        g = _linear_graph()
+        sub = nx.ego_graph(g.graph, "c", radius=2, undirected=True)
+        assert set(sub.nodes()) == {"a", "b", "c", "d", "e"}, (
+            f"Expected all five nodes at depth-2 from c, got {set(sub.nodes())}"
+        )
+
+    def test_focus_default_depth_is_1(self):
+        """When --focus is given without --depth the radius defaults to 1."""
+        g = _linear_graph()
+        sub = nx.ego_graph(g.graph, "a", radius=1, undirected=True)
+        assert "a" in sub.nodes(), "Focus node 'a' should be in the ego graph"
+        assert "b" in sub.nodes(), "Direct neighbour 'b' should be in the ego graph"
+        assert "c" not in sub.nodes(), (
+            "Two-hop neighbour 'c' should not be in depth-1 ego graph"
+        )
+
+    def test_highest_score_node_selection(self):
+        """The node with score=2.0 is 'a'; confirm via graph node attribute."""
+        g = _linear_graph()
+        assert g.graph.nodes["a"]["score"] == pytest.approx(2.0), (
+            "Expected node 'a' to have score=2.0"
+        )

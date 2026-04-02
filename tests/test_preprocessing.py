@@ -279,3 +279,151 @@ class TestPipeline:
         # Without cleaning, OCR artifacts should remain
         # (This verifies the default behavior)
         assert processed.raw_text == doc.text
+
+
+# ============================================================================
+# spaCy availability guard (Phase 13)
+# ============================================================================
+
+import pytest
+
+
+def _spacy_available():
+    try:
+        import spacy
+        spacy.load("en_core_web_sm")
+        return True
+    except Exception:
+        return False
+
+
+requires_spacy = pytest.mark.skipif(
+    not _spacy_available(),
+    reason="spaCy en_core_web_sm not installed",
+)
+
+
+# ============================================================================
+# Test NounChunkExtraction (Phase 13)
+# ============================================================================
+
+
+@requires_spacy
+class TestNounChunkExtraction:
+    """_extract_noun_chunks returns lowercased multi-word noun phrases without leading determiners."""
+
+    def test_multi_word_chunks_extracted(self):
+        """A text with known multi-word noun phrases produces at least one chunk with a space."""
+        from src.concept_mapper.preprocessing.pipeline import _extract_noun_chunks
+
+        text = (
+            "The sign vehicle is a triadic relation. "
+            "Unlimited semiosis involves sign processes."
+        )
+        chunks = _extract_noun_chunks(text)
+        assert any(" " in c for c in chunks), (
+            "Expected at least one multi-word chunk from a text with compound noun phrases"
+        )
+
+    def test_leading_determiners_stripped(self):
+        """Chunks returned do not start with a determiner such as 'the'."""
+        from src.concept_mapper.preprocessing.pipeline import _extract_noun_chunks
+
+        chunks = _extract_noun_chunks("The triadic relation is fundamental.")
+        assert "triadic relation" in chunks, (
+            "Expected 'triadic relation' (without 'the') to appear in chunks"
+        )
+        assert not any(c.startswith("the ") for c in chunks), (
+            "No chunk should start with a leading determiner 'the'"
+        )
+
+    def test_single_word_chunks_excluded(self):
+        """Short sentences that yield only single-word noun phrases produce no results."""
+        from src.concept_mapper.preprocessing.pipeline import _extract_noun_chunks
+
+        chunks = _extract_noun_chunks("Signs exist. Codes function.")
+        assert all(" " in c for c in chunks), (
+            "Expected single-word chunks to be excluded; only multi-word chunks allowed"
+        )
+
+    def test_known_multi_word_phrases_found(self):
+        """A semiotics-domain text yields at least one recognised multi-word phrase."""
+        from src.concept_mapper.preprocessing.pipeline import _extract_noun_chunks
+
+        text = (
+            "The sign vehicle is the concrete bearer of meaning. "
+            "A triadic relation connects representamen, object, and interpretant. "
+            "The sign function maps expression to content in the sign system."
+        )
+        chunks = _extract_noun_chunks(text)
+        known_phrases = {"sign vehicle", "triadic relation", "sign function"}
+        assert any(p in chunks for p in known_phrases), (
+            f"Expected at least one of {known_phrases} in extracted chunks: {chunks}"
+        )
+
+
+# ============================================================================
+# Test PreprocessSpacyFlag (Phase 13)
+# ============================================================================
+
+
+class TestPreprocessSpacyFlag:
+    """preprocess(use_spacy=...) controls whether noun_chunks appear in metadata."""
+
+    def test_preprocess_without_spacy_has_no_noun_chunks(self):
+        """preprocess with use_spacy=False does not add noun_chunks to metadata."""
+        from src.concept_mapper.corpus import Document
+
+        doc = Document(
+            text="The sign vehicle conveys meaning. Semiosis is a triadic process."
+        )
+        processed = preprocess(doc, use_spacy=False)
+        assert "noun_chunks" not in processed.metadata, (
+            "Expected no 'noun_chunks' in metadata when use_spacy=False"
+        )
+
+    @requires_spacy
+    def test_preprocess_with_spacy_stores_list(self):
+        """preprocess with use_spacy=True stores a list under metadata['noun_chunks']."""
+        from src.concept_mapper.corpus import Document
+
+        doc = Document(
+            text="The sign vehicle conveys meaning. Semiosis is a triadic process."
+        )
+        processed = preprocess(doc, use_spacy=True)
+        assert "noun_chunks" in processed.metadata, (
+            "Expected 'noun_chunks' in metadata when use_spacy=True"
+        )
+        assert isinstance(processed.metadata["noun_chunks"], list), (
+            "Expected metadata['noun_chunks'] to be a list"
+        )
+
+    @requires_spacy
+    def test_preprocess_with_spacy_finds_multiword(self):
+        """preprocess with use_spacy=True finds at least one multi-word chunk."""
+        from src.concept_mapper.corpus import Document
+
+        doc = Document(
+            text="The sign vehicle is a triadic relation in Peircean semiotic theory."
+        )
+        processed = preprocess(doc, use_spacy=True)
+        chunks = processed.metadata.get("noun_chunks", [])
+        assert any(" " in c for c in chunks), (
+            f"Expected at least one multi-word chunk in metadata, got: {chunks}"
+        )
+
+    @requires_spacy
+    def test_noun_chunks_survive_to_dict_round_trip(self):
+        """noun_chunks in metadata survive a to_dict() → from_dict() round trip."""
+        from src.concept_mapper.corpus import Document
+        from src.concept_mapper.corpus.models import ProcessedDocument
+
+        doc = Document(
+            text="The sign vehicle is a triadic relation involving representamen and object."
+        )
+        processed = preprocess(doc, use_spacy=True)
+        as_dict = processed.to_dict()
+        restored = ProcessedDocument.from_dict(as_dict)
+        assert "noun_chunks" in restored.metadata, (
+            "Expected 'noun_chunks' to survive a to_dict/from_dict round trip"
+        )
