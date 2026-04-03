@@ -11,7 +11,10 @@ real use case.
 from unittest.mock import MagicMock
 
 
-from concept_mapper.graph.proposition_extractor import PropositionExtractor
+from concept_mapper.graph.proposition_extractor import (
+    PropositionExtractor,
+    _score_sentence,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -511,8 +514,6 @@ class TestCompositionPattern:
 # Test EvidenceScoring (Phase 10)
 # ============================================================================
 
-from concept_mapper.graph.proposition_extractor import _score_sentence
-
 
 class TestEvidenceScoring:
     """_score_sentence assigns higher scores to more informative evidence sentences."""
@@ -541,10 +542,31 @@ class TestEvidenceScoring:
         """A sentence where the terms are close scores higher than one where they are far."""
         close = "Sign produces interpretant."
         # Build a sentence with more than 15 words between "sign" and "interpretant"
-        filler = " ".join(["which", "is", "a", "complex", "relational", "structure",
-                           "in", "Peircean", "philosophy", "may", "under", "certain",
-                           "conditions", "realise", "its", "full", "potential",
-                           "and", "finally", "produce", "its"])
+        filler = " ".join(
+            [
+                "which",
+                "is",
+                "a",
+                "complex",
+                "relational",
+                "structure",
+                "in",
+                "Peircean",
+                "philosophy",
+                "may",
+                "under",
+                "certain",
+                "conditions",
+                "realise",
+                "its",
+                "full",
+                "potential",
+                "and",
+                "finally",
+                "produce",
+                "its",
+            ]
+        )
         far = f"Sign {filler} interpretant."
         score_close = _score_sentence(close, "sign", "interpretant", 0, 10)
         score_far = _score_sentence(far, "sign", "interpretant", 0, 10)
@@ -628,7 +650,9 @@ class TestEvidenceScoring:
         defn_props = [p for p in props if p.type == "definition"]
         assert defn_props, "Expected a definition proposition to be extracted"
         defn_p = defn_props[0]
-        assert defn_p.evidence, "Expected non-empty evidence list on definition proposition"
+        assert defn_p.evidence, (
+            "Expected non-empty evidence list on definition proposition"
+        )
         assert "I mean" in defn_p.evidence[0], (
             f"Expected definition-marker sentence to rank first in definition evidence, "
             f"got: {defn_p.evidence[0]!r}"

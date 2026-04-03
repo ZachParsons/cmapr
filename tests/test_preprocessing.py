@@ -2,6 +2,7 @@
 Tests for preprocessing modules: tokenization, POS tagging, lemmatization, pipeline.
 """
 
+import pytest
 from nltk.corpus import wordnet
 from src.concept_mapper.corpus import Document
 from src.concept_mapper.preprocessing import (
@@ -285,12 +286,11 @@ class TestPipeline:
 # spaCy availability guard (Phase 13)
 # ============================================================================
 
-import pytest
-
 
 def _spacy_available():
     try:
         import spacy
+
         spacy.load("en_core_web_sm")
         return True
     except Exception:

@@ -25,8 +25,11 @@ from concept_mapper.graph.operations import (
     consolidate_duplicate_labels,
     find_isolated_nodes,
     connect_isolated_nodes,
+    prune_to_ratio,
 )
 from concept_mapper.analysis.relations import Relation
+from concept_mapper.graph.builders import build_proposition_graph
+from unittest.mock import MagicMock as _MagicMock
 
 # ============================================================================
 # Test ConceptGraph Model
@@ -901,10 +904,6 @@ class TestGraphIntegration:
 # Test BuildPropositionGraph (Phase 5)
 # ============================================================================
 
-from concept_mapper.graph.builders import build_proposition_graph
-from concept_mapper.graph.operations import prune_to_ratio
-from unittest.mock import MagicMock as _MagicMock
-
 
 def _make_nlp_docs(sentences):
     doc = _MagicMock()
@@ -931,9 +930,7 @@ class TestBuildPropositionGraph:
     def test_typed_edge_over_cooccurrence(self):
         """A sentence with a kind-of marker produces a typed edge, not cooccurrence."""
         sentences = ["Semiosis is a kind of signification process."]
-        graph = self._build(
-            sentences, ["semiosis", "signification"], pmi_threshold=0.0
-        )
+        graph = self._build(sentences, ["semiosis", "signification"], pmi_threshold=0.0)
         has_edge = graph.has_edge("semiosis", "signification") or graph.has_edge(
             "signification", "semiosis"
         )
@@ -998,9 +995,7 @@ class TestBuildPropositionGraph:
             "Sign and interpretant are both present in semiosis.",
             "Interpretant depends on sign for its constitution.",
         ]
-        graph = self._build(
-            sentences, ["sign", "interpretant"], pmi_threshold=0.0
-        )
+        graph = self._build(sentences, ["sign", "interpretant"], pmi_threshold=0.0)
         nodes = set(graph.nodes())
         assert "sign" in nodes or any("sign" in n for n in nodes), (
             "Expected 'sign' to be a node in the graph"
@@ -1051,8 +1046,14 @@ class TestPruneToRatio:
             g.add_node(n, label=n)
         # 8 edges on 5 nodes = 1.6:1, pruning to 1.0 must reduce edges
         pairs = [
-            ("a", "b"), ("a", "c"), ("a", "d"), ("a", "e"),
-            ("b", "c"), ("b", "d"), ("c", "d"), ("d", "e"),
+            ("a", "b"),
+            ("a", "c"),
+            ("a", "d"),
+            ("a", "e"),
+            ("b", "c"),
+            ("b", "d"),
+            ("c", "d"),
+            ("d", "e"),
         ]
         for src, tgt in pairs:
             g.add_edge(src, tgt, relation_type="cooccurrence", weight=1)
@@ -1103,9 +1104,7 @@ class TestPruneToRatio:
         g.add_edge("a", "c", relation_type="cooccurrence", weight=5)
         # 3 edges on 3 nodes = 1.0; pruning to 0.5 requires removing at least one
         pruned = prune_to_ratio(g, target_ratio=0.5)
-        edge_types = {
-            pruned.get_edge(s, t)["relation_type"] for s, t in pruned.edges()
-        }
+        edge_types = {pruned.get_edge(s, t)["relation_type"] for s, t in pruned.edges()}
         assert "cooccurrence" not in edge_types, (
             "Expected cooccurrence edge to be removed before grammatical edges"
         )
@@ -1121,8 +1120,6 @@ class TestPruneToRatio:
 # ============================================================================
 # Test GraphDepthFocus — unit tests (Phase 14 B4/B5)
 # ============================================================================
-
-import networkx as nx  # noqa: E402 — already imported at module top, repeated for clarity
 
 
 def _linear_graph():
