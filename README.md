@@ -6,6 +6,10 @@ Concept Mapper analyzes primary texts to identify author-specific terminology â€
 
 **Examples of target terms:** Aristotle's *eudaimonia*, Spinoza's *affect*, Hegel's *sublation*, Deleuze & Guattari's *body without organs*
 
+<img width="1542" height="1162" alt="Screenshot 2026-04-12" src="https://github.com/user-attachments/assets/92eb0369-3cfc-4a5d-b672-aff6fb84725d" />
+<img width="1231" height="1654" alt="Screenshot 2026-02-28" src="https://github.com/user-attachments/assets/8eade744-f0a1-426a-8c35-2e218fc71029" />
+
+
 ---
 
 ## Installation
