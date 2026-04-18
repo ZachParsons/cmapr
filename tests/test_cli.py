@@ -1595,7 +1595,14 @@ class TestRaritiesVetting:
     """Vetting file (vetting.json) is respected when running rarities."""
 
     def _run_rarities(self, runner, corpus_path, output_path, **extra_args):
-        args = ["rarities", str(corpus_path), "--threshold", "0.0", "--output", str(output_path)]
+        args = [
+            "rarities",
+            str(corpus_path),
+            "--threshold",
+            "0.0",
+            "--output",
+            str(output_path),
+        ]
         for k, v in extra_args.items():
             args.extend([k, v])
         return runner.invoke(cli, args)
@@ -1622,7 +1629,9 @@ class TestRaritiesVetting:
             f"Expected rejected term {term_to_reject!r} to be absent from output"
         )
 
-    def test_accepted_term_survives_top_n_cutoff(self, runner, sample_corpus_json, tmp_path):
+    def test_accepted_term_survives_top_n_cutoff(
+        self, runner, sample_corpus_json, tmp_path
+    ):
         """A term in vetting 'accept' survives even when --top-n would cut it."""
         output = tmp_path / "terms.json"
         # First run to get at least 2 terms
@@ -1637,12 +1646,19 @@ class TestRaritiesVetting:
         vetting = {"accept": [term_to_protect.lower()], "reject": []}
         (tmp_path / "vetting.json").write_text(json.dumps(vetting))
 
-        result2 = runner.invoke(cli, [
-            "rarities", str(sample_corpus_json),
-            "--threshold", "0.0",
-            "--output", str(output),
-            "--top-n", "1",
-        ])
+        result2 = runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(sample_corpus_json),
+                "--threshold",
+                "0.0",
+                "--output",
+                str(output),
+                "--top-n",
+                "1",
+            ],
+        )
         assert result2.exit_code == 0
         terms2 = [t["term"].lower() for t in json.loads(output.read_text())]
         assert term_to_protect.lower() in terms2, (
@@ -1664,12 +1680,19 @@ class TestRaritiesVetting:
     def test_vet_flag_creates_vetting_json(self, runner, sample_corpus_json, tmp_path):
         """--vet creates vetting.json with 'accept' and 'reject' keys."""
         output = tmp_path / "terms.json"
-        result = runner.invoke(cli, [
-            "rarities", str(sample_corpus_json),
-            "--vet",
-            "--threshold", "0.0",
-            "--output", str(output),
-        ], input="s\ns\ns\ns\ns\ns\ns\ns\n")
+        result = runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(sample_corpus_json),
+                "--vet",
+                "--threshold",
+                "0.0",
+                "--output",
+                str(output),
+            ],
+            input="s\ns\ns\ns\ns\ns\ns\ns\n",
+        )
         assert result.exit_code == 0
         vetting_path = tmp_path / "vetting.json"
         assert vetting_path.exists(), "Expected vetting.json to be created by --vet"
@@ -1677,15 +1700,23 @@ class TestRaritiesVetting:
         assert "accept" in vetting, "Expected 'accept' key in vetting.json"
         assert "reject" in vetting, "Expected 'reject' key in vetting.json"
 
-    def test_vet_flag_records_accept_and_reject(self, runner, sample_corpus_json, tmp_path):
+    def test_vet_flag_records_accept_and_reject(
+        self, runner, sample_corpus_json, tmp_path
+    ):
         """--vet records accept (y) and reject (n) decisions in vetting.json."""
         output = tmp_path / "terms.json"
         # Skip everything to discover terms first
-        result_pre = runner.invoke(cli, [
-            "rarities", str(sample_corpus_json),
-            "--threshold", "0.0",
-            "--output", str(output),
-        ])
+        result_pre = runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(sample_corpus_json),
+                "--threshold",
+                "0.0",
+                "--output",
+                str(output),
+            ],
+        )
         assert result_pre.exit_code == 0
         terms = [t["term"] for t in json.loads(output.read_text())]
         if len(terms) < 2:
@@ -1693,12 +1724,19 @@ class TestRaritiesVetting:
 
         # Accept first, reject second, skip the rest
         inputs = "y\nn\n" + "s\n" * 10
-        result = runner.invoke(cli, [
-            "rarities", str(sample_corpus_json),
-            "--vet",
-            "--threshold", "0.0",
-            "--output", str(output),
-        ], input=inputs)
+        result = runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(sample_corpus_json),
+                "--vet",
+                "--threshold",
+                "0.0",
+                "--output",
+                str(output),
+            ],
+            input=inputs,
+        )
         assert result.exit_code == 0
         vetting_path = tmp_path / "vetting.json"
         assert vetting_path.exists(), "Expected vetting.json to be created"
@@ -1719,29 +1757,47 @@ class TestRaritiesVetting:
 class TestRaritiesPOSFilter:
     """--pos filter on rarities restricts candidates to the specified POS category."""
 
-    def test_pos_noun_completes_without_error(self, runner, sample_corpus_json, tmp_path):
+    def test_pos_noun_completes_without_error(
+        self, runner, sample_corpus_json, tmp_path
+    ):
         """rarities --pos noun completes with exit code 0."""
         output = tmp_path / "terms.json"
-        result = runner.invoke(cli, [
-            "rarities", str(sample_corpus_json),
-            "--pos", "noun",
-            "--threshold", "0.0",
-            "--output", str(output),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(sample_corpus_json),
+                "--pos",
+                "noun",
+                "--threshold",
+                "0.0",
+                "--output",
+                str(output),
+            ],
+        )
         assert result.exit_code == 0, (
             f"Expected exit_code 0 for --pos noun, got {result.exit_code}. "
             f"Output: {result.output}"
         )
 
-    def test_pos_verb_completes_without_error(self, runner, sample_corpus_json, tmp_path):
+    def test_pos_verb_completes_without_error(
+        self, runner, sample_corpus_json, tmp_path
+    ):
         """rarities --pos verb does not crash (may produce zero terms on test corpus)."""
         output = tmp_path / "terms.json"
-        result = runner.invoke(cli, [
-            "rarities", str(sample_corpus_json),
-            "--pos", "verb",
-            "--threshold", "0.0",
-            "--output", str(output),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(sample_corpus_json),
+                "--pos",
+                "verb",
+                "--threshold",
+                "0.0",
+                "--output",
+                str(output),
+            ],
+        )
         # Verb filter may empty the candidate list on a noun-heavy test corpus;
         # the command should exit cleanly (0 or 1) — not raise an unhandled exception.
         assert result.exception is None or isinstance(result.exception, SystemExit), (
@@ -1751,34 +1807,56 @@ class TestRaritiesPOSFilter:
     def test_unknown_pos_category_warns(self, runner, sample_corpus_json, tmp_path):
         """An unknown --pos category produces a warning or exits cleanly — not a crash."""
         output = tmp_path / "terms.json"
-        result = runner.invoke(cli, [
-            "rarities", str(sample_corpus_json),
-            "--pos", "badcategory",
-            "--threshold", "0.0",
-            "--output", str(output),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(sample_corpus_json),
+                "--pos",
+                "badcategory",
+                "--threshold",
+                "0.0",
+                "--output",
+                str(output),
+            ],
+        )
         # Should warn or exit 0 — must not crash unhandled
         warning_present = "unknown" in result.output.lower()
         assert warning_present or result.exit_code == 0, (
             "Expected either a warning about unknown POS or a clean exit"
         )
 
-    def test_pos_filter_reduces_candidate_count(self, runner, sample_corpus_json, tmp_path):
+    def test_pos_filter_reduces_candidate_count(
+        self, runner, sample_corpus_json, tmp_path
+    ):
         """--pos noun produces ≤ terms than an unfiltered run (or equal when all are nouns)."""
         output_all = tmp_path / "terms_all.json"
         output_noun = tmp_path / "terms_noun.json"
 
-        result_all = runner.invoke(cli, [
-            "rarities", str(sample_corpus_json),
-            "--threshold", "0.0",
-            "--output", str(output_all),
-        ])
-        result_noun = runner.invoke(cli, [
-            "rarities", str(sample_corpus_json),
-            "--pos", "noun",
-            "--threshold", "0.0",
-            "--output", str(output_noun),
-        ])
+        result_all = runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(sample_corpus_json),
+                "--threshold",
+                "0.0",
+                "--output",
+                str(output_all),
+            ],
+        )
+        result_noun = runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(sample_corpus_json),
+                "--pos",
+                "noun",
+                "--threshold",
+                "0.0",
+                "--output",
+                str(output_noun),
+            ],
+        )
         assert result_all.exit_code == 0
         assert result_noun.exit_code == 0
 
@@ -1799,12 +1877,18 @@ class TestRaritiesBySection:
     """--by-section saves terms_by_section.json alongside terms.json."""
 
     def _run_by_section(self, runner, corpus_path, output_path):
-        return runner.invoke(cli, [
-            "rarities", str(corpus_path),
-            "--by-section",
-            "--threshold", "0.0",
-            "--output", str(output_path),
-        ])
+        return runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(corpus_path),
+                "--by-section",
+                "--threshold",
+                "0.0",
+                "--output",
+                str(output_path),
+            ],
+        )
 
     def test_by_section_creates_json_file(self, runner, sample_corpus_json, tmp_path):
         """--by-section creates terms_by_section.json next to terms.json."""
@@ -1816,18 +1900,20 @@ class TestRaritiesBySection:
             "Expected terms_by_section.json to be created by --by-section"
         )
 
-    def test_by_section_json_has_sections_key(self, runner, sample_corpus_json, tmp_path):
+    def test_by_section_json_has_sections_key(
+        self, runner, sample_corpus_json, tmp_path
+    ):
         """The by-section JSON contains a top-level 'sections' key."""
         output = tmp_path / "terms.json"
         result = self._run_by_section(runner, sample_corpus_json, output)
         assert result.exit_code == 0
         by_section_path = tmp_path / "terms_by_section.json"
         data = json.loads(by_section_path.read_text())
-        assert "sections" in data, (
-            "Expected 'sections' key in terms_by_section.json"
-        )
+        assert "sections" in data, "Expected 'sections' key in terms_by_section.json"
 
-    def test_by_section_sections_have_term_lists(self, runner, sample_corpus_json, tmp_path):
+    def test_by_section_sections_have_term_lists(
+        self, runner, sample_corpus_json, tmp_path
+    ):
         """Each entry in data['sections'] has 'section' (str) and 'terms' (list)."""
         output = tmp_path / "terms.json"
         result = self._run_by_section(runner, sample_corpus_json, output)
@@ -1844,11 +1930,11 @@ class TestRaritiesBySection:
             assert "terms" in entry, (
                 f"Expected 'terms' key in each section entry, got {entry!r}"
             )
-            assert isinstance(entry["terms"], list), (
-                "Expected 'terms' to be a list"
-            )
+            assert isinstance(entry["terms"], list), "Expected 'terms' to be a list"
 
-    def test_by_section_all_terms_in_some_section(self, runner, sample_corpus_json, tmp_path):
+    def test_by_section_all_terms_in_some_section(
+        self, runner, sample_corpus_json, tmp_path
+    ):
         """Every term in terms.json appears in at least one section in terms_by_section.json."""
         output = tmp_path / "terms.json"
         result = self._run_by_section(runner, sample_corpus_json, output)
@@ -1878,15 +1964,24 @@ class TestRaritiesBySection:
 class TestGraphDepthFocusCLI:
     """CLI smoke tests for --focus and --depth flags on the graph command."""
 
-    def test_focus_flag_completes(self, runner, sample_corpus_json, sample_terms_json, tmp_path):
+    def test_focus_flag_completes(
+        self, runner, sample_corpus_json, sample_terms_json, tmp_path
+    ):
         """graph --focus geist completes with exit code 0."""
         output = tmp_path / "graph_focus.json"
-        result = runner.invoke(cli, [
-            "graph", str(sample_corpus_json),
-            "-t", str(sample_terms_json),
-            "--focus", "geist",
-            "--output", str(output),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "graph",
+                str(sample_corpus_json),
+                "-t",
+                str(sample_terms_json),
+                "--focus",
+                "geist",
+                "--output",
+                str(output),
+            ],
+        )
         assert result.exit_code == 0, (
             f"Expected exit_code 0 for graph --focus geist, got {result.exit_code}. "
             f"Output: {result.output}"
@@ -1897,34 +1992,48 @@ class TestGraphDepthFocusCLI:
     ):
         """graph --focus on a non-existent term warns but does not crash."""
         output = tmp_path / "graph_focus_missing.json"
-        result = runner.invoke(cli, [
-            "graph", str(sample_corpus_json),
-            "-t", str(sample_terms_json),
-            "--focus", "xxxxnotaword",
-            "--output", str(output),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "graph",
+                str(sample_corpus_json),
+                "-t",
+                str(sample_terms_json),
+                "--focus",
+                "xxxxnotaword",
+                "--output",
+                str(output),
+            ],
+        )
         assert result.exit_code == 0, (
-            f"Expected exit_code 0 even for unknown focus term, "
-            f"got {result.exit_code}"
+            f"Expected exit_code 0 even for unknown focus term, got {result.exit_code}"
         )
         combined = result.output + (result.stderr or "")
         warned = any(
-            w in combined.lower()
-            for w in ("not found", "warning", "ignoring")
+            w in combined.lower() for w in ("not found", "warning", "ignoring")
         )
         assert warned, (
             "Expected a 'not found', 'warning', or 'ignoring' message for unknown focus term"
         )
 
-    def test_depth_flag_completes(self, runner, sample_corpus_json, sample_terms_json, tmp_path):
+    def test_depth_flag_completes(
+        self, runner, sample_corpus_json, sample_terms_json, tmp_path
+    ):
         """graph --depth 1 completes with exit code 0 and writes valid JSON."""
         output = tmp_path / "graph_depth.json"
-        result = runner.invoke(cli, [
-            "graph", str(sample_corpus_json),
-            "-t", str(sample_terms_json),
-            "--depth", "1",
-            "--output", str(output),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "graph",
+                str(sample_corpus_json),
+                "-t",
+                str(sample_terms_json),
+                "--depth",
+                "1",
+                "--output",
+                str(output),
+            ],
+        )
         assert result.exit_code == 0, (
             f"Expected exit_code 0 for graph --depth 1, got {result.exit_code}. "
             f"Output: {result.output}"
