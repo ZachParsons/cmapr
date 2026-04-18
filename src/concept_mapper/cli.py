@@ -371,8 +371,9 @@ def rarities(
         _doc_chunk_sets = [set(_d.metadata.get("noun_chunks", [])) for _d in docs]
         _n_docs = max(len(docs), 1)
         _mw_scored = []
+        _min_freq = min(2, _n_docs)
         for _chunk, _freq in _chunk_freq.items():
-            if _freq < 2:
+            if _freq < _min_freq:
                 continue
             _df = sum(1 for _dc in _doc_chunk_sets if _chunk in _dc)
             _idf = _log((_n_docs + 1) / (_df + 1))
@@ -1243,6 +1244,17 @@ def graph(
         click.echo(f"Output: {output_path}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    from concept_mapper.graph.operations import find_isolated_nodes
+
+    isolated = find_isolated_nodes(concept_graph)
+    if isolated:
+        click.echo(
+            f"  WARNING: {len(isolated)} isolated node(s) will be dropped from output: "
+            + ", ".join(sorted(isolated)),
+            err=True,
+        )
+
     export_d3_json(concept_graph, output_path, include_evidence=True)
 
     click.echo(f"✓ Saved graph to {output_path}")
@@ -2647,8 +2659,10 @@ def run(
         cmapr run data/input/eco_spl.txt --no-relations --format graphml
         cmapr run data/input/eco_spl.txt --start-from-section 1 --exclude-sections 'index|bibliography'
     """
-    from concept_mapper.analysis.contextual_relations import analyze_context
-    from concept_mapper.graph.builders import graph_from_contextual_relations
+    from collections import Counter
+    from concept_mapper.graph.builders import build_proposition_graph
+    from concept_mapper.graph.node_filter import NodeFilter
+    from concept_mapper.graph.operations import prune_to_ratio
 
     output_dir = ctx.obj["output_dir"]
     text_path = Path(text_file)
@@ -2759,7 +2773,6 @@ def run(
     term_data = [{"term": t, "metadata": {"score": s}} for t, s, _ in candidates]
     validate_term_list(term_data)
     term_list_obj = TermList.from_dict({"terms": term_data})
-    term_names = {t.lower() for t, _, _ in candidates}
     rarities_path = infer_output_path(text_path, output_dir, "rarities")
     rarities_path.parent.mkdir(parents=True, exist_ok=True)
     TermManager(term_list_obj).export_to_json(rarities_path)
@@ -2769,21 +2782,22 @@ def run(
     # ── Step 3: Graph ─────────────────────────────────────────────────────────
     click.echo("[3/4] Building concept graph...")
 
-    all_relations = []
-    with click.progressbar(term_list_obj, label="    Analyzing") as bar:
-        for entry in bar:
-            rels = analyze_context(
-                search_term=entry.term,
-                docs=docs,
-                significance_threshold=0.1,
-                extract_relations=not no_relations,
-            )
-            rels = _filter_relations(rels, start_from_section, exclude_sections)
-            all_relations.extend(rels)
-
-    concept_graph = graph_from_contextual_relations(
-        all_relations, term_filter=term_names
+    all_tokens = [tok.lower() for doc in docs for tok in doc.tokens]
+    all_lemmas = [lem.lower() for doc in docs for lem in doc.lemmas]
+    node_filter = NodeFilter(
+        corpus_vocab=set(all_tokens), term_freqs=Counter(all_lemmas)
     )
+    seed_terms = node_filter.filter([t for t, _, _ in candidates])
+    term_scores = {t.lower(): s for t, s, _ in candidates}
+
+    click.echo("    Extracting typed propositions...")
+    concept_graph = build_proposition_graph(
+        docs=docs,
+        seed_terms=seed_terms,
+        node_filter=node_filter,
+        term_scores=term_scores,
+    )
+    concept_graph = prune_to_ratio(concept_graph, target_ratio=3.0)
     validate_concept_graph(concept_graph)
 
     graph_path = infer_output_path(text_path, output_dir, "graphs")

@@ -56,7 +56,13 @@ def generate_html(
         - Edge width by weight
         - Zoom and pan support
     """
-    output_dir = Path(output_dir)
+    output_path = Path(output_dir)
+    if output_path.suffix.lower() == ".html":
+        output_dir = output_path.parent
+        html_filename = output_path.name
+    else:
+        output_dir = output_path
+        html_filename = "index.html"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Export graph data to JSON file (for reference)
@@ -68,7 +74,7 @@ def generate_html(
     graph_data_json = json.dumps(graph_data, ensure_ascii=False)
 
     # Generate HTML file with inlined data
-    html_path = output_dir / "index.html"
+    html_path = output_dir / html_filename
 
     html_content = _generate_html_template(
         title=title,

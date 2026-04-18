@@ -112,6 +112,7 @@ cmapr rarities data/output/corpus/eco_spl1_spacy/corpus.json \
 ```
 
 Check that multi-word terms appear in the list (e.g. *sign vehicle*, *sign system*, *sign function*).
+maybe 
 
 ---
 
@@ -157,14 +158,12 @@ for t, n in sorted(types.items(), key=lambda x: -x[1]):
 - No isolated nodes (every node appears in at least one link)
 
 ```bash
-python -c "
-import json
-g = json.load(open('data/output/graphs/eco_spl1/graph.json'))
-node_ids = {n['id'] for n in g['nodes']}
-connected = {e['source'] for e in g['links']} | {e['target'] for e in g['links']}
-isolated = node_ids - connected
-print(f'isolated nodes: {sorted(isolated)}   (target: [])')
-"
+# Isolated nodes are stripped before serialisation, so the JSON is always clean.
+# Check stderr from the graph command instead — any dropped nodes are reported there:
+cmapr graph data/output/corpus/eco_spl1/corpus.json \
+    -t data/output/rarities/eco_spl1/terms.json \
+    --output data/output/graphs/eco_spl1/graph.json 2>&1 | grep -i "isolated" || echo "no isolated nodes"
+# Expect: "no isolated nodes"
 ```
 
 **Variant — focus on one term:**
@@ -200,17 +199,17 @@ open data/output/exports/eco_spl1/index.html
 
 **Visual checks in browser:**
 
-- [ ] Page loads without blank screen or JS console errors (`⌘⌥J` to open DevTools)
-- [ ] Nodes are visible and labelled
-- [ ] Node size varies (larger nodes = higher rarity score)
-- [ ] Edge colors differ by type (blue=definition, green=kind-of, orange=production, red=dependence, grey=cooccurrence)
-- [ ] `cooccurrence` edges are dashed, other edges are solid with arrowheads
-- [ ] Hovering an edge shows a tooltip with at least one evidence sentence
-- [ ] Legend is visible (bottom-left); checkboxes are present for each edge type
-- [ ] Unchecking "cooccurrence" hides dashed edges; nodes with no remaining edges also hide
-- [ ] Clicking a node opens the detail panel (right side) showing term, frequency, connected edges
-- [ ] Clicking empty canvas closes the detail panel
-- [ ] Dragging a node pins it in place; simulation continues around it
+- [x] Page loads without blank screen or JS console errors (`⌘⌥J` to open DevTools)
+- [x] Nodes are visible and labelled
+- [x] Node size varies (larger nodes = higher rarity score)
+- [x] Edge colors differ by type (blue=definition, green=kind-of, orange=production, red=dependence, grey=cooccurrence)
+- [x] `cooccurrence` edges are dashed, other edges are solid with arrowheads
+- [x] Hovering an edge shows a tooltip with at least one evidence sentence
+- [x] Legend is visible (bottom-left); checkboxes are present for each edge type
+- [x] Unchecking "cooccurrence" hides dashed edges; nodes with no remaining edges also hide
+- [x] Clicking a node opens the detail panel (right side) showing term, frequency, connected edges
+- [x] Clicking empty canvas closes the detail panel
+- [x] Dragging a node pins it in place; simulation continues around it
 
 **Sanity check — expected terms visible as nodes:**
 
