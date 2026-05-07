@@ -12,7 +12,7 @@ help:
 
 install:
 	@echo "📦 Installing dependencies with uv..."
-	@uv pip install -e ".[dev]"
+	@uv pip install -e ".[dev,serve]"
 
 format:
 	@echo "🔧 Formatting code with Ruff..."

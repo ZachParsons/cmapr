@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %} — Configure{% endblock %}
+{% block breadcrumb %}Configure run{% endblock %}
+
+{% block content %}
+<h1>Concept mapper</h1>
+
+{% if error %}
+<div class="error">{{ error }}</div>
+{% endif %}
+
+{% if works %}
+<div class="card">
+  <h2>Resume existing corpus</h2>
+  <ul style="list-style:none;padding:0">
+    {% for work in works %}
+    <li style="margin-bottom:8px">
+      <a href="/review?work={{ work }}" class="btn btn-secondary">{{ work }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Start a new run</h2>
+  <form method="post" action="/start">
+    <div class="field">
+      <label class="field-label" for="file_path">Source text path</label>
+      <input type="text" id="file_path" name="file_path"
+             placeholder="data/input/eco_spl1.txt" required>
+      <span class="hint">Absolute or relative path to a .txt or .pdf file</span>
+    </div>
+    <div class="field">
+      <label class="field-label" for="toc_path">Table of contents (optional)</label>
+      <input type="text" id="toc_path" name="toc_path"
+             placeholder="data/input/eco_spl_toc.txt">
+    </div>
+    <div class="field" style="display:flex;gap:20px;margin-top:4px">
+      <label>
+        <input type="checkbox" name="clean_ocr" value="true">
+        &nbsp;--clean-ocr &nbsp;<span class="hint">(strip OCR artifacts)</span>
+      </label>
+      <label>
+        <input type="checkbox" name="use_spacy" value="true">
+        &nbsp;--spacy &nbsp;<span class="hint">(multi-word terms, requires spacy)</span>
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-top:8px">
+      Ingest &amp; review terms →
+    </button>
+  </form>
+</div>
+{% endblock %}

@@ -1691,9 +1691,9 @@ class TestRaritiesVetting:
                 "--output",
                 str(output),
             ],
-            input="s\ns\ns\ns\ns\ns\ns\ns\n",
+            input="y\n" * 20,
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         vetting_path = tmp_path / "vetting.json"
         assert vetting_path.exists(), "Expected vetting.json to be created by --vet"
         vetting = json.loads(vetting_path.read_text())
@@ -1705,7 +1705,6 @@ class TestRaritiesVetting:
     ):
         """--vet records accept (y) and reject (n) decisions in vetting.json."""
         output = tmp_path / "terms.json"
-        # Skip everything to discover terms first
         result_pre = runner.invoke(
             cli,
             [
@@ -1722,8 +1721,8 @@ class TestRaritiesVetting:
         if len(terms) < 2:
             return  # not enough terms to make a meaningful accept/reject test
 
-        # Accept first, reject second, skip the rest
-        inputs = "y\nn\n" + "s\n" * 10
+        # Accept first, reject second, accept the rest
+        inputs = "y\nn\n" + "y\n" * 20
         result = runner.invoke(
             cli,
             [
@@ -1737,7 +1736,7 @@ class TestRaritiesVetting:
             ],
             input=inputs,
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         vetting_path = tmp_path / "vetting.json"
         assert vetting_path.exists(), "Expected vetting.json to be created"
         vetting = json.loads(vetting_path.read_text())
@@ -1746,6 +1745,30 @@ class TestRaritiesVetting:
         )
         assert len(vetting.get("reject", [])) >= 1, (
             "Expected at least one term in vetting 'reject'"
+        )
+
+    def test_vet_flag_invalid_input_reprompts(
+        self, runner, sample_corpus_json, tmp_path
+    ):
+        """--vet re-prompts and shows an error message when input is not y or n."""
+        output = tmp_path / "terms.json"
+        # First input is invalid; second is valid y
+        result = runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(sample_corpus_json),
+                "--vet",
+                "--threshold",
+                "0.0",
+                "--output",
+                str(output),
+            ],
+            input="s\ny\n" + "y\n" * 20,
+        )
+        assert result.exit_code == 0, result.output
+        assert "enter y" in result.output.lower(), (
+            "Expected re-prompt error message when invalid input given"
         )
 
 

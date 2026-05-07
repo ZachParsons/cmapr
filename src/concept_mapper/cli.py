@@ -266,7 +266,7 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy):
     default=False,
     help=(
         "Interactively vet each candidate term. "
-        "For each unvetted term you are prompted: y=accept, n=reject, s/Enter=skip. "
+        "For each unvetted term you are prompted: y=accept, n=reject. "
         "Decisions are saved to a vetting.json file next to the terms output and "
         "applied automatically on subsequent runs."
     ),
@@ -553,7 +553,7 @@ def rarities(
 
     # Interactive vetting mode
     if vet:
-        click.echo("\n--- Vetting mode (y=accept  n=reject  s/Enter=skip) ---\n")
+        click.echo("\n--- Vetting mode (y=accept  n=reject) ---\n")
         new_accepted = set(vetting_accepted)
         new_rejected = set(vetting_rejected)
         vetted_candidates = []
@@ -561,38 +561,35 @@ def rarities(
         for term, score, components in candidates:
             t_lower = term.lower()
             if t_lower in new_accepted:
-                status = " (already accepted)"
+                click.echo(f"  {term:30} {score:6.2f}  (already accepted)")
                 vetted_candidates.append((term, score, components))
+                continue
             elif t_lower in new_rejected:
                 # Should not appear (filtered above), but handle gracefully
                 continue
-            else:
-                status = ""
 
-            if t_lower in new_accepted:
-                click.echo(f"  {term:30} {score:6.2f}{status}")
-                continue
-
-            choice = (
-                click.prompt(
-                    f"  {term:30} {score:6.2f}",
-                    default="s",
-                    prompt_suffix="  [y/n/s] ",
-                    show_default=False,
+            while True:
+                raw = (
+                    click.prompt(
+                        f"  {term:30} {score:6.2f}",
+                        default="",
+                        prompt_suffix="  [y/n] ",
+                        show_default=False,
+                    )
+                    .strip()
+                    .lower()
                 )
-                .strip()
-                .lower()
-            )
-
-            if choice == "n":
-                new_rejected.add(t_lower)
-                new_accepted.discard(t_lower)
-            elif choice == "y":
-                new_accepted.add(t_lower)
-                new_rejected.discard(t_lower)
-                vetted_candidates.append((term, score, components))
-            else:
-                vetted_candidates.append((term, score, components))
+                if raw == "n":
+                    new_rejected.add(t_lower)
+                    new_accepted.discard(t_lower)
+                    break
+                elif raw == "y":
+                    new_accepted.add(t_lower)
+                    new_rejected.discard(t_lower)
+                    vetted_candidates.append((term, score, components))
+                    break
+                else:
+                    click.echo("  Enter y (accept) or n (reject).")
 
         candidates = vetted_candidates
 
@@ -2839,6 +2836,58 @@ def run(
 
     click.echo(f"    ✓ {result_path}")
     click.echo(f"\n✓ Done.  open {result_path}")
+
+
+# ============================================================================
+# Serve Command
+# ============================================================================
+
+
+@cli.command()
+@click.option("--port", default=8000, show_default=True, help="Port to listen on")
+@click.option("--no-browser", is_flag=True, help="Don't open the browser automatically")
+def serve(port, no_browser):
+    """Start the local web UI at http://localhost:<port>.
+
+    Run from your project root (the directory containing data/).
+    The UI walks you through ingest → term review → graph options → visualization.
+
+    \b
+    Example:
+        cmapr serve
+        cmapr serve --port 8080
+    """
+    try:
+        import uvicorn
+    except ImportError:
+        raise click.ClickException(
+            "The serve command requires extra dependencies.\n"
+            "Install them with:  pip install 'concept-mapper[serve]'"
+        )
+
+    url = f"http://localhost:{port}"
+    click.echo(f"Starting cmapr UI at {url}")
+    click.echo("Run from your project root (the directory containing data/).")
+    click.echo("Press Ctrl+C to stop.\n")
+
+    if not no_browser:
+        import threading
+        import webbrowser
+
+        def _open():
+            import time
+
+            time.sleep(0.8)
+            webbrowser.open(url)
+
+        threading.Thread(target=_open, daemon=True).start()
+
+    uvicorn.run(
+        "concept_mapper.server.app:app",
+        host="127.0.0.1",
+        port=port,
+        log_level="warning",
+    )
 
 
 # ============================================================================

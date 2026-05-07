@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %} — Review terms{% endblock %}
+{% block breadcrumb %}
+  <a href="/" style="color:#aaa;text-decoration:none">Configure</a> › Review terms
+{% endblock %}
+
+{% block content %}
+<h1>Review terms — {{ work }}</h1>
+
+<div class="card">
+  <p style="color:#666;font-size:13px;margin-bottom:16px">
+    Check the terms you want included in the concept map.
+    Unchecked terms are excluded. Your choices are saved and applied on the next run.
+  </p>
+  <form method="post" action="/vet">
+    <input type="hidden" name="work" value="{{ work }}">
+
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="text-align:left;font-size:12px;color:#888;border-bottom:1px solid #eee">
+          <th style="padding:4px 8px;width:32px"></th>
+          <th style="padding:4px 8px">Term</th>
+          <th style="padding:4px 8px;text-align:right">Score</th>
+          <th style="padding:4px 8px;text-align:right">Freq</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in terms %}
+        <tr style="border-bottom:1px solid #f5f5f5">
+          <td style="padding:5px 8px">
+            <input type="checkbox" name="terms" value="{{ t.term }}"
+                   {% if t.checked %}checked{% endif %}>
+          </td>
+          <td style="padding:5px 8px;font-weight:500">{{ t.term }}</td>
+          <td style="padding:5px 8px;text-align:right;color:#888">{{ t.score }}</td>
+          <td style="padding:5px 8px;text-align:right;color:#888">{{ t.freq }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
+      <button type="submit" class="btn btn-primary">Continue to graph options →</button>
+      <span style="color:#aaa;font-size:12px">{{ terms|length }} candidate terms</span>
+    </div>
+  </form>
+</div>
+
+<details>
+  <summary>Re-run ingest with different options</summary>
+  <div class="card" style="margin-top:0;border-top-left-radius:0;border-top-right-radius:0">
+    <form method="post" action="/start">
+      <div class="field">
+        <label class="field-label" for="ri_file_path">Source text path</label>
+        <input type="text" id="ri_file_path" name="file_path"
+               placeholder="data/input/eco_spl1.txt" required>
+      </div>
+      <div class="field">
+        <label class="field-label" for="ri_toc">Table of contents (optional)</label>
+        <input type="text" id="ri_toc" name="toc_path">
+      </div>
+      <div class="field" style="display:flex;gap:20px">
+        <label>
+          <input type="checkbox" name="clean_ocr" value="true"> &nbsp;--clean-ocr
+        </label>
+        <label>
+          <input type="checkbox" name="use_spacy" value="true"> &nbsp;--spacy
+        </label>
+      </div>
+      <button type="submit" class="btn btn-secondary">Re-ingest →</button>
+    </form>
+  </div>
+</details>
+{% endblock %}

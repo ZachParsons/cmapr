@@ -497,9 +497,15 @@ def _generate_html_template(
                 }})
                 .on("dblclick", (event, d) => {{
                     event.stopPropagation();
+                    if (focusedNodeId === d.id) {{
+                        focusedNodeId = null;
+                    }} else {{
+                        focusedNodeId = d.id;
+                    }}
                     d.fx = null;
                     d.fy = null;
                     simulation.alphaTarget(0.1).restart();
+                    applyVisibility();
                 }});
 
             // Edge labels — always visible unless density exceeds 3 edges per 100×100 px,
@@ -567,19 +573,27 @@ def _generate_html_template(
             // 11.1 — Edge type toggle
             // ----------------------------------------------------------------
             const hiddenTypes = new Set();
+            let focusedNodeId = null;
 
-            function applyTypeFilter() {{
-                link.style("display", d => hiddenTypes.has(d.type) ? "none" : null);
-                if (linkLabel) linkLabel.style("display", d => hiddenTypes.has(d.type) ? "none" : null);
+            function applyVisibility() {{
+                function linkVisible(l) {{
+                    if (hiddenTypes.has(l.type)) return false;
+                    if (focusedNodeId === null) return true;
+                    const src = l.source.id !== undefined ? l.source.id : l.source;
+                    const tgt = l.target.id !== undefined ? l.target.id : l.target;
+                    return src === focusedNodeId || tgt === focusedNodeId;
+                }}
+                link.style("display", d => linkVisible(d) ? null : "none");
+                if (linkLabel) linkLabel.style("display", d => linkVisible(d) ? null : "none");
 
-                // Hide nodes whose every incident edge is hidden
                 const visibleIds = new Set();
                 data.links.forEach(l => {{
-                    if (!hiddenTypes.has(l.type)) {{
+                    if (linkVisible(l)) {{
                         visibleIds.add(l.source.id !== undefined ? l.source.id : l.source);
                         visibleIds.add(l.target.id !== undefined ? l.target.id : l.target);
                     }}
                 }});
+                if (focusedNodeId !== null) visibleIds.add(focusedNodeId);
                 node.style("display",  d => visibleIds.has(d.id) ? null : "none");
                 label.style("display", d => visibleIds.has(d.id) ? null : "none");
             }}
@@ -612,7 +626,7 @@ def _generate_html_template(
                 cb.addEventListener("change", () => {{
                     if (cb.checked) hiddenTypes.delete(type);
                     else hiddenTypes.add(type);
-                    applyTypeFilter();
+                    applyVisibility();
                 }});
 
                 const swatch = document.createElement("div");
@@ -684,7 +698,7 @@ def _generate_html_template(
                 .on("end", (event) => {{
                     if (!event.active) simulation.alphaTarget(0);
                     // fx/fy intentionally kept — node stays pinned where dropped.
-                    // Double-click the node to release it back to the simulation.
+                    // Double-click the node to expand its neighbourhood (also releases the pin).
                 }});
         }}
 

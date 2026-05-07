@@ -301,7 +301,7 @@ python -m pytest -q
 
 ---
 
-## Phase 9 — Opposition edge type
+## Phase 9 — Opposition edge type ✅
 
 Spec ref: *Edges > Edge types* (deferred from v1)
 
@@ -325,11 +325,27 @@ Spec ref: *Edges > Edge types* (deferred from v1)
 **Verify:**
 ```bash
 python -m pytest tests/test_proposition_extractor.py -v -k "opposition"
+# Expect: all opposition tests pass, directed=False confirmed
+
+cmapr graph data/output/corpus/eco_spl1/corpus.json \
+    -t data/output/rarities/eco_spl1/terms.json \
+    --output data/output/graphs/eco_spl1/graph.json
+
+python -c "
+import json
+g = json.load(open('data/output/graphs/eco_spl1/graph.json'))
+opp = [e for e in g['links'] if e.get('type') == 'opposition']
+print(f'opposition edges: {len(opp)}')
+for e in opp[:5]:
+    print(f'  {e[\"source\"]} ↔ {e[\"target\"]}  ({e.get(\"evidence\", [\"\"])[0][:60]})')
+"
+# Pass: at least 1 opposition edge present, none have directed=True
+# Fail: 0 opposition edges (corpus may be too short — try full eco_spl1.txt)
 ```
 
 ---
 
-## Phase 10 — Evidence selection
+## Phase 10 — Evidence selection ✅
 
 Spec ref: *Evidence selection spec* (deferred from v1)
 
@@ -349,11 +365,31 @@ Spec ref: *Evidence selection spec* (deferred from v1)
 **Verify:**
 ```bash
 cmapr graph data/output/corpus/eco_spl1/corpus.json \
-    --terms data/output/rarities/eco_spl1/terms.json \
-    --output data/output/graphs/eco_spl1/graph.json && \
-cmapr export data/output/graphs/eco_spl1/graph.json --format html --include-evidence && \
+    -t data/output/rarities/eco_spl1/terms.json \
+    --output data/output/graphs/eco_spl1/graph.json
+
+python -c "
+import json
+g = json.load(open('data/output/graphs/eco_spl1/graph.json'))
+links = g['links']
+multi = [e for e in links if isinstance(e.get('evidence'), list) and len(e['evidence']) > 1]
+single = [e for e in links if isinstance(e.get('evidence'), list) and len(e['evidence']) == 1]
+missing = [e for e in links if not e.get('evidence')]
+print(f'edges with 2-3 evidence sentences: {len(multi)}')
+print(f'edges with 1 evidence sentence:    {len(single)}')
+print(f'edges missing evidence:             {len(missing)}')
+if multi:
+    e = multi[0]
+    print(f'sample ({e[\"source\"]} → {e[\"target\"]}):')
+    for i, s in enumerate(e[\"evidence\"], 1): print(f'  [{i}] {s[:80]}')
+"
+# Pass: evidence is a list (not a string); at least some edges have 2+ sentences
+# Fail: missing > 0 (evidence not being stored); evidence is a string (old format)
+
+cmapr export data/output/graphs/eco_spl1/graph.json --format html \
+    --output data/output/exports/eco_spl1/index.html && \
 open data/output/exports/eco_spl1/index.html
-# Hover over edges: tooltip should show 1–3 ranked evidence sentences
+# Visual: hover an edge — tooltip should show up to 3 sentences separated by <hr>
 ```
 
 ---
@@ -362,54 +398,40 @@ open data/output/exports/eco_spl1/index.html
 
 Spec ref: *v2 interactivity* (deferred from v1)
 
-**11.1 Edge type toggle**
+**11.1 Edge type toggle** ✅
 - Add checkboxes to the legend (one per edge type)
 - Toggling a type hides/shows all edges of that type and their labels
 - Isolated nodes (all edges hidden) are also hidden
 
-**11.2 Node detail panel**
+**11.2 Node detail panel** ✅
 - Clicking a node opens a side panel (right side, 280px wide)
 - Panel shows: term, POS, frequency, rarity score, community, all connected edges with their type and verb label
 - Clicking elsewhere closes it
 
-**11.3 Node expand/collapse** *(stretch)*
-- Double-click currently releases pin; repurpose to expand: show only this node's neighbourhood
-- Second double-click collapses back to full graph
-- Requires storing full graph state and filtering displayed nodes/links
+**11.3 Node expand/collapse** ✅
+- Double-click a node: expand — show only that node and its direct neighbours; also releases pin
+- Double-click the same node again: collapse — restore full graph
+- Interacts correctly with the type filter (hidden types stay hidden in focused view)
 
 **Verify:**
 ```bash
+cmapr graph data/output/corpus/eco_spl1/corpus.json \
+    -t data/output/rarities/eco_spl1/terms.json \
+    --output data/output/graphs/eco_spl1/graph.json && \
+cmapr export data/output/graphs/eco_spl1/graph.json --format html \
+    --output data/output/exports/eco_spl1/index.html && \
 open data/output/exports/eco_spl1/index.html
-# Manual checks:
-# - Uncheck "cooccurrence" → dashed edges disappear, isolated nodes hide
-# - Click node → detail panel appears with edge list
-# - Click elsewhere → panel closes
+
+# 11.1 — Uncheck "cooccurrence" in legend
+# Pass: dashed edges disappear; nodes with no remaining edges hide
+# Fail: edges remain visible after unchecking; no checkboxes in legend
+
+# 11.2 — Click any node
+# Pass: detail panel opens on the right showing term name, frequency, score, connected edges
+# Fail: panel does not open; panel opens blank; clicking elsewhere does not close it
 ```
 
 ---
-
-## Phase 12 — Special-terms dictionary
-
-Spec ref: *Interactive special-terms dictionary* (deferred from v1)
-
-**12.1 Per-work vetting file**
-- File: `data/input/<corpus_name>.terms.json` (optional, user-maintained)
-- Format: `{"accept": ["lekton", "aliquid"], "reject": ["tion", "structu"]}`
-- `cmapr rarities` reads this file if present and applies accept/reject before output
-
-**12.2 CLI flag**
-- `cmapr rarities --vet` — interactive mode: print each candidate term, prompt y/n/s (yes/no/skip), save to vetting file
-
-**12.3 Apply at graph time**
-- `cmapr graph --terms` already filters by rarities output; vetting file is applied upstream at rarities stage
-
-**Verify:**
-```bash
-cmapr rarities data/output/corpus/eco_spl1/corpus.json --vet
-# Expect: interactive prompt per term; saves to data/input/eco_spl1.terms.json
-cmapr rarities data/output/corpus/eco_spl1/corpus.json
-# Expect: accepted/rejected terms already applied from vetting file
-```
 
 ---
 
@@ -473,4 +495,92 @@ cmapr graph data/output/corpus/eco_spl1/corpus.json \
     --focus sign --depth 2 \
     --output data/output/graphs/eco_spl1/sign_neighbourhood.json
 # Expect: small graph centred on 'sign'
+```
+
+---
+
+## Phase 15 — Term vetting intermediate workflow
+
+The core vetting machinery is already implemented (formerly Phase 12). This phase tracks the remaining delta to align with the intended design.
+
+**Implemented:**
+- `cmapr rarities --vet` — interactive prompt per term, saves decisions to vetting file
+- Vetting file at `data/output/rarities/<work>/vetting.json`, format `{"accept": [...], "reject": [...]}`
+- Accepted/rejected decisions applied before top-n filtering and output
+
+**Remaining:**
+- **15.1** Drop `s/Enter=skip` from `--vet` prompt — currently the CLI accepts `s` and Enter as skip; simplify to `y/n` only (unvetted terms continue to pass through unchanged regardless)
+- **15.2** Phase 16 (web UI) becomes the primary vetting interface; `--vet` stays as CLI fallback
+
+**Verify:**
+```bash
+# From scratch — ingest must already be complete
+cmapr rarities data/output/corpus/eco_spl1/corpus.json --top-n 60 --vet
+# Prompts y/n per term; saves to data/output/rarities/eco_spl1/vetting.json
+# Pass: prompt shows term, frequency, score; accepts y and n; saves file on exit
+# Fail: prompt accepts 's' or blank Enter as a third option (post-15.1 fix: these should be rejected)
+
+# Re-run without --vet to confirm vetting is applied
+cmapr rarities data/output/corpus/eco_spl1/corpus.json --top-n 60 \
+    --output data/output/rarities/eco_spl1/terms.json
+
+python -c "
+import json
+terms = json.load(open('data/output/rarities/eco_spl1/terms.json'))
+vet   = json.load(open('data/output/rarities/eco_spl1/vetting.json'))
+ids   = {t['term'] for t in terms}
+print('rejected still present:', [t for t in vet.get('reject', []) if t in ids])
+print('accepted missing:',       [t for t in vet.get('accept', []) if t not in ids])
+"
+# Pass: rejected=[], accepted=[]
+# Fail: rejected terms appear in output; accepted terms are missing
+```
+
+---
+
+## Phase 16 — Local web UI ✅
+
+**Stack:** FastAPI + Jinja2. No frontend build step. Served locally; `cmapr serve` opens the browser.
+
+**Entry point**
+- New CLI command: `cmapr serve [--port 8000]`
+- Opens `http://localhost:8000` in the default browser
+- Serves all UI pages and exposes pipeline steps as POST endpoints
+
+**State detection**
+- On load, the UI scans `data/output/corpus/` for existing corpora
+- If a corpus exists for the selected work, ingest is skipped and the UI jumps to term review
+- "Re-run ingest" button available to force re-ingest (e.g. after the source text changes)
+
+**Step 1 — Configure run**
+- File picker for source text (`.txt` or `.pdf`)
+- Optional: TOC file path
+- Toggles: `--clean-ocr`, `--spacy`
+- If corpus already exists: show "Corpus found — skip to term review" shortcut
+
+**Step 2 — Term review**
+- Runs `rarities` against the corpus, displays results as a checkbox list
+- Each row: term · frequency · rarity score · checkbox (checked = accept)
+- Pre-checked state reflects existing vetting file if present
+- Submit saves vetting file and proceeds to Step 3
+
+**Step 3 — Graph options**
+- `--top-n`, `--threshold`, `--depth`, `--focus` inputs
+- "Re-run graph" is always available from this step without returning to Step 1 or 2
+- Submit triggers graph build
+
+**Step 4 — Result**
+- Embedded D3 visualization (reuses existing HTML export template)
+- "Re-run graph" button returns to Step 3 with current options pre-filled
+- "Export" button downloads the graph JSON or standalone HTML
+
+**Verify:**
+```bash
+pip install 'concept-mapper[serve]'   # one-time, adds fastapi + uvicorn
+cmapr serve
+# Browser opens at localhost:8000 — run from the project root (the directory with data/)
+
+# New run: enter source file path → ingest → term review → graph options → visualization
+# Existing corpus: click work name on home page → skip ingest → term review → graph options
+# Re-run graph: "Re-run graph" button on result page → graph options → new visualization
 ```
