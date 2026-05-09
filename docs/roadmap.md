@@ -20,10 +20,9 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 
 _Last updated: 2026-05-09. Cold-re-entry checklist — keep glance-able._
 
-- **Last completed:** Pipeline architecture diagram at `docs/architecture.md` — Mermaid flowchart showing all 10 CLI commands and the processing modules grouped by stage. README links to it. Phase 13 (multi-word terms) and Phase 14 (B1–B5 options) landed in commit `1e2d99b`.
-- **Next up:** `cmapr try-extract` (debug single-sentence extraction) is the recommended pick — high-leverage for iteration, no overlap with web UI. Alt: `cmapr merge` (combine per-chapter graphs).
+- **Last completed:** Doc-discipline pass — codified the `[ ]`/`[x]` checkbox rule in `.claude/rules.md` (every task list uses it; commits gate on relevant boxes flipped). Audited `docs/plans/graph.md`: 27 sub-tasks converted to checkboxes, Phase 15 restructured (15.1 verified at `cli.py:582-592` and ticked, 15.2 ticked). All graph-spec phases (1–16) now `[x]` in the plan.
+- **Next up:** `cmapr try-extract` (debug single-sentence extraction). Alt: `cmapr merge`. Or pick the next major spec since `docs/plans/graph.md` is fully closed out.
 - **Open issues:**
-  - **Phase 15.1 stale-note** — `docs/plans/graph.md:540` lists "drop `s/Enter=skip` from `--vet`" as remaining, but `cli.py:582-592` already only accepts `y`/`n`. Loose end: verify + clear note.
   - **Wizard reverted** — `cmapr wizard` was prototyped then reverted as redundant with the web UI. Don't re-propose without a distinct use case.
 - **Tests:** 877 passed, 2 skipped (spaCy-required) as of the last full run.
 

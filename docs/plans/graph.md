@@ -25,7 +25,7 @@ open data/output/exports/eco_spl1/index.html
 
 ## Phase 1 — Test corpus
 
-**1.1 Extract one chapter of Eco's SPL**
+- [x] **1.1 Extract one chapter of Eco's SPL**
 - Copy one chapter into `data/input/eco_ch1.txt`
 - Run ingest + rarities once; save outputs to `data/output/corpus/eco_ch1/` and `data/output/rarities/eco_ch1/`
 - Verify: rarities produces 30–80 terms, corpus loads cleanly
@@ -45,7 +45,7 @@ python -c "import json; d=json.load(open('data/output/rarities/eco_spl1/terms.js
 
 Spec ref: *Nodes > Inclusion criteria*, *Decision 1 (node roles)*
 
-**2.1 Implement `NodeFilter`**
+- [x] **2.1 Implement `NodeFilter`**
 - File: `src/concept_mapper/graph/node_filter.py`
 - Function: `is_valid_node(term: str, corpus_vocab: set[str], term_freqs: Counter, stopwords: set) -> bool`
 - Checks in order:
@@ -57,7 +57,7 @@ Spec ref: *Nodes > Inclusion criteria*, *Decision 1 (node roles)*
   6. Fragment check: NOT (absent from WordNet AND any corpus word starts with it)
 - Acceptance: unit tests covering each rejection criterion; `sign`, `interpretant`, `semiosis` pass; `nn`, `structu`, `moke` fail
 
-**2.2 Apply `NodeFilter` at graph construction time**
+- [x] **2.2 Apply `NodeFilter` at graph construction time**
 - Both seed nodes (from rarities) and extracted nodes go through `NodeFilter`
 - Acceptance: graph command output contains no terms shorter than 4 chars, no all-caps abbreviations
 
@@ -74,7 +74,7 @@ python -m pytest tests/test_node_filter.py -v
 
 Spec ref: *Edges > Edge types*, *Copular disambiguation rules*, *Decision 4 (scanning scope)*
 
-**3.1 Implement `PropositionExtractor`**
+- [x] **3.1 Implement `PropositionExtractor`**
 - File: `src/concept_mapper/graph/proposition_extractor.py`
 - Class: `PropositionExtractor(docs: list[ProcessedDocument])`
 - Core method: `extract(term_a: str, term_b: str) -> list[Proposition]`
@@ -87,11 +87,11 @@ Spec ref: *Edges > Edge types*, *Copular disambiguation rules*, *Decision 4 (sca
     5. If none found: return `None` (caller handles cooccurrence fallback)
   - Returns `Proposition(source, target, label, type, evidence_sentence)`
 
-**3.2 `Proposition` dataclass**
+- [x] **3.2 `Proposition` dataclass**
 - Fields: `source: str`, `target: str`, `label: str`, `type: str`, `evidence: str`, `directed: bool`
 - `directed=True` for all typed extractions; `directed=False` for cooccurrence fallback
 
-**3.3 Unit tests for `PropositionExtractor`**
+- [x] **3.3 Unit tests for `PropositionExtractor`**
 - Planted sentences for each edge type; verify correct type and direction returned
 - Verify that a sentence with no matching pattern returns `None`
 - Test copular disambiguation: definition marker → `definition`; kind marker → `kind-of`; plain NP → `None` (property deferred)
@@ -108,7 +108,7 @@ python -m pytest tests/test_proposition_extractor.py -v
 
 Spec ref: *Decision 12*
 
-**4.1 Implement `extract_composition(sentence, term_list) -> list[Proposition]`**
+- [x] **4.1 Implement `extract_composition(sentence, term_list) -> list[Proposition]`**
 - File: `src/concept_mapper/graph/proposition_extractor.py` (add to same module)
 - Pattern: compound subject (A, B, C) + composition verb (form, constitute, compose, make up, consist of) + object X
 - Where 2+ members of the compound subject are in `term_list`
@@ -129,7 +129,7 @@ python -m pytest tests/test_proposition_extractor.py -v -k "Composition"
 
 Spec ref: *Graph model > How edges should be constructed*
 
-**5.1 Implement `build_proposition_graph`**
+- [x] **5.1 Implement `build_proposition_graph`**
 - File: `src/concept_mapper/graph/builders.py` (new function alongside existing builders)
 - Signature: `build_proposition_graph(docs, term_list, pmi_threshold=1.0, prune_ratio=3.0) -> ConceptGraph`
 - Algorithm:
@@ -142,7 +142,7 @@ Spec ref: *Graph model > How edges should be constructed*
   7. Prune to `prune_ratio` (Phase 6)
 - Acceptance: graph from eco_ch1 produces typed edge labels (not all "co-occurs with"), ratio ≤ 3:1
 
-**5.2 Wire into `cmapr graph` command**
+- [x] **5.2 Wire into `cmapr graph` command**
 - Replace the current `analyze_context`-based loop with `build_proposition_graph`
 - Keep existing `--terms`, `--threshold`, `--count`, `--with-relations` options
 - Acceptance: `cmapr graph eco_ch1/corpus.json --terms eco_ch1/terms.json` completes and outputs edge types in summary
@@ -179,7 +179,7 @@ print(f'typed (non-cooc): {len(links)-cooc}/{len(links)} = {(len(links)-cooc)/ma
 
 Spec ref: *Implementation priorities #3*
 
-**6.1 Implement `prune_to_ratio`**
+- [x] **6.1 Implement `prune_to_ratio`**
 - File: `src/concept_mapper/graph/operations.py` (add to existing operations)
 - Signature: `prune_to_ratio(graph: ConceptGraph, target_ratio: float = 3.0) -> ConceptGraph`
 - Pruning order:
@@ -213,7 +213,7 @@ print(f'isolated nodes: {len(isolated)}  (target 0)')
 
 Spec ref: *Visualization*, *v1 vs v2 scope*
 
-**7.1 Update D3 force parameters in HTML template**
+- [x] **7.1 Update D3 force parameters in HTML template**
 - File: `src/concept_mapper/export/html.py`
 - Changes:
   - Charge: `-400` or stronger (currently default D3 value)
@@ -222,17 +222,17 @@ Spec ref: *Visualization*, *v1 vs v2 scope*
   - If node degree > 10: reduce its link strength by 50%
   - Pin dragged nodes: on `dragend`, set `node.fx = node.x` and `node.fy = node.y` so the node stays where placed; the simulation continues but the pinned node is held fixed
 
-**7.2 Edge label rendering**
+- [x] **7.2 Edge label rendering**
 - Always show edge label on the link line (not just on hover) for v1
 - If labels overlap: fall back to hover-only (threshold: when edge density exceeds 3 edges per 100px²)
 
-**7.3 Edge visual differentiation by type**
+- [x] **7.3 Edge visual differentiation by type**
 - Color per edge type (assign fixed palette: definition=blue, kind-of=green, production=orange, dependence=red, component=purple, cooccurrence=light grey)
 - `cooccurrence` edges: dashed stroke, 50% opacity
 - `component` edges: undirected (no arrowhead)
 - All other v1 types: directed arrowhead
 
-**7.4 Node size by significance score**
+- [x] **7.4 Node size by significance score**
 - Pass rarity score from terms file through to graph JSON node attributes
 - Scale node radius: `r = 4 + score * 3` (adjustable)
 - Font size proportional to radius: `font-size = max(10, r * 1.2)`
@@ -252,7 +252,7 @@ open data/output/exports/eco_spl1/index.html
 
 ## Phase 8 — Integration test
 
-**8.1 End-to-end test on eco_ch1**
+- [x] **8.1 End-to-end test on eco_ch1**
 - Run full dev loop command
 - Verify:
   - Node count 30–150 (chapter scale)
@@ -261,7 +261,7 @@ open data/output/exports/eco_spl1/index.html
   - HTML loads in browser without JS errors
   - Edge labels are visible and readable at default zoom
 
-**8.2 Regression: existing tests still pass**
+- [x] **8.2 Regression: existing tests still pass**
 - `make test` green after all changes
 
 **Verify:**
@@ -307,7 +307,7 @@ python -m pytest -q
 
 Spec ref: *Edges > Edge types* (deferred from v1)
 
-**9.1 Implement `_try_opposition` in `PropositionExtractor`**
+- [x] **9.1 Implement `_try_opposition` in `PropositionExtractor`**
 - Pattern: explicit contrast markers between two terms
   - *X vs Y*, *X versus Y*
   - *X as opposed to Y*, *X rather than Y*
@@ -316,11 +316,11 @@ Spec ref: *Edges > Edge types* (deferred from v1)
 - Label: `"opposes"`, type: `"opposition"`, directed: `False` (contrast is symmetric)
 - Insert in `_extract_from_sentence` chain after `_try_dependence`, before `_try_property`
 
-**9.2 Add to HTML legend and color palette**
+- [x] **9.2 Add to HTML legend and color palette**
 - Color: `#d4a0a0` (muted rose) — distinct from dependence red
 - Undirected (no arrowhead), solid stroke
 
-**9.3 Unit tests**
+- [x] **9.3 Unit tests**
 - `"X vs Y"`, `"X as opposed to Y"`, `"X is the opposite of Y"` → `opposition`
 - Verify `directed=False`
 
@@ -351,7 +351,7 @@ for e in opp[:5]:
 
 Spec ref: *Evidence selection spec* (deferred from v1)
 
-**10.1 Score and rank evidence sentences per edge**
+- [x] **10.1 Score and rank evidence sentences per edge**
 - File: `src/concept_mapper/graph/proposition_extractor.py`
 - When merging duplicate (source, target, type) edges, keep the best evidence sentence, not just the first
 - Scoring heuristics (in priority order):
@@ -361,7 +361,7 @@ Spec ref: *Evidence selection spec* (deferred from v1)
   4. Sentences from early in the document preferred (introductions define terms)
 - Store top-3 sentences as `evidence` list on the edge
 
-**10.2 Surface evidence in tooltip**
+- [x] **10.2 Surface evidence in tooltip**
 - `html.py`: tooltip already renders `d.evidence[0]`; show all stored sentences (up to 3), separated by `<hr>`
 
 **Verify:**
@@ -400,17 +400,17 @@ open data/output/exports/eco_spl1/index.html
 
 Spec ref: *v2 interactivity* (deferred from v1)
 
-**11.1 Edge type toggle** ✅
+- [x] **11.1 Edge type toggle**
 - Add checkboxes to the legend (one per edge type)
 - Toggling a type hides/shows all edges of that type and their labels
 - Isolated nodes (all edges hidden) are also hidden
 
-**11.2 Node detail panel** ✅
+- [x] **11.2 Node detail panel**
 - Clicking a node opens a side panel (right side, 280px wide)
 - Panel shows: term, POS, frequency, rarity score, community, all connected edges with their type and verb label
 - Clicking elsewhere closes it
 
-**11.3 Node expand/collapse** ✅
+- [x] **11.3 Node expand/collapse**
 - Double-click a node: expand — show only that node and its direct neighbours; also releases pin
 - Double-click the same node again: collapse — restore full graph
 - Interacts correctly with the type filter (hidden types stay hidden in focused view)
@@ -441,17 +441,17 @@ open data/output/exports/eco_spl1/index.html
 
 Spec ref: *Multi-word term support (requires spaCy)* (deferred from v1)
 
-**13.1 spaCy integration** ✅
+- [x] **13.1 spaCy integration**
 - Added `spacy` as optional dependency (`pip install cmapr[spacy]`); requires `python -m spacy download en_core_web_sm`
 - `cmapr ingest --spacy` flag stores deduplicated lowercased noun chunks (with leading determiners stripped) on `ProcessedDocument.metadata["noun_chunks"]`. NLTK remains the default tokeniser/tagger; spaCy is additive, not a replacement
 - Extracted noun chunks become candidate multi-word terms (e.g. *sign vehicle*, *unlimited semiosis*, *triadic relation*)
 
-**13.2 Multi-word term handling in graph** ✅
+- [x] **13.2 Multi-word term handling in graph**
 - `NodeFilter`: phrases bypass single-token guards — length, char-validity, abbreviation, fragment, frequency, and stopword checks. POS check still applies. Phrase frequency is enforced upstream by the rarities chunk scorer
 - `PropositionExtractor`: regex extractors (`re.escape` + `\b…\b`) handle phrases. The catch-all POS-based `_try_pos_verb` fallback silently skips phrases (acceptable v1 loss; pattern extractors run earlier in the chain). The `_score_sentence` proximity bonus also no-ops on phrases — sentence ranking still works via the other heuristics
 - Graph node IDs: use the full phrase (e.g. `"sign vehicle"`)
 
-**13.3 Rarities: multi-word candidate scoring** ✅
+- [x] **13.3 Rarities: multi-word candidate scoring**
 - TF-IDF across documents: `score = log(1 + freq) * (1 + log((n_docs + 1) / (df + 1)))`
 - Phrases merged into the ranked candidate list before lemmatisation, fragment, POS, and vetting filters; phrases automatically pass the POS filter and the lemmatisation derivational-suffix collapse (no single-token suffix matches a phrase)
 
@@ -488,27 +488,27 @@ cmapr rarities data/output/corpus/eco_spl1_spacy/corpus.json --top-n 60
 
 Spec ref: *Seed-word workflow B options (B1–B5)* (deferred from v1)
 
-**B1 — POS filter flag** ✅
+- [x] **B1 — POS filter flag**
 - `cmapr rarities --pos noun,verb,adj,adv` (comma-separated, multi-valued)
 - Multi-word noun chunks always pass regardless of POS category
 - Tests: `tests/test_cli.py::TestRaritiesPOSFilter`
 
-**B2 — Count limit** ✅
+- [x] **B2 — Count limit**
 - `cmapr rarities --top-n N` (default 50)
 - Top-N is applied during the lemmatisation merge pass; the POS filter runs after, so output is *up to N* candidates that survive POS filtering. This ordering is intentional — top-N caps total output, POS filter trims.
 - Tests: `test_rarities_displays_results`, `test_top_n_and_pos_combine`
 
-**B3 — Group by section** ✅
+- [x] **B3 — Group by section**
 - `cmapr rarities --by-section` writes an additional `<work>_by_section.json` next to `terms.json`
 - Each term is assigned to the section where it appears most frequently (resolved from `sentence_locations` → chapter/section/subsection/paragraph)
 - Tests: `tests/test_cli.py::TestRaritiesBySection`
 
-**B4 — Depth limit** ✅
+- [x] **B4 — Depth limit**
 - `cmapr graph --depth N` — `nx.ego_graph(centre, radius=N, undirected=True)` over the post-prune graph
 - Centre is the highest-scoring seed when `--focus` is omitted, otherwise the focus term
 - Tests: `tests/test_cli.py::TestGraphDepthFocusCLI::test_depth_flag_completes`
 
-**B5 — Neighbourhood export** ✅
+- [x] **B5 — Neighbourhood export**
 - `cmapr graph --focus <term>` — same ego-graph centred on the named term (default radius 1, or `--depth N` if supplied)
 - Unknown focus term emits a warning and falls through to the full graph
 - Tests: `test_focus_flag_completes`, `test_unknown_focus_warns_not_crashes`
@@ -530,18 +530,13 @@ cmapr graph data/output/corpus/eco_spl1/corpus.json \
 
 ---
 
-## Phase 15 — Term vetting intermediate workflow
+## Phase 15 — Term vetting intermediate workflow ✅
 
-The core vetting machinery is already implemented (formerly Phase 12). This phase tracks the remaining delta to align with the intended design.
+The core vetting machinery is already implemented (formerly Phase 12).
 
-**Implemented:**
-- `cmapr rarities --vet` — interactive prompt per term, saves decisions to vetting file
-- Vetting file at `data/output/rarities/<work>/vetting.json`, format `{"accept": [...], "reject": [...]}`
-- Accepted/rejected decisions applied before top-n filtering and output
-
-**Remaining:**
-- **15.1** Drop `s/Enter=skip` from `--vet` prompt — currently the CLI accepts `s` and Enter as skip; simplify to `y/n` only (unvetted terms continue to pass through unchanged regardless)
-- **15.2** Phase 16 (web UI) becomes the primary vetting interface; `--vet` stays as CLI fallback
+- [x] **15.0 Core machinery** — `cmapr rarities --vet` interactive prompt per term; decisions saved to `data/output/rarities/<work>/vetting.json` (`{"accept": [...], "reject": [...]}`); accepted/rejected applied before top-n filtering and output.
+- [x] **15.1 `--vet` accepts only `y`/`n`** — verified at `cli.py:582-592`: blank Enter and any non-`y`/`n` input loop with "Enter y (accept) or n (reject)."
+- [x] **15.2 Web UI is the primary vetting interface** — Phase 16 covers it; `--vet` remains as CLI fallback.
 
 **Verify:**
 ```bash
@@ -583,24 +578,24 @@ print('accepted missing:',       [t for t in vet.get('accept', []) if t not in i
 - If a corpus exists for the selected work, ingest is skipped and the UI jumps to term review
 - "Re-run ingest" button available to force re-ingest (e.g. after the source text changes)
 
-**Step 1 — Configure run**
+- [x] **Step 1 — Configure run**
 - File picker for source text (`.txt` or `.pdf`)
 - Optional: TOC file path
 - Toggles: `--clean-ocr`, `--spacy`
 - If corpus already exists: show "Corpus found — skip to term review" shortcut
 
-**Step 2 — Term review**
+- [x] **Step 2 — Term review**
 - Runs `rarities` against the corpus, displays results as a checkbox list
 - Each row: term · frequency · rarity score · checkbox (checked = accept)
 - Pre-checked state reflects existing vetting file if present
 - Submit saves vetting file and proceeds to Step 3
 
-**Step 3 — Graph options**
+- [x] **Step 3 — Graph options**
 - `--top-n`, `--threshold`, `--depth`, `--focus` inputs
 - "Re-run graph" is always available from this step without returning to Step 1 or 2
 - Submit triggers graph build
 
-**Step 4 — Result**
+- [x] **Step 4 — Result**
 - Embedded D3 visualization (reuses existing HTML export template)
 - "Re-run graph" button returns to Step 3 with current options pre-filled
 - "Export" button downloads the graph JSON or standalone HTML

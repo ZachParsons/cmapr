@@ -68,6 +68,7 @@ Three layers, classified by file/function rather than just by directory:
 - **Link, don't copy** - reference central docs instead of duplicating
 - Explain WHY in docs, not WHAT (code shows what)
 - Define acronyms and technical terms on first use
+- **Every task list in every doc uses `[ ]` (pending) and `[x]` (done) checkboxes** — so progress is trackable at a glance. Applies to roadmap entries, plan sub-tasks, QA visual-check lists, and any other doc with discrete items that can be done. Plain bullet lists (descriptions, references) are not task lists.
 
 ### Structure
 - **README.md**: Features, quickstart, project structure
@@ -94,6 +95,7 @@ Verify documentation is current:
 - API reference (docs/api-reference.md) is up-to-date
 - Roadmap reflects completion status
 - No stale information contradicts your changes
+- **Every checkbox for work this commit completes is flipped from `[ ]` to `[x]`** — across plan files, the roadmap, QA lists, anywhere the task is tracked. The commit is blocked until they are. If the boxes don't exist yet, add them.
 
 ---
 
