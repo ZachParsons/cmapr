@@ -6,6 +6,7 @@ import pytest
 import networkx as nx
 from concept_mapper.graph import (
     ConceptGraph,
+    aggregate_graphs,
     graph_from_cooccurrence,
     graph_from_relations,
     graph_from_terms,
@@ -671,6 +672,181 @@ class TestOperations:
             connected = connect_isolated_nodes(g, {})
         assert connected == 0
         assert any("orphan" in r.message for r in caplog.records)
+
+
+# ============================================================================
+# Test aggregate_graphs (cmapr merge backend)
+# ============================================================================
+
+
+class TestAggregateGraphs:
+    """aggregate_graphs combines per-chapter graphs with proper aggregation."""
+
+    def test_empty_input_raises(self):
+        with pytest.raises(ValueError):
+            aggregate_graphs([])
+
+    def test_mixed_directedness_raises(self):
+        g1 = ConceptGraph(directed=True)
+        g2 = ConceptGraph(directed=False)
+        with pytest.raises(ValueError):
+            aggregate_graphs([g1, g2])
+
+    def test_single_graph_passthrough(self):
+        g = ConceptGraph(directed=True)
+        g.add_node("sign", frequency=10, score=3.5, label="sign")
+        g.add_node("code", frequency=5, score=2.0, label="code")
+        g.add_edge("sign", "code", relation_type="definition", weight=2, evidence=["s1"])
+        merged = aggregate_graphs([g])
+        assert merged.node_count() == 2
+        assert merged.edge_count() == 1
+        assert merged.get_node("sign")["frequency"] == 10
+        assert merged.get_node("sign")["score"] == 3.5
+
+    def test_disjoint_graphs_pass_nodes_and_edges_through(self):
+        g1 = ConceptGraph(directed=True)
+        g1.add_node("a", frequency=1, score=1.0)
+        g1.add_node("b", frequency=1, score=1.0)
+        g1.add_edge("a", "b", relation_type="production", weight=1, evidence=["s1"])
+
+        g2 = ConceptGraph(directed=True)
+        g2.add_node("c", frequency=1, score=1.0)
+        g2.add_node("d", frequency=1, score=1.0)
+        g2.add_edge("c", "d", relation_type="kind-of", weight=1, evidence=["s2"])
+
+        merged = aggregate_graphs([g1, g2])
+        assert merged.node_count() == 4
+        assert merged.edge_count() == 2
+
+    def test_shared_node_sums_frequencies(self):
+        g1 = ConceptGraph(directed=True)
+        g1.add_node("sign", frequency=10, score=3.5)
+        g2 = ConceptGraph(directed=True)
+        g2.add_node("sign", frequency=20, score=4.2)
+        merged = aggregate_graphs([g1, g2])
+        assert merged.get_node("sign")["frequency"] == 30
+
+    def test_shared_node_weighted_avg_score(self):
+        g1 = ConceptGraph(directed=True)
+        g1.add_node("sign", frequency=10, score=3.5)
+        g2 = ConceptGraph(directed=True)
+        g2.add_node("sign", frequency=20, score=4.2)
+        merged = aggregate_graphs([g1, g2])
+        # Expected: (10*3.5 + 20*4.2) / 30 = 119 / 30 ≈ 3.967
+        assert merged.get_node("sign")["score"] == pytest.approx(119 / 30)
+
+    def test_shared_node_score_only_in_one_graph(self):
+        """Score from the contributing graph carries through unchanged."""
+        g1 = ConceptGraph(directed=True)
+        g1.add_node("sign", frequency=10)  # no score
+        g2 = ConceptGraph(directed=True)
+        g2.add_node("sign", frequency=20, score=4.2)
+        merged = aggregate_graphs([g1, g2])
+        assert merged.get_node("sign")["score"] == pytest.approx(4.2)
+
+    def test_community_dropped_on_merge(self):
+        """community is graph-relative; the merged graph should re-detect."""
+        g1 = ConceptGraph(directed=True)
+        g1.add_node("sign", frequency=10, community=0)
+        merged = aggregate_graphs([g1])
+        assert "community" not in merged.get_node("sign")
+
+    def test_shared_edge_same_type_sums_weight_and_concats_evidence(self):
+        g1 = ConceptGraph(directed=True)
+        g1.add_node("a")
+        g1.add_node("b")
+        g1.add_edge(
+            "a", "b", relation_type="definition", weight=2, evidence=["s1", "s2"]
+        )
+
+        g2 = ConceptGraph(directed=True)
+        g2.add_node("a")
+        g2.add_node("b")
+        g2.add_edge("a", "b", relation_type="definition", weight=3, evidence=["s3"])
+
+        merged = aggregate_graphs([g1, g2])
+        edge = merged.get_edge("a", "b")
+        assert edge["relation_type"] == "definition"
+        assert edge["weight"] == 5
+        assert sorted(edge["evidence"]) == sorted(["s1", "s2", "s3"])
+        # Single type — no multi-type fields written
+        assert "relation_types" not in edge
+
+    def test_shared_edge_different_types_writes_multi_type_fields(self):
+        g1 = ConceptGraph(directed=True)
+        g1.add_node("a")
+        g1.add_node("b")
+        g1.add_edge(
+            "a",
+            "b",
+            relation_type="definition",
+            weight=3,
+            evidence=["s1"],
+            verb="is defined as",
+        )
+
+        g2 = ConceptGraph(directed=True)
+        g2.add_node("a")
+        g2.add_node("b")
+        g2.add_edge(
+            "a",
+            "b",
+            relation_type="production",
+            weight=2,
+            evidence=["s2", "s3"],
+            verb="produces",
+        )
+
+        merged = aggregate_graphs([g1, g2])
+        edge = merged.get_edge("a", "b")
+
+        # Primary type: definition wins by priority ladder
+        assert edge["relation_type"] == "definition"
+        assert edge["verb"] == "is defined as"
+        assert edge["weight"] == 5
+        # Flat evidence: combined
+        assert set(edge["evidence"]) == {"s1", "s2", "s3"}
+
+        # Multi-type fields
+        assert edge["relation_types"] == ["definition", "production"]
+        assert edge["weight_by_type"] == {"definition": 3, "production": 2}
+        assert edge["evidence_by_type"] == {
+            "definition": ["s1"],
+            "production": ["s2", "s3"],
+        }
+        assert edge["verb_by_type"] == {
+            "definition": "is defined as",
+            "production": "produces",
+        }
+
+    def test_shared_edge_priority_resolution(self):
+        """Lower-priority types lose the primary slot to higher-priority ones."""
+        g1 = ConceptGraph(directed=True)
+        g1.add_node("a")
+        g1.add_node("b")
+        # cooccurrence has the lowest priority (8)
+        g1.add_edge(
+            "a", "b", relation_type="cooccurrence", weight=1, evidence=["s_cooc"]
+        )
+
+        g2 = ConceptGraph(directed=True)
+        g2.add_node("a")
+        g2.add_node("b")
+        # kind-of (priority 1) outranks cooccurrence
+        g2.add_edge("a", "b", relation_type="kind-of", weight=2, evidence=["s_kind"])
+
+        merged = aggregate_graphs([g1, g2])
+        edge = merged.get_edge("a", "b")
+        assert edge["relation_type"] == "kind-of"
+        assert edge["relation_types"][0] == "kind-of"
+
+    def test_three_way_merge(self):
+        g1, g2, g3 = (ConceptGraph(directed=True) for _ in range(3))
+        for g in (g1, g2, g3):
+            g.add_node("sign", frequency=10, score=4.0)
+        merged = aggregate_graphs([g1, g2, g3])
+        assert merged.get_node("sign")["frequency"] == 30
+        assert merged.get_node("sign")["score"] == pytest.approx(4.0)
 
 
 # ============================================================================

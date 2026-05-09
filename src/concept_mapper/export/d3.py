@@ -136,6 +136,20 @@ def to_d3_dict(
             # Limit evidence to max_evidence sentences
             link_data["evidence"] = evidence[:max_evidence]
 
+        # Multi-type edges (from `cmapr merge`): pass the additive fields
+        # through so consumers can render or query the per-type breakdown.
+        if "relation_types" in edge_attrs:
+            link_data["relation_types"] = list(edge_attrs["relation_types"])
+            if "weight_by_type" in edge_attrs:
+                link_data["weight_by_type"] = dict(edge_attrs["weight_by_type"])
+            if "verb_by_type" in edge_attrs:
+                link_data["verb_by_type"] = dict(edge_attrs["verb_by_type"])
+            if include_evidence and "evidence_by_type" in edge_attrs:
+                link_data["evidence_by_type"] = {
+                    t: ev[:max_evidence]
+                    for t, ev in edge_attrs["evidence_by_type"].items()
+                }
+
         links.append(link_data)
 
     # Create D3 JSON structure

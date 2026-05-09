@@ -6,6 +6,7 @@ Commands:
   ingest      Parse raw text files into a processed corpus JSON.
   rarities    Score and rank terms by rarity/significance across a corpus.
   graph       Build a co-occurrence or relation graph from a corpus.
+  merge       Combine multiple graph files with frequency/score aggregation.
   export      Convert a graph file to D3, GraphML, CSV, GEXF, or HTML.
 
   # experiments.
@@ -2836,6 +2837,96 @@ def run(
 
     click.echo(f"    ✓ {result_path}")
     click.echo(f"\n✓ Done.  open {result_path}")
+
+
+# ============================================================================
+# Merge Command
+# ============================================================================
+
+
+@cli.command()
+@click.argument("graphs", nargs=-1, required=True, type=click.Path(exists=True))
+@click.option("--output", "-o", type=click.Path(), required=True, help="Output graph file")
+@click.option(
+    "--prune-ratio",
+    type=float,
+    default=None,
+    help="If set, prune the merged graph to this edges/nodes ratio (e.g. 3.0).",
+)
+@click.pass_context
+def merge(ctx, graphs, output, prune_ratio):
+    """Combine multiple graph JSON files into one with proper aggregation.
+
+    Frequency sums; rarity scores are frequency-weighted means; edge weights
+    sum and evidence concatenates; same-pair-different-type edges keep both
+    types via the multi-type schema (relation_types, weight_by_type, ...).
+
+    \b
+    Example:
+        cmapr merge data/output/graphs/ch1/graph.json \\
+                    data/output/graphs/ch3/graph.json \\
+                    -o data/output/graphs/merged/graph.json
+    """
+    from concept_mapper.export import load_d3_json
+    from concept_mapper.graph import ConceptGraph, aggregate_graphs
+    from concept_mapper.graph.operations import prune_to_ratio
+
+    if len(graphs) < 2:
+        raise click.UsageError("merge requires at least 2 graph files")
+
+    verbose = ctx.obj["verbose"]
+
+    loaded: list[ConceptGraph] = []
+    for path in graphs:
+        if verbose:
+            click.echo(f"Loading {path}...")
+        data = load_d3_json(Path(path))
+        g = ConceptGraph(directed=True)
+        for node_data in data["nodes"]:
+            g.add_node(
+                node_data["id"], **{k: v for k, v in node_data.items() if k != "id"}
+            )
+        for link_data in data["links"]:
+            attrs = {k: v for k, v in link_data.items() if k not in {"source", "target"}}
+            # D3 JSON renames relation_type to "type" on export; restore it
+            # so aggregate_graphs sees the canonical key.
+            if "type" in attrs and "relation_type" not in attrs:
+                attrs["relation_type"] = attrs["type"]
+            g.add_edge(link_data["source"], link_data["target"], **attrs)
+        loaded.append(g)
+
+    merged = aggregate_graphs(loaded)
+
+    if prune_ratio is not None:
+        before = merged.edge_count()
+        merged = prune_to_ratio(merged, target_ratio=prune_ratio)
+        click.echo(
+            f"Pruned to ratio {prune_ratio}: {before} → {merged.edge_count()} edges"
+        )
+
+    output_path = Path(output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    export_d3_json(merged, output_path, include_evidence=True)
+
+    # Summary
+    click.echo(
+        f"✓ Merged {len(graphs)} graphs → {output_path}\n"
+        f"  {merged.node_count()} nodes, {merged.edge_count()} edges"
+    )
+    # Type breakdown
+    type_counts: dict = {}
+    for s, t in merged.edges():
+        rt = merged.get_edge(s, t).get("relation_type", "cooccurrence")
+        type_counts[rt] = type_counts.get(rt, 0) + 1
+    if type_counts:
+        click.echo("  edge types:")
+        for rt, n in sorted(type_counts.items(), key=lambda kv: -kv[1]):
+            click.echo(f"    {rt:20s} {n}")
+    multi = sum(
+        1 for s, t in merged.edges() if "relation_types" in merged.get_edge(s, t)
+    )
+    if multi:
+        click.echo(f"  multi-type edges: {multi}")
 
 
 # ============================================================================

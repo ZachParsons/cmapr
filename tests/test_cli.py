@@ -2093,3 +2093,156 @@ class TestGraphDepthFocusCLI:
         assert "nodes" in data and "links" in data, (
             "Expected valid D3 JSON with 'nodes' and 'links' keys"
         )
+
+
+# ============================================================================
+# Test Merge Command
+# ============================================================================
+
+
+def _write_d3_graph(path, nodes, links):
+    """Write a minimal D3-format graph JSON to path."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
+        json.dump({"nodes": nodes, "links": links}, f)
+
+
+class TestMergeCommand:
+    """`cmapr merge` aggregates two or more graph files into one."""
+
+    def _make_graph(self, path, *, suffix=""):
+        """Build a small D3 graph with sign + code (definition link)."""
+        _write_d3_graph(
+            path,
+            nodes=[
+                {"id": "sign", "label": "sign", "frequency": 10, "score": 3.5},
+                {"id": "code", "label": "code", "frequency": 5, "score": 2.0},
+            ],
+            links=[
+                {
+                    "source": "sign",
+                    "target": "code",
+                    "type": "definition",
+                    "weight": 2,
+                    "verb": "is defined as",
+                    "evidence": [f"Sign is defined as code{suffix}."],
+                }
+            ],
+        )
+
+    def test_requires_two_graphs(self, runner, tmp_path):
+        """A single graph file is rejected (≥ 2 required)."""
+        g1 = tmp_path / "ch1.json"
+        self._make_graph(g1, suffix=" 1")
+        out = tmp_path / "merged.json"
+        result = runner.invoke(cli, ["merge", str(g1), "-o", str(out)])
+        assert result.exit_code != 0
+        assert "at least 2" in result.output.lower()
+
+    def test_merges_two_graphs(self, runner, tmp_path):
+        """Two graphs sharing a node merge with summed frequency."""
+        g1 = tmp_path / "ch1.json"
+        g2 = tmp_path / "ch2.json"
+        self._make_graph(g1, suffix=" 1")
+        self._make_graph(g2, suffix=" 2")
+        out = tmp_path / "merged.json"
+
+        result = runner.invoke(cli, ["merge", str(g1), str(g2), "-o", str(out)])
+        assert result.exit_code == 0, (
+            f"Expected exit 0, got {result.exit_code}. Output: {result.output}"
+        )
+        assert out.exists()
+
+        merged = json.loads(out.read_text())
+        ids = {n["id"] for n in merged["nodes"]}
+        assert ids == {"sign", "code"}
+
+        sign = next(n for n in merged["nodes"] if n["id"] == "sign")
+        assert sign["frequency"] == 20  # 10 + 10
+        # Score weighted-avg with equal weights ≈ 3.5
+        assert sign["score"] == pytest.approx(3.5, rel=0.01)
+
+    def test_multi_type_edge_preserved_in_output(self, runner, tmp_path):
+        """When the same pair has different types in two graphs, the merged
+        edge carries relation_types and per-type breakdowns."""
+        g1 = tmp_path / "ch1.json"
+        g2 = tmp_path / "ch2.json"
+        _write_d3_graph(
+            g1,
+            nodes=[
+                {"id": "sign", "label": "sign"},
+                {"id": "code", "label": "code"},
+            ],
+            links=[
+                {
+                    "source": "sign", "target": "code",
+                    "type": "definition", "weight": 3,
+                    "verb": "is defined as",
+                    "evidence": ["s1"],
+                }
+            ],
+        )
+        _write_d3_graph(
+            g2,
+            nodes=[
+                {"id": "sign", "label": "sign"},
+                {"id": "code", "label": "code"},
+            ],
+            links=[
+                {
+                    "source": "sign", "target": "code",
+                    "type": "production", "weight": 2,
+                    "verb": "produces",
+                    "evidence": ["s2"],
+                }
+            ],
+        )
+        out = tmp_path / "merged.json"
+        result = runner.invoke(cli, ["merge", str(g1), str(g2), "-o", str(out)])
+        assert result.exit_code == 0, result.output
+
+        merged = json.loads(out.read_text())
+        edge = merged["links"][0]
+        assert edge["type"] == "definition"  # primary by priority
+        assert edge["weight"] == 5
+        assert edge["relation_types"] == ["definition", "production"]
+        assert edge["weight_by_type"] == {"definition": 3, "production": 2}
+        # evidence_by_type only included when include_evidence=True (merge does)
+        assert "evidence_by_type" in edge
+        assert edge["evidence_by_type"] == {
+            "definition": ["s1"],
+            "production": ["s2"],
+        }
+
+    def test_prune_ratio_applied(self, runner, tmp_path):
+        """--prune-ratio caps the merged graph's edge density."""
+        # Build two graphs whose union exceeds a 1.0 ratio
+        g1 = tmp_path / "ch1.json"
+        _write_d3_graph(
+            g1,
+            nodes=[{"id": x, "label": x} for x in ("a", "b", "c", "d")],
+            links=[
+                {"source": "a", "target": "b", "type": "cooccurrence", "weight": 1},
+                {"source": "a", "target": "c", "type": "cooccurrence", "weight": 1},
+                {"source": "a", "target": "d", "type": "cooccurrence", "weight": 1},
+                {"source": "b", "target": "c", "type": "cooccurrence", "weight": 1},
+            ],
+        )
+        g2 = tmp_path / "ch2.json"
+        _write_d3_graph(
+            g2,
+            nodes=[{"id": x, "label": x} for x in ("a", "b", "e")],
+            links=[
+                {"source": "b", "target": "e", "type": "cooccurrence", "weight": 1},
+                {"source": "a", "target": "e", "type": "cooccurrence", "weight": 1},
+            ],
+        )
+        out = tmp_path / "merged.json"
+        result = runner.invoke(
+            cli,
+            ["merge", str(g1), str(g2), "-o", str(out), "--prune-ratio", "1.0"],
+        )
+        assert result.exit_code == 0, result.output
+        merged = json.loads(out.read_text())
+        ratio = len(merged["links"]) / max(len(merged["nodes"]), 1)
+        assert ratio <= 1.0, f"Expected ratio ≤ 1.0 after prune, got {ratio:.2f}"

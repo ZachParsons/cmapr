@@ -457,7 +457,26 @@ def _generate_html_template(
                     let html = `<strong>${{src}} ${{arrow}} ${{tgt}}</strong><br>`;
                     html += `<span style="color:#bbb">${{d.verb || d.type || "relates to"}}</span>`;
                     if (d.weight && d.weight > 1) html += ` (×${{d.weight}})`;
-                    if (d.evidence && d.evidence.length) {{
+                    // Multi-type edges (from `cmapr merge`): list per-type breakdown
+                    if (d.relation_types && d.relation_types.length > 1) {{
+                        html += `<br><span style="color:#999;font-size:11px">also: `
+                            + d.relation_types.slice(1).map(t => {{
+                                const w = d.weight_by_type ? d.weight_by_type[t] : null;
+                                return w != null ? `${{t}} (×${{w}})` : t;
+                            }}).join(", ")
+                            + `</span>`;
+                    }}
+                    // Evidence: prefer per-type when available, else flat
+                    if (d.evidence_by_type && d.relation_types) {{
+                        d.relation_types.forEach(t => {{
+                            const ev = d.evidence_by_type[t] || [];
+                            if (ev.length) {{
+                                html += `<br><hr style="border-color:#444;margin:4px 0">`
+                                    + `<div style="color:#888;font-size:11px;margin-bottom:2px">${{t}}</div>`
+                                    + ev.map(s => `<em style="color:#ccc">${{s}}</em>`).join("<br>");
+                            }}
+                        }});
+                    }} else if (d.evidence && d.evidence.length) {{
                         html += d.evidence
                             .map(s => `<br><hr style="border-color:#444;margin:4px 0"><em style="color:#ccc">${{s}}</em>`)
                             .join("");
@@ -522,7 +541,14 @@ def _generate_html_template(
                     .join("text")
                     .attr("class", "link-label")
                     .attr("fill", d => edgeColor(d))
-                    .text(d => d.verb || d.label || "")
+                    .text(d => {{
+                        if (d.relation_types && d.relation_types.length > 1) {{
+                            return d.relation_types
+                                .map(t => (d.verb_by_type && d.verb_by_type[t]) || t)
+                                .join(" / ");
+                        }}
+                        return d.verb || d.label || "";
+                    }})
                 : null;
 
             // Node labels — size proportional to score/radius
@@ -669,10 +695,14 @@ def _generate_html_template(
                     const directed = DIRECTED_TYPES.has(l.type);
                     const arrow = directed ? (isSource ? "→" : "←") : "↔";
                     const color = EDGE_COLORS[l.type] || EDGE_COLOR_DEFAULT;
+                    let typeText = l.verb || l.type;
+                    if (l.relation_types && l.relation_types.length > 1) {{
+                        typeText = l.relation_types.join(" / ");
+                    }}
                     html += `<div class="panel-edge">
                         <span style="color:${{color}};font-size:14px">■</span>
                         <span>${{arrow}} <strong>${{other}}</strong></span>
-                        <span class="panel-edge-type">${{l.verb || l.type}}</span>
+                        <span class="panel-edge-type">${{typeText}}</span>
                     </div>`;
                 }});
 
