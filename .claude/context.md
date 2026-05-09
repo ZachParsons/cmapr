@@ -1,5 +1,15 @@
 # Concept Mapper: Project Context
 
+| Topic | Location |
+| --- | --- |
+| Project goals | `.claude/context.md` (this file) |
+| Code & test rules | `.claude/rules.md` |
+| Feature plans | `docs/plans/` |
+| Feature QA | `docs/qa/` |
+| Roadmap | `docs/roadmap.md` |
+| CLI guide | `src/concept_mapper/cli.py` (docstrings) |
+| API reference | `docs/api-reference.md` |
+
 ## Project Purpose
 
 Concept Mapper is a digital humanities tool for identifying and visualizing **author-specific philosophical terminology** in primary texts. It goes beyond simple frequency analysis to find terms that are:
@@ -415,21 +425,11 @@ open viz/index.html
 
 ## Current Status
 
-**Version:** 1.0.0 (Complete)
-**Test Coverage:** 521 tests passing
-**Documentation:** Comprehensive (README, Usage Guide, API Reference)
-**Production Ready:** Yes
+For the live status — *latest, next, open issues* — see `docs/roadmap.md` § Status. That's the canonical entrypoint; this file does not duplicate it.
 
 ## Future Extension Points
 
-### Planned Enhancements (Not Currently Implemented)
-
-1. **Multi-language support** - Add NLTK resources for other languages
-2. **Advanced dependency parsing** - Integrate SpaCy when Python 3.14 compatible
-3. **Database backend** - SQLite/PostgreSQL for massive corpora
-4. **Web interface** - Flask/Django app with interactive exploration
-5. **Citation networks** - Track philosophical citations and influences
-6. **Temporal analysis** - Track concept evolution across an author's career
+Backlog of unplanned ideas lives in `docs/roadmap.md` § Future Work. Don't duplicate here.
 
 ### Extension Guidelines
 
@@ -445,7 +445,6 @@ open viz/index.html
 2. **Domain focus:** Academic philosophy/literary analysis (not general NLP)
 3. **Scale target:** 10-100 documents (not big data)
 4. **Design philosophy:** Simple, tested, documented > cutting-edge but complex
-5. **Current completeness:** All planned features implemented, focus on refinement not expansion
-6. **Testing culture:** 521 tests, high coverage, don't break existing tests
-7. **Documentation:** Keep README, usage guide, and API reference in sync
-8. **Python version:** 3.14+ (use modern features, watch compatibility)
+5. **Documentation:** Keep README, usage guide, and API reference in sync
+6. **Python version:** 3.14+ (use modern features, watch compatibility)
+7. **Status:** see `docs/roadmap.md` § Status for what's latest/next; this file is reference, not state.

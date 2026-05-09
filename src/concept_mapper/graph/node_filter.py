@@ -4,13 +4,19 @@ Node inclusion filter for concept graph construction.
 Applies the criteria from docs/specs/graph.md § Nodes > Inclusion criteria:
 
   1. Content POS — noun, verb, adjective, adverb (checked when pos is supplied)
-  2. Length ≥ 4 characters
-  3. Not an abbreviation — not all-caps with length ≤ 4
-  4. Not a stopword
-  5. Minimum corpus frequency (default 3)
-  6. Not a fragment — not a prefix of a longer corpus word, unless the term
-     itself is in WordNet (so 'sign' is kept even though 'signal' exists)
-  7. No invalid characters — only letters and hyphens (rejects '/man/', '[14]')
+  2. Length ≥ 4 characters       (single-token only)
+  3. Not an abbreviation         (single-token only)
+  4. Not a stopword              (single-token only)
+  5. Minimum corpus frequency    (single-token only; phrase frequency is
+                                  enforced upstream by the rarities chunk
+                                  scorer)
+  6. Not a fragment              (single-token only)
+  7. No invalid characters       (single-token only)
+
+Multi-word terms (noun phrases from spaCy ingest) bypass every criterion
+except POS. They survive into the graph layer only after the rarities
+pipeline has scored them, so the per-token guards do not apply, and a
+real phrase will never match a single-word stopword anyway.
 
 Applies to both seed nodes (from rarities list) and extracted nodes
 (objects/complements of grammatical propositions).  Both roles use the
@@ -87,12 +93,16 @@ class NodeFilter:
         t = term.lower().strip()
         is_multiword = " " in t
 
-        # Multi-word terms (noun phrases from spaCy) skip single-token checks:
-        # length, character validity, and fragment detection don't apply.
-        if not is_multiword:
-            if pos is not None and pos not in CONTENT_POS_TAGS:
-                return False, f"wrong POS ({pos})"
+        # POS check applies to both single tokens and phrases.
+        if pos is not None and pos not in CONTENT_POS_TAGS:
+            return False, f"wrong POS ({pos})"
 
+        # Single-token-only criteria. Multi-word noun phrases from spaCy bypass
+        # length, char-validity, abbreviation, fragment, and frequency checks —
+        # phrase frequency is enforced upstream by the rarities chunk scorer
+        # (≥ min(2, n_docs) occurrences). The stopword check is also single-
+        # token-only since real phrases never match a single-word stopword.
+        if not is_multiword:
             if len(t) < 4:
                 return False, f"too short ({len(t)} chars)"
 
@@ -102,18 +112,15 @@ class NodeFilter:
             if term.isupper() and len(term) <= 4:
                 return False, "abbreviation (all-caps ≤ 4)"
 
+            if t in self._stopwords:
+                return False, "stopword"
+
             if self._is_fragment(t):
                 return False, "fragment (prefix of longer corpus word)"
-        else:
-            if pos is not None and pos not in CONTENT_POS_TAGS:
-                return False, f"wrong POS ({pos})"
 
-        if t in self._stopwords:
-            return False, "stopword"
-
-        freq = self._term_freqs.get(t, 0)
-        if freq < self._min_freq:
-            return False, f"low frequency ({freq} < {self._min_freq})"
+            freq = self._term_freqs.get(t, 0)
+            if freq < self._min_freq:
+                return False, f"low frequency ({freq} < {self._min_freq})"
 
         return True, ""
 

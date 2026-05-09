@@ -2,6 +2,8 @@
 
 Derived from `docs/specs/graph.md`. Each task is independently testable before the next begins.
 
+> **Status / next / open issues:** see `docs/roadmap.md` § Status. This file is the per-phase detail view; the roadmap is the at-a-glance view.
+
 ---
 
 ## Dev loop
@@ -435,23 +437,42 @@ open data/output/exports/eco_spl1/index.html
 
 ---
 
-## Phase 13 — Multi-word term support
+## Phase 13 — Multi-word term support ✅
 
 Spec ref: *Multi-word term support (requires spaCy)* (deferred from v1)
 
-**13.1 spaCy integration**
-- Add `spacy` as optional dependency (`pip install cmapr[spacy]`)
-- `cmapr ingest --spacy` flag: use spaCy pipeline instead of NLTK for tokenisation and POS
-- Extract noun chunks as candidate multi-word terms (e.g. *sign vehicle*, *unlimited semiosis*, *triadic relation*)
+**13.1 spaCy integration** ✅
+- Added `spacy` as optional dependency (`pip install cmapr[spacy]`); requires `python -m spacy download en_core_web_sm`
+- `cmapr ingest --spacy` flag stores deduplicated lowercased noun chunks (with leading determiners stripped) on `ProcessedDocument.metadata["noun_chunks"]`. NLTK remains the default tokeniser/tagger; spaCy is additive, not a replacement
+- Extracted noun chunks become candidate multi-word terms (e.g. *sign vehicle*, *unlimited semiosis*, *triadic relation*)
 
-**13.2 Multi-word term handling in graph**
-- `NodeFilter`: skip length check for multi-word terms (already ≥2 words)
-- `PropositionExtractor`: substring matching already works for multi-word terms; no change needed
+**13.2 Multi-word term handling in graph** ✅
+- `NodeFilter`: phrases bypass single-token guards — length, char-validity, abbreviation, fragment, frequency, and stopword checks. POS check still applies. Phrase frequency is enforced upstream by the rarities chunk scorer
+- `PropositionExtractor`: regex extractors (`re.escape` + `\b…\b`) handle phrases. The catch-all POS-based `_try_pos_verb` fallback silently skips phrases (acceptable v1 loss; pattern extractors run earlier in the chain). The `_score_sentence` proximity bonus also no-ops on phrases — sentence ranking still works via the other heuristics
 - Graph node IDs: use the full phrase (e.g. `"sign vehicle"`)
 
-**13.3 Rarities: multi-word candidate scoring**
-- Score by TF-IDF of the full phrase across documents
-- Merge single-word and multi-word candidates into one ranked list
+**13.3 Rarities: multi-word candidate scoring** ✅
+- TF-IDF across documents: `score = log(1 + freq) * (1 + log((n_docs + 1) / (df + 1)))`
+- Phrases merged into the ranked candidate list before lemmatisation, fragment, POS, and vetting filters; phrases automatically pass the POS filter and the lemmatisation derivational-suffix collapse (no single-token suffix matches a phrase)
+
+**Verify:**
+```bash
+cmapr ingest data/input/eco_spl1.txt --clean-ocr --spacy \
+    --output data/output/corpus/eco_spl1_spacy/corpus.json
+cmapr rarities data/output/corpus/eco_spl1_spacy/corpus.json --top-n 60 \
+    --output data/output/rarities/eco_spl1_spacy/terms.json
+cmapr graph data/output/corpus/eco_spl1_spacy/corpus.json \
+    -t data/output/rarities/eco_spl1_spacy/terms.json \
+    --output data/output/graphs/eco_spl1_spacy/graph.json
+
+python -c "
+import json
+g = json.load(open('data/output/graphs/eco_spl1_spacy/graph.json'))
+phrases = [n['id'] for n in g['nodes'] if ' ' in n['id']]
+print(f'{len(phrases)} multi-word node(s):', phrases[:8])
+"
+# Expect: at least a few phrases like 'sign vehicle', 'sign function', 'sign system'
+```
 
 **Verify:**
 ```bash
@@ -463,38 +484,48 @@ cmapr rarities data/output/corpus/eco_spl1_spacy/corpus.json --top-n 60
 
 ---
 
-## Phase 14 — Seed-word workflow B options
+## Phase 14 — Seed-word workflow B options ✅
 
 Spec ref: *Seed-word workflow B options (B1–B5)* (deferred from v1)
 
-**B1 — POS filter flag**
-- `cmapr rarities --pos noun,verb` — restrict candidates to specified POS tags
-- Default: all POS (current behaviour)
+**B1 — POS filter flag** ✅
+- `cmapr rarities --pos noun,verb,adj,adv` (comma-separated, multi-valued)
+- Multi-word noun chunks always pass regardless of POS category
+- Tests: `tests/test_cli.py::TestRaritiesPOSFilter`
 
-**B2 — Count limit**
-- `cmapr rarities --top-n N` already implemented; ensure it interacts correctly with POS filter
+**B2 — Count limit** ✅
+- `cmapr rarities --top-n N` (default 50)
+- Top-N is applied during the lemmatisation merge pass; the POS filter runs after, so output is *up to N* candidates that survive POS filtering. This ordering is intentional — top-N caps total output, POS filter trims.
+- Tests: `test_rarities_displays_results`, `test_top_n_and_pos_combine`
 
-**B3 — Group by section**
-- `cmapr rarities --by-section` — output terms grouped by document section (requires section metadata from ingest)
-- Section metadata: `ProcessedDocument.metadata["section"]`
+**B3 — Group by section** ✅
+- `cmapr rarities --by-section` writes an additional `<work>_by_section.json` next to `terms.json`
+- Each term is assigned to the section where it appears most frequently (resolved from `sentence_locations` → chapter/section/subsection/paragraph)
+- Tests: `tests/test_cli.py::TestRaritiesBySection`
 
-**B4 — Depth limit**
-- `cmapr graph --depth N` — only include nodes reachable within N hops from the highest-scoring seed node
-- Useful for focusing on a term's immediate conceptual neighbourhood
+**B4 — Depth limit** ✅
+- `cmapr graph --depth N` — `nx.ego_graph(centre, radius=N, undirected=True)` over the post-prune graph
+- Centre is the highest-scoring seed when `--focus` is omitted, otherwise the focus term
+- Tests: `tests/test_cli.py::TestGraphDepthFocusCLI::test_depth_flag_completes`
 
-**B5 — Neighbourhood export**
-- `cmapr graph --focus <term>` — build graph centred on one term, include all nodes connected to it
+**B5 — Neighbourhood export** ✅
+- `cmapr graph --focus <term>` — same ego-graph centred on the named term (default radius 1, or `--depth N` if supplied)
+- Unknown focus term emits a warning and falls through to the full graph
+- Tests: `test_focus_flag_completes`, `test_unknown_focus_warns_not_crashes`
 
 **Verify:**
 ```bash
 cmapr rarities data/output/corpus/eco_spl1/corpus.json --pos noun --top-n 40
-# Expect: only noun terms
+# Expect: only noun terms (plus any multi-word phrases if --spacy was used)
+
+cmapr rarities data/output/corpus/eco_spl1/corpus.json --by-section --top-n 60
+# Expect: data/output/rarities/eco_spl1/terms_by_section.json grouped by section
 
 cmapr graph data/output/corpus/eco_spl1/corpus.json \
     --terms data/output/rarities/eco_spl1/terms.json \
     --focus sign --depth 2 \
     --output data/output/graphs/eco_spl1/sign_neighbourhood.json
-# Expect: small graph centred on 'sign'
+# Expect: small graph centred on 'sign' (≤ 2 hops)
 ```
 
 ---

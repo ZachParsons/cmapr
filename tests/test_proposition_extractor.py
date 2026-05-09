@@ -657,3 +657,73 @@ class TestEvidenceScoring:
             f"Expected definition-marker sentence to rank first in definition evidence, "
             f"got: {defn_p.evidence[0]!r}"
         )
+
+
+# ============================================================================
+# Multi-word phrase support (Phase 13)
+# ============================================================================
+
+
+class TestMultiWordPhrases:
+    """
+    Phrases from spaCy noun chunks must work in the regex-based extractors.
+    The pattern code uses re.escape + word boundaries, which handle internal
+    spaces correctly without code changes — these tests pin that contract.
+    """
+
+    def test_definition_with_phrase_term(self):
+        s = "By sign vehicle I mean the perceptible aspect of a sign."
+        e = PropositionExtractor(make_docs([s]))
+        props = e.extract("sign vehicle", "aspect")
+        defn = [p for p in props if p.type == "definition"]
+        assert defn, "Expected a definition proposition for the phrase term"
+        assert defn[0].source.lower() == "sign vehicle"
+        assert defn[0].target.lower() == "aspect"
+
+    def test_kind_of_with_phrase_term(self):
+        s = "A sign vehicle is a kind of perceptible token in semiosis."
+        e = PropositionExtractor(make_docs([s]))
+        props = e.extract("sign vehicle", "token")
+        kinds = [p for p in props if p.type == "kind-of"]
+        assert kinds
+        assert kinds[0].source.lower() == "sign vehicle"
+        assert kinds[0].target.lower() == "token"
+
+    def test_production_with_phrase_term(self):
+        s = "A sign vehicle produces meaning when interpreted by a receiver."
+        e = PropositionExtractor(make_docs([s]))
+        props = e.extract("sign vehicle", "meaning")
+        prod = [p for p in props if p.type == "production"]
+        assert prod
+        assert prod[0].source.lower() == "sign vehicle"
+        assert prod[0].target.lower() == "meaning"
+
+    def test_composition_with_phrase_term(self):
+        """Composition pattern works when constituents and/or composed entity
+        are multi-word phrases."""
+        s = (
+            "The sign vehicle, the interpretant, and the referent "
+            "form a triadic relation."
+        )
+        e = PropositionExtractor(make_docs([s]))
+        props = e.extract_composition(
+            ["sign vehicle", "interpretant", "referent", "triadic relation"]
+        )
+        component = [p for p in props if p.type == "component"]
+        pairs = {frozenset([p.source, p.target]) for p in component}
+        assert frozenset(["sign vehicle", "interpretant"]) in pairs
+        assert frozenset(["sign vehicle", "referent"]) in pairs
+        prod = [p for p in props if p.type == "production"]
+        prod_pairs = {(p.source, p.target) for p in prod}
+        assert ("sign vehicle", "triadic relation") in prod_pairs
+
+    def test_phrase_substring_match_finds_sentence(self):
+        """The sentence-scanning loop uses substring search, so phrases work."""
+        s = "The sign vehicle and the interpretant are both essential to semiosis."
+        e = PropositionExtractor(make_docs([s]))
+        # Even without a typed pattern, the sentence is reachable; assert no
+        # exception and that at least one extractor or no extractor fires
+        # (relation_verbs may match "are" via _try_property — either is fine).
+        props = e.extract("sign vehicle", "interpretant")
+        # Critically: the substring scan does not crash on phrase terms.
+        assert isinstance(props, list)

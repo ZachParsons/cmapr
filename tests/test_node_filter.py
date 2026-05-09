@@ -350,3 +350,71 @@ class TestEcoCorpusTerms:
         ok, reason = self.f.is_valid("structu")
         assert not ok
         assert "fragment" in reason
+
+
+# ---------------------------------------------------------------------------
+# Multi-word terms (spaCy noun chunks)
+# ---------------------------------------------------------------------------
+
+
+class TestMultiWordTerms:
+    """Phrases from spaCy noun-chunk extraction bypass single-token guards."""
+
+    def test_phrase_passes_with_zero_token_freq(self):
+        """A phrase whose components have no entry in term_freqs still passes —
+        phrase frequency is enforced upstream by the rarities chunk scorer."""
+        f = make_filter(freqs={}, min_freq=3)
+        ok, reason = f.is_valid("sign vehicle")
+        assert ok, f"Expected 'sign vehicle' to pass but got: {reason}"
+
+    def test_phrase_skips_fragment_check(self):
+        """A phrase isn't compared against the corpus fragment heuristic."""
+        f = NodeFilter(
+            corpus_vocab={"signifier", "signification"},
+            term_freqs=Counter(),
+            min_freq=3,
+        )
+        # 'sign' alone would pass via WordNet, but the fragment check is
+        # the relevant one — confirm phrases bypass it entirely.
+        ok, _ = f.is_valid("sign function")
+        assert ok
+
+    def test_phrase_skips_short_token_check(self):
+        """Multi-word terms with short components still pass."""
+        f = make_filter(freqs={})
+        ok, _ = f.is_valid("ad hoc reasoning")
+        assert ok
+
+    def test_phrase_pos_check_still_applies(self):
+        """POS rejection works for phrases too (when supplied)."""
+        f = make_filter(freqs={})
+        ok, reason = f.is_valid("sign vehicle", pos="DT")
+        assert not ok
+        assert "POS" in reason
+
+    def test_phrase_pos_noun_passes(self):
+        f = make_filter(freqs={})
+        ok, _ = f.is_valid("triadic relation", pos="NN")
+        assert ok
+
+    def test_phrase_with_stopword_components_passes(self):
+        """Stopword check is single-token-only — a real phrase will not
+        match a single-word stopword anyway, so phrases bypass the check."""
+        f = make_filter(freqs={})
+        ok, _ = f.is_valid("the sign and the meaning")
+        assert ok
+
+    def test_filter_keeps_phrases(self):
+        """Bulk filter() keeps phrases alongside valid single tokens."""
+        f = NodeFilter(
+            corpus_vocab={"sign", "interpretant"},
+            term_freqs=Counter({"sign": 20, "interpretant": 10}),
+            min_freq=3,
+        )
+        kept = f.filter(["sign", "sign vehicle", "interpretant", "triadic relation"])
+        assert set(kept) == {
+            "sign",
+            "sign vehicle",
+            "interpretant",
+            "triadic relation",
+        }

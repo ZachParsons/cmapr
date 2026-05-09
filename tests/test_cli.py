@@ -1890,6 +1890,33 @@ class TestRaritiesPOSFilter:
             f"got {len(noun_terms)}"
         )
 
+    def test_top_n_and_pos_combine(self, runner, sample_corpus_json, tmp_path):
+        """B2: --top-n and --pos can be combined; output respects both bounds."""
+        output_path = tmp_path / "terms_top10_noun.json"
+        result = runner.invoke(
+            cli,
+            [
+                "rarities",
+                str(sample_corpus_json),
+                "--top-n",
+                "10",
+                "--pos",
+                "noun",
+                "--threshold",
+                "0.0",
+                "--output",
+                str(output_path),
+            ],
+        )
+        assert result.exit_code == 0, (
+            f"Expected exit_code 0 for --top-n + --pos, got {result.exit_code}. "
+            f"Output: {result.output!r}"
+        )
+        terms = json.loads(output_path.read_text())
+        assert len(terms) <= 10, (
+            f"Expected ≤ 10 terms with --top-n 10, got {len(terms)}"
+        )
+
 
 # ============================================================================
 # Test RaritiesBySection (Phase 14 B3)

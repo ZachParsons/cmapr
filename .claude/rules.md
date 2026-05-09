@@ -5,6 +5,19 @@ NLP project for concept mapping and linguistic analysis using NLTK and Stanza.
 
 ---
 
+## On session start
+
+Before doing anything else:
+
+- [ ] Read `docs/roadmap.md` § Status — the canonical entrypoint for *what's latest, next, open*.
+- [ ] Skim the active plan file (e.g. `docs/plans/graph.md`) for phase markers if continuing a feature.
+- [ ] `git log -5 --oneline` and `git status` to confirm baseline.
+- [ ] `make test` (or `pytest -q`) to confirm green before changing anything.
+
+At session end: update `docs/roadmap.md` § Status (last completed / next up / open issues) so cold re-entry is one-glance.
+
+---
+
 ## Code Standards
 
 ### Style
@@ -12,6 +25,17 @@ NLP project for concept mapping and linguistic analysis using NLTK and Stanza.
 - Prefer functional style: expressions over statements, composition over classes
 - Keep functions focused, single-purpose, and composable
 - Use descriptive names; avoid unnecessary comments
+
+### Architecture (layered)
+Three layers, classified by file/function rather than just by directory:
+
+- **Data** (`*/models.py`, `corpus/loader.py`, `storage/`): defines data shapes and owns I/O. No analysis or business logic.
+- **Logic** (`analysis/`, `transformations/`, `preprocessing/`, `search/`, `syntax/`, `graph/builders.py`, `graph/operations.py`, `graph/metrics.py`, `terms/manager.py`, `terms/suggester.py`): pure transformations on data. No I/O, no CLI/HTML/print.
+- **Presentation** (`cli.py`, `server/`, `export/`): user-facing surfaces. Calls logic; never reimplements it. Click decorators, HTML templates, and format adapters live only here.
+
+**Import direction**: presentation → logic → data. Logic never imports presentation; data never imports logic.
+
+**When tempted to put logic in a CLI handler**: extract a function in the matching logic module and call it from the handler. Keeps things testable without invoking Click.
 
 ### Tooling
 - **Package manager**: `uv` (not pip)

@@ -1,5 +1,7 @@
 # Roadmap
 
+This is the canonical entrypoint for *what's latest, what's next, what's blocked*. Update the **Status** block at the end of each session.
+
 **Past:** completed phases, significant additions/pivots.
 **Present:** planned work, WIP.
 **Future:** unplanned features, ideas.
@@ -15,6 +17,19 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 ---
 
 ## Status
+
+_Last updated: 2026-05-08. Cold-re-entry checklist — keep glance-able._
+
+- **Last completed:** Phase 13 (multi-word terms via spaCy) and Phase 14 (B1–B5 seed-word workflow options) marked ✅ in `docs/plans/graph.md`. NodeFilter now exempts multi-word phrases from single-token frequency / fragment / length checks (`src/concept_mapper/graph/node_filter.py`); test suite expanded.
+- **Next up:** Pick from `cmapr try-extract` (debug single-sentence extraction), `cmapr merge` (combine per-chapter graphs), or pipeline architecture diagram. Discussed but not started.
+- **Open issues:**
+  - **Phase 15.1 stale-note** — `docs/plans/graph.md:540` lists "drop `s/Enter=skip` from `--vet`" as remaining, but `cli.py:582-592` already only accepts `y`/`n`. Loose end: verify + clear note.
+  - **Wizard reverted** — `cmapr wizard` was prototyped then reverted as redundant with the web UI. Don't re-propose without a distinct use case.
+- **Tests:** 877 passed, 2 skipped (spaCy-required) as of the last full run.
+
+---
+
+## v1 milestones
 
 **🎉 Feature-complete** — all 11 phases implemented, tested, and documented.
 
@@ -496,7 +511,6 @@ src/concept_mapper/
 - [ ] Usage-based definition generation (aggregate co-occurrences and relations into empirical definitions)
 - [ ] **Test suite cleanup** — use `pytest-cov` to identify undercovered code paths (add tests) and overcovered ones (redundant tests testing the same path with different labels); target reducing test count from ~718 to ~510-540 (~25% reduction) while improving branch coverage; delete redundant tests rather than merging them to keep intent legible.
 - [ ] **Ecosystem survey** — investigate available packages for concept mapping, mind mapping, and knowledge graph construction (e.g. `conceptnet`, `rdflib`, `pykeen`, `rebel`, `pyvis`, `sentence-transformers`) to identify features worth importing, implementations worth optimising against, and libraries that could replace or augment internal components. Output: `docs/research/ecosystem.md`.
-- [ ] **Interactive CLI wizard** — a `cmapr wizard` command (or `cmapr run` with no args) that steps the user through the full pipeline interactively, prompting for each option with a one-line explanation and sensible defaults. Removes the need to remember command names, flag syntax, or execution order. Implemented with `questionary` or `InquirerPy`; no server or browser required.
 - [ ] **Graph merge command** — `cmapr merge graph1.json graph2.json --output merged.json` to combine graphs built from separate chapters or texts. Shared nodes: sum frequencies, reconcile scores. Shared edges (same source/target/type): accumulate weights, combine evidence lists. Unique nodes/edges: carried through as-is. Builds on the existing `merge_graphs()` in `graph/operations.py` which currently does a basic NetworkX merge without aggregation. Enables an incremental workflow: process and vet chapters independently, then combine into a unified graph.
 - [ ] **Multi-chapter clustered visualization** — display per-chapter graphs together on a single D3 canvas as spatially separated clusters, with a new `recurrence` edge type linking same-term nodes across chapters. Each chapter is a self-contained cluster; node IDs are namespaced (`sign_ch1`, `sign_ch3`) so the same term remains a distinct node per chapter rather than being merged. `recurrence` edges chain same-term nodes in chapter order (`sign_ch1 → sign_ch3 → sign_ch5`), weighted by span (a term recurring across all 7 chapters gets weight 7). Cross-chapter edges are toggleable. Adds a structural dimension that rarity scoring alone cannot capture: terms with long recurrence chains are conceptually central to the whole work, not just a single chapter.
   - **Display option A (clustered force)** — a D3 cluster force pulls each node toward its chapter's centroid; shared-term nodes sit at the boundary between their chapters' centroids. Recurrence edges shown as thin threads between clusters.

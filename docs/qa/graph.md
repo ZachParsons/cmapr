@@ -203,6 +203,7 @@ for t, n in sorted(types.items(), key=lambda x: -x[1]):
 - No node IDs shorter than 4 characters (NodeFilter should have excluded them)
 - No isolated nodes (every node appears in at least one link)
 - `evidence` on each edge is a list (not a string), with 1–3 sentences
+- If the corpus was ingested with `--spacy`, expect a few multi-word node IDs (e.g. *sign vehicle*, *sign function*, *triadic relation*)
 
 ```bash
 # Isolated nodes are stripped before serialisation, so the JSON is always clean.

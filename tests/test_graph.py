@@ -1020,6 +1020,46 @@ class TestBuildPropositionGraph:
             "Expected ConceptGraph even when NodeFilter is provided"
         )
 
+    def test_multiword_seed_becomes_node(self):
+        """Phase 13: a multi-word seed term survives the NodeFilter and
+        appears as a node when it co-occurs with another seed in a sentence
+        that yields a typed edge."""
+        from collections import Counter
+        from concept_mapper.graph.node_filter import NodeFilter
+
+        sentences = [
+            "A sign vehicle produces meaning when interpreted.",
+            "The sign vehicle and meaning are central to semiosis.",
+        ]
+        # Build NodeFilter the way cli.py does: token-level vocab and freqs.
+        # The phrase "sign vehicle" has freq 0 in this Counter — the filter
+        # must still accept it because it's multi-word.
+        vocab = {"sign", "vehicle", "produces", "meaning", "interpreted", "semiosis"}
+        freqs = Counter(
+            {"sign": 2, "vehicle": 2, "meaning": 2, "produces": 1, "semiosis": 1}
+        )
+        nf = NodeFilter(corpus_vocab=vocab, term_freqs=freqs, min_freq=3)
+        # Confirm the filter passes the phrase even with min_freq=3
+        assert nf.is_valid("sign vehicle")[0], (
+            "Expected NodeFilter to accept the multi-word phrase 'sign vehicle'"
+        )
+        graph = self._build(
+            sentences,
+            ["sign vehicle", "meaning"],
+            node_filter=nf,
+            pmi_threshold=0.0,
+        )
+        nodes = set(graph.nodes())
+        assert "sign vehicle" in nodes, (
+            f"Expected 'sign vehicle' as a node, got nodes={nodes}"
+        )
+        assert "meaning" in nodes, f"Expected 'meaning' as a node, got nodes={nodes}"
+        # The production pattern should produce a typed edge
+        has_edge = graph.has_edge("sign vehicle", "meaning") or graph.has_edge(
+            "meaning", "sign vehicle"
+        )
+        assert has_edge, "Expected an edge between 'sign vehicle' and 'meaning'"
+
 
 # ============================================================================
 # Test PruneToRatio (Phase 6)
