@@ -24,7 +24,7 @@ cmapr --help
 
 ## Workflow
 
-The four commands form a pipeline: **ingest → rarities → graph → export**. Or run all at once:
+The four commands form a pipeline: **ingest → rarities → graph → export**. See [`docs/architecture.md`](docs/architecture.md) for the full pipeline diagram with all CLI commands and processing modules. Or run all at once:
 
 ```bash
 cmapr run data/input/eco_spl.txt --toc data/input/eco_spl_toc.txt --top-n 50 --format html

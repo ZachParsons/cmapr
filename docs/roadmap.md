@@ -18,10 +18,10 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 
 ## Status
 
-_Last updated: 2026-05-08. Cold-re-entry checklist — keep glance-able._
+_Last updated: 2026-05-09. Cold-re-entry checklist — keep glance-able._
 
-- **Last completed:** Phase 13 (multi-word terms via spaCy) and Phase 14 (B1–B5 seed-word workflow options) marked ✅ in `docs/plans/graph.md`. NodeFilter now exempts multi-word phrases from single-token frequency / fragment / length checks (`src/concept_mapper/graph/node_filter.py`); test suite expanded.
-- **Next up:** Pick from `cmapr try-extract` (debug single-sentence extraction), `cmapr merge` (combine per-chapter graphs), or pipeline architecture diagram. Discussed but not started.
+- **Last completed:** Pipeline architecture diagram at `docs/architecture.md` — Mermaid flowchart showing all 10 CLI commands and the processing modules grouped by stage. README links to it. Phase 13 (multi-word terms) and Phase 14 (B1–B5 options) landed in commit `1e2d99b`.
+- **Next up:** `cmapr try-extract` (debug single-sentence extraction) is the recommended pick — high-leverage for iteration, no overlap with web UI. Alt: `cmapr merge` (combine per-chapter graphs).
 - **Open issues:**
   - **Phase 15.1 stale-note** — `docs/plans/graph.md:540` lists "drop `s/Enter=skip` from `--vet`" as remaining, but `cli.py:582-592` already only accepts `y`/`n`. Loose end: verify + clear note.
   - **Wizard reverted** — `cmapr wizard` was prototyped then reverted as redundant with the web UI. Don't re-propose without a distinct use case.
@@ -519,7 +519,7 @@ src/concept_mapper/
   - **v1 target**: option A (clustered force) with recurrence edges toggleable. Options B and C deferred.
 - [ ] **Extraction debug command** — `cmapr try-extract "sentence" term1 term2` runs `PropositionExtractor` on a single sentence and prints the result (type, label, direction, evidence). Enables fast iteration on extraction patterns without running the full pipeline. Complement with a `cmapr try-filter "word"` that shows why `NodeFilter` accepts or rejects a term.
 - [ ] **Session status doc** — `docs/status.md`: a one-page always-current file recording *last worked on*, *next step*, and *open questions / known issues*. Updated at the end of each session. Separate from the roadmap (history + future) and QA doc (verification); purpose is cold re-entry after days away.
-- [ ] **Pipeline architecture diagram** — Mermaid flowchart in the README (or `docs/architecture.md`) showing the full data flow: input file → `ingest` → `corpus.json` → `rarities` → `terms.json` → `graph` → `graph.json` → `export` → `index.html`, with the key data structures annotated at each stage. Serves as a map for where to extend the system (new edge types, spaCy, multi-word terms, etc.).
+- [x] **Pipeline architecture diagram** — `docs/architecture.md`: Mermaid flowchart with all 10 CLI commands and the processing modules grouped by stage (`corpus/`, `preprocessing/`, `analysis/`, `terms/`, `graph/`, `export/`, plus auxiliary `search/`, `transformations/`, `syntax/`, `server/`). README points at it.
 - [ ] Database backend for large-scale corpora
 - [ ] Temporal analysis across an author's career
 - [ ] Web interface
