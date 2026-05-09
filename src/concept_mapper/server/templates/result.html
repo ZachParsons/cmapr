@@ -1,14 +1,19 @@
 {% extends "base.html" %}
 {% block title %} — {{ work }}{% endblock %}
 {% block breadcrumb %}
-  <a href="/" style="color:#aaa;text-decoration:none">Configure</a> ›
-  <a href="/review?work={{ work }}" style="color:#aaa;text-decoration:none">Review terms</a> ›
-  <a href="/options?work={{ work }}" style="color:#aaa;text-decoration:none">Graph options</a> ›
-  Result
+  <a href="/">Configure</a>
+  <span class="sep">›</span>
+  <a href="/review?work={{ work }}">Review terms</a>
+  <span class="sep">›</span>
+  <a href="/options?work={{ work }}">Graph options</a>
+  <span class="sep">›</span>
+  <span class="current">Result</span>
 {% endblock %}
 
+{% block main_class %}full{% endblock %}
+
 {% block content %}
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
   <h1 style="margin:0">{{ work }}</h1>
   <div style="display:flex;gap:8px">
     <a href="/options?work={{ work }}" class="btn btn-secondary">Re-run graph</a>
@@ -21,11 +26,9 @@
 </div>
 
 {% if has_export %}
-<div style="border:1px solid #e0e0e0;border-radius:6px;overflow:hidden;background:#fff">
-  <iframe src="/exports/{{ work }}/index.html"
-          style="width:100%;height:78vh;border:none;display:block">
-  </iframe>
-</div>
+<iframe src="/exports/{{ work }}/index.html"
+        style="width:100%;height:calc(100vh - 110px);border:1px solid #e0e0e0;border-radius:6px;background:#fff;display:block">
+</iframe>
 {% else %}
 <div class="card">
   <p style="color:#888">No export found. <a href="/options?work={{ work }}">Build the graph</a> first.</p>

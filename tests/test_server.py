@@ -330,3 +330,35 @@ class TestServeExport:
         with TestClient(app, follow_redirects=False) as c:
             r = c.get("/exports/nowork/index.html")
         assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Loading overlay (shared across templates)
+# ---------------------------------------------------------------------------
+
+
+class TestLoadingOverlay:
+    """The loading overlay must render on every page that submits work,
+    so users always get feedback that long-running ingest/build jobs began."""
+
+    def _has_overlay(self, html: str) -> bool:
+        return 'id="loading"' in html and "loading-overlay" in html
+
+    def test_index_has_overlay(self):
+        r = client.get("/")
+        assert self._has_overlay(r.text)
+
+    def test_review_has_overlay(self, tmp_data):
+        with TestClient(app, follow_redirects=False) as c:
+            r = c.get("/review?work=mywork")
+        assert self._has_overlay(r.text)
+
+    def test_options_has_overlay(self, tmp_data):
+        with TestClient(app, follow_redirects=False) as c:
+            r = c.get("/options?work=mywork")
+        assert self._has_overlay(r.text)
+
+    def test_result_has_overlay(self, tmp_data):
+        with TestClient(app, follow_redirects=False) as c:
+            r = c.get("/result?work=mywork")
+        assert self._has_overlay(r.text)
