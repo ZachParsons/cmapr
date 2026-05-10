@@ -6,6 +6,7 @@ Commands:
   ingest      Parse raw text files into a processed corpus JSON.
   rarities    Score and rank terms by rarity/significance across a corpus.
   graph       Build a co-occurrence or relation graph from a corpus.
+  cluster     Build a clustered graph: one sub-graph per chapter + recurrence edges.
   merge       Combine multiple graph files with frequency/score aggregation.
   export      Convert a graph file to D3, GraphML, CSV, GEXF, or HTML.
 
@@ -2846,7 +2847,9 @@ def run(
 
 @cli.command()
 @click.argument("graphs", nargs=-1, required=True, type=click.Path(exists=True))
-@click.option("--output", "-o", type=click.Path(), required=True, help="Output graph file")
+@click.option(
+    "--output", "-o", type=click.Path(), required=True, help="Output graph file"
+)
 @click.option(
     "--prune-ratio",
     type=float,
@@ -2887,7 +2890,9 @@ def merge(ctx, graphs, output, prune_ratio):
                 node_data["id"], **{k: v for k, v in node_data.items() if k != "id"}
             )
         for link_data in data["links"]:
-            attrs = {k: v for k, v in link_data.items() if k not in {"source", "target"}}
+            attrs = {
+                k: v for k, v in link_data.items() if k not in {"source", "target"}
+            }
             # D3 JSON renames relation_type to "type" on export; restore it
             # so aggregate_graphs sees the canonical key.
             if "type" in attrs and "relation_type" not in attrs:
@@ -2927,6 +2932,106 @@ def merge(ctx, graphs, output, prune_ratio):
     )
     if multi:
         click.echo(f"  multi-type edges: {multi}")
+
+
+# ============================================================================
+# Cluster Command
+# ============================================================================
+
+
+@cli.command()
+@click.argument("corpus", type=click.Path(exists=True))
+@click.option("--terms", "-t", required=True, type=click.Path(exists=True))
+@click.option("--output", "-o", type=click.Path(), required=True)
+@click.option(
+    "--by",
+    type=click.Choice(["chapter", "section"]),
+    default="chapter",
+    show_default=True,
+    help="Structure level to cluster on.",
+)
+@click.option(
+    "--prune-ratio",
+    type=float,
+    default=None,
+    help="If set, prune the clustered graph to this edges/nodes ratio.",
+)
+@click.pass_context
+def cluster(ctx, corpus, terms, output, by, prune_ratio):
+    """Cluster a corpus by chapter (or section) and link recurring terms.
+
+    Builds one sub-graph per chapter, namespaces nodes as
+    ``<term>__<chapter>``, and adds ``recurrence`` edges between same-term
+    occurrences in consecutive chapters. Open the resulting graph with
+    ``cmapr export ... --format html`` to see the cluster layout.
+
+    \b
+    Example:
+        cmapr cluster data/output/corpus/eco_spl1_w_toc/corpus.json \\
+                     -t data/output/rarities/eco_spl1_w_toc/terms.json \\
+                     -o data/output/graphs/eco_spl1_clustered/graph.json
+    """
+    from collections import Counter
+    from concept_mapper.graph import cluster_by_structure
+    from concept_mapper.graph.node_filter import NodeFilter
+    from concept_mapper.graph.operations import prune_to_ratio
+
+    verbose = ctx.obj["verbose"]
+
+    with open(corpus, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    docs = [ProcessedDocument(**doc_data) for doc_data in data]
+
+    if verbose:
+        click.echo(f"Loaded {len(docs)} document(s)")
+
+    manager = TermManager()
+    manager.import_from_json(Path(terms))
+    term_list = manager.term_list
+
+    all_tokens = [tok.lower() for doc in docs for tok in doc.tokens]
+    all_lemmas = [lem.lower() for doc in docs for lem in doc.lemmas]
+    node_filter = NodeFilter(
+        corpus_vocab=set(all_tokens), term_freqs=Counter(all_lemmas)
+    )
+
+    raw_seed_terms = [entry.term for entry in term_list]
+    seed_terms = node_filter.filter(raw_seed_terms)
+
+    term_scores = {
+        entry.term.lower(): entry.metadata.get("score", 0.0)
+        for entry in term_list
+        if entry.metadata and "score" in entry.metadata
+    }
+
+    click.echo(f"Building clustered graph by {by}...")
+    g = cluster_by_structure(
+        docs=docs,
+        seed_terms=seed_terms,
+        by=by,
+        node_filter=node_filter,
+        term_scores=term_scores,
+    )
+
+    if prune_ratio is not None:
+        before = g.edge_count()
+        g = prune_to_ratio(g, target_ratio=prune_ratio)
+        click.echo(f"Pruned to ratio {prune_ratio}: {before} → {g.edge_count()} edges")
+
+    output_path = Path(output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    export_d3_json(g, output_path, include_evidence=True)
+
+    chapters = {g.get_node(n).get(by) for n in g.nodes()}
+    chapters.discard(None)
+    rec_count = sum(
+        1 for s, t in g.edges() if g.get_edge(s, t).get("relation_type") == "recurrence"
+    )
+    click.echo(
+        f"✓ Clustered graph → {output_path}\n"
+        f"  {len(chapters)} {by}(s), {g.node_count()} nodes, "
+        f"{g.edge_count()} edges ({rec_count} recurrence)"
+    )
 
 
 # ============================================================================

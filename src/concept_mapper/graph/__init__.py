@@ -19,6 +19,7 @@ from concept_mapper.graph.builders import (
 )
 from concept_mapper.graph.operations import (
     aggregate_graphs,
+    cluster_by_structure,
     merge_graphs,
     prune_edges,
     prune_nodes,
@@ -43,6 +44,7 @@ __all__ = [
     "graph_from_terms",
     # Operations
     "aggregate_graphs",
+    "cluster_by_structure",
     "merge_graphs",
     "prune_edges",
     "prune_nodes",

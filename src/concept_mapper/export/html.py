@@ -357,6 +357,7 @@ def _generate_html_template(
             "property":     "#edc948",
             "relation":     "#76b7b2",
             "component":    "#b07aa1",
+            "recurrence":   "#7a8aa0",
             "cooccurrence": "#bbbbbb",
         }};
         const EDGE_COLOR_DEFAULT = "#aaaaaa";
@@ -371,7 +372,7 @@ def _generate_html_template(
         const edgeColor = d => EDGE_COLORS[d.type] || EDGE_COLOR_DEFAULT;
 
         // Directed types (component and cooccurrence are undirected)
-        const DIRECTED_TYPES = new Set(["definition", "kind-of", "production", "dependence", "property", "relation"]);
+        const DIRECTED_TYPES = new Set(["definition", "kind-of", "production", "dependence", "property", "relation", "recurrence"]);
 
         // Create SVG
         const svg = d3.select("#graph");
@@ -438,6 +439,33 @@ def _generate_html_template(
                 .force("center", d3.forceCenter(width / 2, height / 2))
                 .force("collision", d3.forceCollide()
                     .radius(d => nodeRadius(d) + (d.label || "").length * 3.8 + 4));
+
+            // Cluster force — when nodes have a `chapter` attribute (from
+            // `cmapr cluster`), pull each node toward its chapter's centroid.
+            // Centroids sit on a circle around the canvas centre.
+            const clusterKeys = Array.from(new Set(
+                data.nodes.map(d => d.chapter).filter(c => c != null)
+            ));
+            if (clusterKeys.length >= 2) {{
+                const cx = width / 2, cy = height / 2;
+                const radius = Math.min(width, height) * 0.35;
+                const centroids = {{}};
+                clusterKeys.forEach((key, i) => {{
+                    const angle = (2 * Math.PI * i) / clusterKeys.length;
+                    centroids[key] = {{
+                        x: cx + radius * Math.cos(angle),
+                        y: cy + radius * Math.sin(angle),
+                    }};
+                }});
+                simulation.force("cluster", alpha => {{
+                    data.nodes.forEach(d => {{
+                        const centroid = centroids[d.chapter];
+                        if (!centroid) return;
+                        d.vx -= (d.x - centroid.x) * alpha * 0.05;
+                        d.vy -= (d.y - centroid.y) * alpha * 0.05;
+                    }});
+                }});
+            }}
 
             // Links
             const link = g.append("g")
@@ -634,6 +662,7 @@ def _generate_html_template(
                 {{ type: "property",     color: "#edc948", dashed: false }},
                 {{ type: "relation",     color: "#76b7b2", dashed: false }},
                 {{ type: "component",    color: "#b07aa1", dashed: false }},
+                {{ type: "recurrence",   color: "#7a8aa0", dashed: true  }},
                 {{ type: "cooccurrence", color: "#bbbbbb", dashed: true  }},
             ];
             const legendEl = document.getElementById("legend");

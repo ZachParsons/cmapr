@@ -7,6 +7,7 @@ import networkx as nx
 from concept_mapper.graph import (
     ConceptGraph,
     aggregate_graphs,
+    cluster_by_structure,
     graph_from_cooccurrence,
     graph_from_relations,
     graph_from_terms,
@@ -629,6 +630,45 @@ class TestOperations:
             consolidate_duplicate_labels(g)
         assert any("dup" in r.message for r in caplog.records)
 
+    def test_consolidate_preserves_namespaced_clones_across_chapters(self):
+        """Clustered graphs deliberately repeat the same label in each chapter
+        (sign__Chapter 1, sign__Chapter 2). Dedup must use (label, chapter)
+        so the namespacing survives export."""
+        g = ConceptGraph(directed=True)
+        g.add_node("sign__Ch1", label="sign", chapter="Ch1", term="sign")
+        g.add_node("sign__Ch2", label="sign", chapter="Ch2", term="sign")
+        g.add_node("code__Ch1", label="code", chapter="Ch1", term="code")
+        g.add_edge("sign__Ch1", "code__Ch1", relation_type="production", weight=1)
+        # Recurrence edge across chapters
+        g.add_edge("sign__Ch1", "sign__Ch2", relation_type="recurrence", weight=2)
+
+        count = consolidate_duplicate_labels(g)
+        assert count == 0, "expected no consolidation across chapter clusters"
+        assert g.has_node("sign__Ch1")
+        assert g.has_node("sign__Ch2")
+        # Recurrence edge survives intact
+        assert g.has_edge("sign__Ch1", "sign__Ch2")
+
+    def test_consolidate_still_dedupes_same_label_within_one_chapter(self):
+        """Within a single chapter, duplicate labels must still be merged.
+        The (label, chapter) key only loosens dedup across chapters, never
+        within one."""
+        g = ConceptGraph(directed=True)
+        # Two nodes with the same label, both in Ch1 — accidentally namespaced
+        # incorrectly upstream. Should still consolidate.
+        g.add_node("sign_a", label="sign", chapter="Ch1")
+        g.add_node("sign_b", label="sign", chapter="Ch1")
+        g.add_node("code__Ch1", label="code", chapter="Ch1")
+        g.add_edge("sign_a", "code__Ch1", weight=1)
+        g.add_edge("sign_b", "code__Ch1", weight=2)
+
+        count = consolidate_duplicate_labels(g)
+        assert count == 1
+        assert g.node_count() == 2
+        # The remaining sign-labelled node should carry summed edge weight
+        sign_id = next(n for n in g.nodes() if g.get_node(n).get("label") == "sign")
+        assert g.get_edge(sign_id, "code__Ch1")["weight"] == 3
+
     def test_find_isolated_nodes(self):
         """find_isolated_nodes returns only nodes with degree zero."""
         g = ConceptGraph()
@@ -696,7 +736,9 @@ class TestAggregateGraphs:
         g = ConceptGraph(directed=True)
         g.add_node("sign", frequency=10, score=3.5, label="sign")
         g.add_node("code", frequency=5, score=2.0, label="code")
-        g.add_edge("sign", "code", relation_type="definition", weight=2, evidence=["s1"])
+        g.add_edge(
+            "sign", "code", relation_type="definition", weight=2, evidence=["s1"]
+        )
         merged = aggregate_graphs([g])
         assert merged.node_count() == 2
         assert merged.edge_count() == 1
@@ -847,6 +889,204 @@ class TestAggregateGraphs:
         merged = aggregate_graphs([g1, g2, g3])
         assert merged.get_node("sign")["frequency"] == 30
         assert merged.get_node("sign")["score"] == pytest.approx(4.0)
+
+
+# ============================================================================
+# Test cluster_by_structure (cmapr cluster backend)
+# ============================================================================
+
+
+def _doc_with_chapters(sentences_per_chapter):
+    """Build a duck-typed ProcessedDocument with chapter-tagged sentences.
+
+    sentences_per_chapter: list of (chapter_title, [sentence, ...]) tuples,
+    in the order chapters should appear in the document.
+    """
+    from concept_mapper.corpus.models import SentenceLocation
+
+    sentences = []
+    locs = []
+    for ch, sents in sentences_per_chapter:
+        for s in sents:
+            locs.append(SentenceLocation(sent_index=len(sentences), chapter_title=ch))
+            sentences.append(s)
+
+    doc = _MagicMock()
+    doc.sentences = sentences
+    doc.sentence_locations = locs
+    doc.metadata = {}
+    return [doc]
+
+
+class TestClusterByStructure:
+    """cluster_by_structure builds per-chapter sub-graphs with namespaced
+    nodes and recurrence edges between same-term occurrences."""
+
+    def test_two_chapter_shared_term_yields_recurrence(self):
+        docs = _doc_with_chapters(
+            [
+                (
+                    "Ch1",
+                    [
+                        "Sign produces interpretant in semiosis.",
+                        "Sign produces meaning when interpreted.",
+                    ],
+                ),
+                (
+                    "Ch2",
+                    [
+                        "Sign relates to code in the system.",
+                        "Code produces sign in discourse.",
+                    ],
+                ),
+            ]
+        )
+        g = cluster_by_structure(
+            docs, ["sign", "code", "interpretant", "meaning"], pmi_threshold=0.0
+        )
+        # sign is namespaced into both chapters
+        nodes = set(g.nodes())
+        assert "sign__Ch1" in nodes
+        assert "sign__Ch2" in nodes
+
+        rec = [
+            (s, t, g.get_edge(s, t))
+            for s, t in g.edges()
+            if g.get_edge(s, t).get("relation_type") == "recurrence"
+        ]
+        assert len(rec) == 1, f"expected 1 recurrence edge, got {len(rec)}"
+        s, t, attrs = rec[0]
+        assert s == "sign__Ch1"
+        assert t == "sign__Ch2"
+        assert attrs["weight"] == 2
+
+    def test_three_chapter_term_skips_middle(self):
+        docs = _doc_with_chapters(
+            [
+                (
+                    "Ch1",
+                    [
+                        "Sign produces interpretant in semiosis.",
+                        "Sign produces meaning when interpreted.",
+                    ],
+                ),
+                (
+                    "Ch2",
+                    [
+                        "Code defines structure of language.",
+                        "Code produces structure in dialogue.",
+                    ],
+                ),
+                (
+                    "Ch3",
+                    [
+                        "Sign relates to code in semiosis.",
+                        "Sign produces meaning in code.",
+                    ],
+                ),
+            ]
+        )
+        g = cluster_by_structure(
+            docs,
+            ["sign", "code", "interpretant", "meaning", "structure"],
+            pmi_threshold=0.0,
+        )
+        # 'sign' is in Ch1 and Ch3 only — recurrence chains them directly
+        sign_rec = [
+            (s, t)
+            for s, t in g.edges()
+            if g.get_edge(s, t).get("relation_type") == "recurrence"
+            and g.get_edge(s, t).get("verb") == "recurs in"
+            and s.startswith("sign__")
+        ]
+        assert ("sign__Ch1", "sign__Ch3") in sign_rec
+        # weight = span = 2 (sign appears in 2 chapters)
+        assert g.get_edge("sign__Ch1", "sign__Ch3")["weight"] == 2
+
+    def test_term_in_one_chapter_no_recurrence(self):
+        docs = _doc_with_chapters(
+            [
+                (
+                    "Ch1",
+                    [
+                        "Interpretant produces sign in semiosis.",
+                        "Sign and interpretant co-occur in language.",
+                    ],
+                ),
+                (
+                    "Ch2",
+                    [
+                        "Code defines structure of language.",
+                        "Code produces structure in dialogue.",
+                    ],
+                ),
+            ]
+        )
+        g = cluster_by_structure(
+            docs, ["sign", "code", "interpretant", "structure"], pmi_threshold=0.0
+        )
+        rec = [
+            (s, t)
+            for s, t in g.edges()
+            if g.get_edge(s, t).get("relation_type") == "recurrence"
+        ]
+        # No term appears in BOTH chapters — no recurrence edges
+        assert rec == []
+
+    def test_no_structure_metadata_single_cluster(self):
+        # Doc has sentences but no sentence_locations — falls back to "Document"
+        doc = _MagicMock()
+        doc.sentences = [
+            "Sign produces interpretant in semiosis.",
+            "Sign relates to code in language.",
+        ]
+        doc.sentence_locations = []
+        doc.metadata = {}
+        g = cluster_by_structure(
+            [doc], ["sign", "code", "interpretant"], pmi_threshold=0.0
+        )
+        # All nodes should be in the fallback "Document" cluster
+        chapters = {g.get_node(n).get("chapter") for n in g.nodes()}
+        assert chapters == {"Document"}
+        # No recurrence edges (single cluster)
+        rec = [
+            (s, t)
+            for s, t in g.edges()
+            if g.get_edge(s, t).get("relation_type") == "recurrence"
+        ]
+        assert rec == []
+
+    def test_empty_docs_returns_empty_graph(self):
+        g = cluster_by_structure([], ["sign"])
+        assert g.node_count() == 0
+        assert g.edge_count() == 0
+
+    def test_empty_seed_terms_returns_empty_graph(self):
+        docs = _doc_with_chapters([("Ch1", ["Sign produces interpretant."])])
+        g = cluster_by_structure(docs, [])
+        assert g.node_count() == 0
+        assert g.edge_count() == 0
+
+    def test_namespaced_node_carries_term_and_chapter_attrs(self):
+        docs = _doc_with_chapters(
+            [
+                (
+                    "Ch1",
+                    [
+                        "Sign produces interpretant in semiosis.",
+                        "Sign produces meaning when interpreted.",
+                    ],
+                )
+            ]
+        )
+        g = cluster_by_structure(
+            docs, ["sign", "interpretant", "meaning"], pmi_threshold=0.0
+        )
+        sign_attrs = g.get_node("sign__Ch1")
+        assert sign_attrs["term"] == "sign"
+        assert sign_attrs["chapter"] == "Ch1"
+        # `label` shows the un-namespaced term so the viz renders cleanly
+        assert sign_attrs["label"] == "sign"
 
 
 # ============================================================================

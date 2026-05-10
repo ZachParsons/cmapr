@@ -101,6 +101,15 @@ def to_d3_dict(
             node_data["group"] = node_attrs["community"]
         else:
             node_data["group"] = 0
+        # Multi-chapter clustering (`cmapr cluster`): pass cluster membership
+        # through so the D3 cluster force can position nodes per chapter and
+        # the detail panel can group connections by chapter.
+        if "chapter" in node_attrs:
+            node_data["chapter"] = node_attrs["chapter"]
+        if "section" in node_attrs:
+            node_data["section"] = node_attrs["section"]
+        if "term" in node_attrs:
+            node_data["term"] = node_attrs["term"]
 
         nodes.append(node_data)
 

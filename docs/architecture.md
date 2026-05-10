@@ -100,6 +100,8 @@ Graph → renderable artifact.
 ## Aggregators and wrappers
 
 - **`cmapr run`** — chains stages 1–4 in one invocation. Same logic as the four commands; not a separate code path.
+- **`cmapr merge`** — `aggregate_graphs()` in `graph/operations.py` combines two or more graph files: frequencies sum, scores are frequency-weighted means, edges with same-pair-different-type collapse to a single edge that carries additive multi-type fields (`relation_types`, `weight_by_type`, `evidence_by_type`, `verb_by_type`).
+- **`cmapr cluster`** — `cluster_by_structure()` in `graph/operations.py` builds one sub-graph per chapter (or section) from a single corpus's `sentence_locations`, namespaces nodes as `<term>__<chapter>`, and adds `recurrence` edges between consecutive same-term occurrences across chapters. The HTML viz auto-detects cluster membership and adds a D3 cluster force.
 - **`cmapr serve`** — local web UI (FastAPI + Jinja2). Serves the same stages through the browser; lives under `server/` and `server/templates/`. Requires `pip install 'concept-mapper[serve]'`.
 
 ## Auxiliary commands

@@ -2175,8 +2175,10 @@ class TestMergeCommand:
             ],
             links=[
                 {
-                    "source": "sign", "target": "code",
-                    "type": "definition", "weight": 3,
+                    "source": "sign",
+                    "target": "code",
+                    "type": "definition",
+                    "weight": 3,
                     "verb": "is defined as",
                     "evidence": ["s1"],
                 }
@@ -2190,8 +2192,10 @@ class TestMergeCommand:
             ],
             links=[
                 {
-                    "source": "sign", "target": "code",
-                    "type": "production", "weight": 2,
+                    "source": "sign",
+                    "target": "code",
+                    "type": "production",
+                    "weight": 2,
                     "verb": "produces",
                     "evidence": ["s2"],
                 }
@@ -2246,3 +2250,188 @@ class TestMergeCommand:
         merged = json.loads(out.read_text())
         ratio = len(merged["links"]) / max(len(merged["nodes"]), 1)
         assert ratio <= 1.0, f"Expected ratio ≤ 1.0 after prune, got {ratio:.2f}"
+
+
+# ============================================================================
+# Test Cluster Command
+# ============================================================================
+
+
+@pytest.fixture
+def chaptered_corpus_json(tmp_path):
+    """Synthetic preprocessed corpus with 2 chapters via sentence_locations.
+
+    Chapter 1 contains sign + interpretant terms; Chapter 2 contains sign + code.
+    `sign` is therefore the cross-chapter recurring term.
+    """
+    from concept_mapper.corpus.loader import load_file
+    from concept_mapper.preprocessing.pipeline import preprocess
+    from concept_mapper.corpus.models import SentenceLocation
+
+    # Two chapters, each four sentences
+    text = (
+        # Chapter 1
+        "Sign is a fundamental concept in semiotic theory. "
+        "Sign produces interpretant in the process of semiosis. "
+        "Interpretant is a kind of mental representation. "
+        "Sign and interpretant are inseparable in the semiotic relation. "
+        # Chapter 2
+        "Code defines structure of language and discourse. "
+        "Sign relates to code in the system of signification. "
+        "Code produces sign in the act of communication. "
+        "Sign and code function together in semiosis."
+    )
+    text_file = tmp_path / "source.txt"
+    text_file.write_text(text)
+
+    doc_obj = load_file(text_file)
+    processed = preprocess(doc_obj)
+
+    # Replace sentence_locations: 4 sentences per chapter
+    locs = []
+    for i in range(min(len(processed.sentences), 4)):
+        locs.append(SentenceLocation(sent_index=i, chapter_title="Chapter 1"))
+    for i in range(4, min(len(processed.sentences), 8)):
+        locs.append(SentenceLocation(sent_index=i, chapter_title="Chapter 2"))
+
+    corpus_file = tmp_path / "corpus.json"
+    with open(corpus_file, "w") as f:
+        json.dump(
+            [
+                {
+                    "raw_text": processed.raw_text,
+                    "sentences": processed.sentences,
+                    "tokens": processed.tokens,
+                    "lemmas": processed.lemmas,
+                    "pos_tags": processed.pos_tags,
+                    "metadata": processed.metadata,
+                    "sentence_locations": [loc.to_dict() for loc in locs],
+                }
+            ],
+            f,
+        )
+
+    return corpus_file
+
+
+@pytest.fixture
+def chaptered_terms_json(tmp_path):
+    """Term list matching the chaptered corpus."""
+    from concept_mapper.terms.models import TermList
+    from concept_mapper.terms.manager import TermManager
+
+    terms = TermList.from_dict(
+        {
+            "terms": [
+                {"term": "sign", "pos": "NN", "metadata": {"score": 3.0}},
+                {"term": "interpretant", "pos": "NN", "metadata": {"score": 2.5}},
+                {"term": "code", "pos": "NN", "metadata": {"score": 2.0}},
+                {"term": "semiosis", "pos": "NN", "metadata": {"score": 1.5}},
+            ]
+        }
+    )
+    terms_file = tmp_path / "terms.json"
+    TermManager(terms).export_to_json(terms_file)
+    return terms_file
+
+
+class TestClusterCommand:
+    """`cmapr cluster` builds a clustered graph with chapter-namespaced
+    nodes and recurrence edges between same-term occurrences."""
+
+    def test_cluster_completes(
+        self, runner, chaptered_corpus_json, chaptered_terms_json, tmp_path
+    ):
+        """Basic invocation succeeds and writes valid D3 JSON."""
+        out = tmp_path / "clustered.json"
+        result = runner.invoke(
+            cli,
+            [
+                "cluster",
+                str(chaptered_corpus_json),
+                "-t",
+                str(chaptered_terms_json),
+                "-o",
+                str(out),
+            ],
+        )
+        assert result.exit_code == 0, (
+            f"Expected exit_code 0, got {result.exit_code}. Output: {result.output}"
+        )
+        assert out.exists()
+        data = json.loads(out.read_text())
+        assert "nodes" in data and "links" in data
+
+    def test_cluster_namespaces_nodes_by_chapter(
+        self, runner, chaptered_corpus_json, chaptered_terms_json, tmp_path
+    ):
+        """Output node IDs are namespaced as <term>__<chapter>."""
+        out = tmp_path / "clustered.json"
+        result = runner.invoke(
+            cli,
+            [
+                "cluster",
+                str(chaptered_corpus_json),
+                "-t",
+                str(chaptered_terms_json),
+                "-o",
+                str(out),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        data = json.loads(out.read_text())
+        chapters = {n.get("chapter") for n in data["nodes"]}
+        assert "Chapter 1" in chapters
+        assert "Chapter 2" in chapters
+        # All IDs carry the __<chapter> suffix
+        for n in data["nodes"]:
+            assert "__" in n["id"], f"Expected namespaced id, got {n['id']!r}"
+
+    def test_cluster_emits_recurrence_edges(
+        self, runner, chaptered_corpus_json, chaptered_terms_json, tmp_path
+    ):
+        """`sign` appears in both chapters → at least one recurrence edge."""
+        out = tmp_path / "clustered.json"
+        result = runner.invoke(
+            cli,
+            [
+                "cluster",
+                str(chaptered_corpus_json),
+                "-t",
+                str(chaptered_terms_json),
+                "-o",
+                str(out),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        data = json.loads(out.read_text())
+        rec = [e for e in data["links"] if e.get("type") == "recurrence"]
+        assert len(rec) >= 1, f"Expected ≥1 recurrence edge, got {len(rec)}"
+        # The recurrence edge for 'sign' should bridge the two chapters
+        sign_rec = [
+            e for e in rec if "sign__" in e["source"] and "sign__" in e["target"]
+        ]
+        assert sign_rec, "Expected a recurrence edge for 'sign' across chapters"
+
+    def test_cluster_prune_ratio_honored(
+        self, runner, chaptered_corpus_json, chaptered_terms_json, tmp_path
+    ):
+        """--prune-ratio caps the merged graph's edges/nodes ratio."""
+        out = tmp_path / "clustered.json"
+        result = runner.invoke(
+            cli,
+            [
+                "cluster",
+                str(chaptered_corpus_json),
+                "-t",
+                str(chaptered_terms_json),
+                "-o",
+                str(out),
+                "--prune-ratio",
+                "1.0",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        data = json.loads(out.read_text())
+        ratio = len(data["links"]) / max(len(data["nodes"]), 1)
+        assert ratio <= 1.0, f"Expected ratio ≤ 1.0, got {ratio:.2f}"
