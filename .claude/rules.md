@@ -89,13 +89,25 @@ Three layers, classified by file/function rather than just by directory:
 
 **When in doubt, ASK FIRST.**
 
-### Before Committing
-Verify documentation is current:
-- README.md reflects new features/changes
-- API reference (docs/api-reference.md) is up-to-date
-- Roadmap reflects completion status
-- No stale information contradicts your changes
-- **Every checkbox for work this commit completes is flipped from `[ ]` to `[x]`** — across plan files, the roadmap, QA lists, anywhere the task is tracked. The commit is blocked until they are. If the boxes don't exist yet, add them.
+### Before Committing — doc-update gate
+
+Walk the list below before staging. Every doc whose subject the commit touches must be updated in the **same commit**. Skip an item only when the commit genuinely doesn't change its subject; never defer "I'll update the docs in a follow-up".
+
+| Doc | Update when... | What to update |
+|---|---|---|
+| **`docs/roadmap.md` § Status** | *every commit* — this is the canonical entrypoint for cold re-entry | Bump `_Last updated_` date · refresh **Last completed** (one-line summary of this commit) · refresh **Next up** if the next pick has shifted · refresh **Open issues** if any opened or closed · update test count if it changed |
+| **`docs/roadmap.md` § Future Work** | a future-work item lands or its scope changes | Flip `[ ]` → `[x]` for the item · update its one-line summary to reflect what shipped (paths, flags, behaviour) · sub-task checklists if applicable |
+| **`docs/plans/<feature>.md`** | a sub-task of an in-flight feature lands | Flip the relevant `- [x]` checkbox · update the per-task note to reflect the actual implementation if it deviated from the plan |
+| **`docs/qa/<feature>.md`** | a feature's user-visible behaviour changes (CLI flags, output schema, viz interactions) | Add or revise QA steps · do **not** preemptively tick visual-check `[x]` — those flip only after manual verification |
+| **`docs/architecture.md`** | files move/split/merge · new modules appear · pipeline sub-steps change · new CLI commands land | Update the module tree, the Mermaid diagram, and the relevant per-stage prose · "Where to extend" recipes if a new extension point is created |
+| **`docs/api-reference.md`** | the Python API surface changes (public functions, classes, signatures, return types) | Mirror the signature change |
+| **`README.md`** | install steps, the four-command workflow, or the top-level CLI surface changes | Quickstart and any inline examples |
+| **`src/concept_mapper/cli.py`** module docstring | a CLI command is added, removed, or renamed | The top-of-file command index must list every command |
+| **`.claude/rules.md`** | a new convention emerges from the commit (a new doc type, a new constraint, a recurring failure mode worth a rule) | Capture the rule with **why** so the next session honors it |
+
+**Checkbox invariant:** every `[ ]` for work this commit completes must flip to `[x]`. Across plan files, the roadmap Future Work list, QA lists, anywhere the task is tracked. The commit is blocked until they line up. If a checkbox doesn't yet exist for the work, *add* one (preferably during planning, but always before commit).
+
+**Why this rule:** docs that lag commits go stale in days. Cold re-entry breaks. The roadmap stops being a canonical entrypoint and becomes an aspirational list. Updating in the same commit ties the doc to the code that justified the change — `git blame` and `git log -p docs/<file>` stay useful.
 
 ---
 
