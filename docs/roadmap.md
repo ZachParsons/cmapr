@@ -18,14 +18,16 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 
 ## Status
 
-_Last updated: 2026-05-09. Cold-re-entry checklist — keep glance-able._
+_Last updated: 2026-05-13. Cold-re-entry checklist — keep glance-able._
 
-- **Last completed:** `cmapr cluster` — per-chapter sub-graphs with namespaced nodes (`<term>__<chapter>`) and `recurrence` edges chaining same-term occurrences across chapters. D3 cluster force in HTML viz auto-engages when ≥ 2 chapters are present. Spec/plan: `docs/plans/multi-chapter.md`. 11 new tests.
-- **Next up:** Top picks remain: structured ingestion pipeline (replace OCR + manual TOC workflow), ecosystem survey (`docs/research/ecosystem.md`), or display options B (constellation) / C (timeline spine) for clustered viz.
+- **Last completed:** Pipeline modularity pass — three refactors landed: (1) `terms/scoring.py` extracts the post-scoring filter chain (quote-strip, multi-word chunks, proper-name, lemma+suffix merge, fragments, POS, vetting); `cli.py:rarities` and `cli.py:run` now share one implementation, killing the previous duplication. (2) `graph/operations.py` split into `graph/cluster.py` + `graph/aggregation.py` + `graph/pruning.py`; `operations.py` keeps tidy/extract ops only. (3) spaCy noun-chunk code moved from `preprocessing/pipeline.py` to `preprocessing/noun_chunks.py`. `cli.py` down from 3100 → 2912 lines; tests unchanged at 910/2.
+- **Next up:** **`[neural]` extra + `cmapr graph --neural`** (REBEL relation extraction + sentence-transformers evidence ranking) — recommended next initiative per the ecosystem survey. Alt: **`cmapr similar TERM`** (sentence-transformers solo, smaller scope), or **structured ingestion pipeline**.
 - **Open issues:**
   - **Wizard reverted** — `cmapr wizard` was prototyped then reverted as redundant with the web UI. Don't re-propose without a distinct use case.
   - **`cmapr try-extract` scrapped** — debug command originally on the backlog, removed per user direction (couldn't justify the use case).
-- **Tests:** 910 passed, 2 skipped (spaCy-required). +13 from cluster (11 cluster + 2 consolidate-dedup chapter-aware).
+  - **Cluster feature lacks manual QA** — `docs/qa/cluster.md` is now ready; not yet exercised on the eco_spl1 corpus.
+  - **`.claude/context.md` partly duplicates architecture.md** — the module tree and design-decision sections overlap. Candidate for slimming to a pointer.
+- **Tests:** 910 passed, 2 skipped (spaCy-required). Pure-refactor batch — no behavior change, no new tests.
 
 ---
 
@@ -502,15 +504,15 @@ src/concept_mapper/
 ## Future Work
 
 
-- [ ] **Implement concept graph** — see `docs/spec-graph.md` for full specification. Covers three layers:
-  - [ ] manually add extract source text for faster dev.
+- [x] **Implement concept graph** — see `docs/spec-graph.md` for full specification. Covers three layers:
+  - [x] manually add extract source text for faster dev.
   - **Data extraction**: node filtering (POS, length, fragment, OCR artifact checks), typed directed proposition edges (definition, kind-of, property, opposition, production, dependence), co-occurrence as candidate-discovery mechanism not edge type, multi-word term support
   - **Graph workflows**: (A) threshold-driven from rarities list; (B) seed-word-driven with options for POS filter, count limit, section grouping (separate subgraphs per section), and depth limit (same-sentence or same-paragraph window); `graph` = batch `analyze` + merge
   - **Visualization**: tuned D3 force params, directed edges, typed edge labels, section subgraph navigation, interactive node expand/collapse, node detail panel (definition, frequency, location)
 - [ ] **Structured ingestion pipeline** — a cleaner, isolated ingestion interface that produces richly labeled documents. Covers: (1) investigate whether an existing package (`docling`, `pymupdf4llm`, `unstructured`, `nougat`, `pdfplumber`) can replace the current two-file workflow (raw OCR text + manually cleaned TOC) by extracting structured text, TOC, and layout directly from PDF; (2) classify front-matter (title page, copyright, TOC, introduction) and back-matter (bibliography, references, index, appendix) sections by heuristic or model; (3) strip running headers and page numbers per page; (4) detect and label document structure (parts, chapters, sections) and paragraph boundaries automatically.
 - [ ] Usage-based definition generation (aggregate co-occurrences and relations into empirical definitions)
 - [ ] **Test suite cleanup** — use `pytest-cov` to identify undercovered code paths (add tests) and overcovered ones (redundant tests testing the same path with different labels); target reducing test count from ~718 to ~510-540 (~25% reduction) while improving branch coverage; delete redundant tests rather than merging them to keep intent legible.
-- [ ] **Ecosystem survey** — investigate available packages for concept mapping, mind mapping, and knowledge graph construction (e.g. `conceptnet`, `rdflib`, `pykeen`, `rebel`, `pyvis`, `sentence-transformers`) to identify features worth importing, implementations worth optimising against, and libraries that could replace or augment internal components. Output: `docs/research/ecosystem.md`.
+- [x] **Ecosystem survey** — `docs/research/ecosystem.md`. Top picks identified for the next analytical-depth initiatives: **REBEL** (neural relation extraction) + **sentence-transformers** (semantic embeddings) packaged as a `[neural]` extra + `--neural` flag; **PyKEEN** link prediction once extraction is at peak quality; **ConceptNet** as a future external validation/augmentation. Skips: pyvis (would lose custom D3 features), rdflib (no concrete RDF need), gensim (needs multi-document corpora).
 - [x] **Graph merge command** — `cmapr merge ch1.json ch2.json [...] -o merged.json` aggregates per-chapter graphs. Frequencies sum; rarity scores are frequency-weighted means; same-pair-different-type edges keep both types via an additive multi-type schema (`relation_types`, `weight_by_type`, `evidence_by_type`, `verb_by_type`). HTML viz renders the per-type breakdown in tooltips and the detail panel. `aggregate_graphs()` in `graph/operations.py` is the underlying primitive; the legacy naïve `merge_graphs()` is kept as-is.
 - [x] **Multi-chapter clustered visualization** (v1, option A) — `cmapr cluster CORPUS -t TERMS -o OUT [--by chapter|section]` builds per-chapter sub-graphs from `sentence_locations`, namespaces nodes as `<term>__<chapter>`, and adds `recurrence` edges between consecutive same-term occurrences (weight = span). HTML viz auto-detects cluster membership and adds a D3 cluster force that pulls each node toward its chapter's centroid; legend toggle hides recurrence edges. See `docs/plans/multi-chapter.md`. **Display options B (constellation) and C (timeline spine) remain deferred.**
 - [ ] **Session status doc** — `docs/status.md`: a one-page always-current file recording *last worked on*, *next step*, and *open questions / known issues*. Updated at the end of each session. Separate from the roadmap (history + future) and QA doc (verification); purpose is cold re-entry after days away.

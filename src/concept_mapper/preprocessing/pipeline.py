@@ -11,77 +11,11 @@ from typing import List, Optional
 from ..corpus.models import Document, ProcessedDocument
 from .cleaning import clean_text
 from .lemmatize import lemmatize_tagged
+from .noun_chunks import extract_noun_chunks
 from .segment import get_paragraph_indices
 from .structure import DocumentStructureDetector
 from .tagging import tag_tokens
 from .tokenize import tokenize_sentences, tokenize_words
-
-# ---------------------------------------------------------------------------
-# spaCy noun-chunk extraction (optional; loaded lazily)
-# ---------------------------------------------------------------------------
-
-_SPACY_NLP = None
-
-_LEADING_DETS = frozenset(
-    {
-        "the",
-        "a",
-        "an",
-        "this",
-        "that",
-        "these",
-        "those",
-        "its",
-        "their",
-        "our",
-        "your",
-        "my",
-        "his",
-        "her",
-    }
-)
-
-
-def _get_spacy_nlp():
-    """Load and cache the spaCy en_core_web_sm model."""
-    global _SPACY_NLP
-    if _SPACY_NLP is None:
-        import spacy  # noqa: PLC0415
-
-        try:
-            _SPACY_NLP = spacy.load("en_core_web_sm")
-        except OSError:
-            raise RuntimeError(
-                "spaCy model 'en_core_web_sm' not found. "
-                "Run: python -m spacy download en_core_web_sm"
-            )
-    return _SPACY_NLP
-
-
-def _extract_noun_chunks(text: str) -> List[str]:
-    """
-    Extract multi-word noun phrases from *text* using spaCy.
-
-    Returns a deduplicated list of lowercased multi-word phrases with leading
-    determiners stripped (e.g. 'the sign vehicle' → 'sign vehicle').
-    """
-    nlp = _get_spacy_nlp()
-    max_len = nlp.max_length - 100
-    seen: set = set()
-    for start in range(0, len(text), max_len):
-        doc = nlp(text[start : start + max_len])
-        for chunk in doc.noun_chunks:
-            words = chunk.text.lower().split()
-            # Strip leading determiners/articles
-            while words and words[0] in _LEADING_DETS:
-                words = words[1:]
-            if len(words) < 2:
-                continue
-            # Reject if any token is a single character (OCR artifact)
-            if any(len(w) < 2 for w in words):
-                continue
-            seen.add(" ".join(words))
-    return list(seen)
 
 
 def preprocess(
@@ -160,7 +94,7 @@ def preprocess(
 
     # 7. Noun chunk extraction (optional)
     if use_spacy:
-        doc_metadata["noun_chunks"] = _extract_noun_chunks(text)
+        doc_metadata["noun_chunks"] = extract_noun_chunks(text)
 
     return ProcessedDocument(
         raw_text=text,

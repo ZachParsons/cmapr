@@ -27,8 +27,8 @@ from concept_mapper.graph.operations import (
     consolidate_duplicate_labels,
     find_isolated_nodes,
     connect_isolated_nodes,
-    prune_to_ratio,
 )
+from concept_mapper.graph.pruning import prune_to_ratio
 from concept_mapper.analysis.relations import Relation
 from concept_mapper.graph.builders import build_proposition_graph
 from unittest.mock import MagicMock as _MagicMock

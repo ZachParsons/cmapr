@@ -310,26 +310,26 @@ requires_spacy = pytest.mark.skipif(
 
 @requires_spacy
 class TestNounChunkExtraction:
-    """_extract_noun_chunks returns lowercased multi-word noun phrases without leading determiners."""
+    """extract_noun_chunks returns lowercased multi-word noun phrases without leading determiners."""
 
     def test_multi_word_chunks_extracted(self):
         """A text with known multi-word noun phrases produces at least one chunk with a space."""
-        from src.concept_mapper.preprocessing.pipeline import _extract_noun_chunks
+        from src.concept_mapper.preprocessing.noun_chunks import extract_noun_chunks
 
         text = (
             "The sign vehicle is a triadic relation. "
             "Unlimited semiosis involves sign processes."
         )
-        chunks = _extract_noun_chunks(text)
+        chunks = extract_noun_chunks(text)
         assert any(" " in c for c in chunks), (
             "Expected at least one multi-word chunk from a text with compound noun phrases"
         )
 
     def test_leading_determiners_stripped(self):
         """Chunks returned do not start with a determiner such as 'the'."""
-        from src.concept_mapper.preprocessing.pipeline import _extract_noun_chunks
+        from src.concept_mapper.preprocessing.noun_chunks import extract_noun_chunks
 
-        chunks = _extract_noun_chunks("The triadic relation is fundamental.")
+        chunks = extract_noun_chunks("The triadic relation is fundamental.")
         assert "triadic relation" in chunks, (
             "Expected 'triadic relation' (without 'the') to appear in chunks"
         )
@@ -339,23 +339,23 @@ class TestNounChunkExtraction:
 
     def test_single_word_chunks_excluded(self):
         """Short sentences that yield only single-word noun phrases produce no results."""
-        from src.concept_mapper.preprocessing.pipeline import _extract_noun_chunks
+        from src.concept_mapper.preprocessing.noun_chunks import extract_noun_chunks
 
-        chunks = _extract_noun_chunks("Signs exist. Codes function.")
+        chunks = extract_noun_chunks("Signs exist. Codes function.")
         assert all(" " in c for c in chunks), (
             "Expected single-word chunks to be excluded; only multi-word chunks allowed"
         )
 
     def test_known_multi_word_phrases_found(self):
         """A semiotics-domain text yields at least one recognised multi-word phrase."""
-        from src.concept_mapper.preprocessing.pipeline import _extract_noun_chunks
+        from src.concept_mapper.preprocessing.noun_chunks import extract_noun_chunks
 
         text = (
             "The sign vehicle is the concrete bearer of meaning. "
             "A triadic relation connects representamen, object, and interpretant. "
             "The sign function maps expression to content in the sign system."
         )
-        chunks = _extract_noun_chunks(text)
+        chunks = extract_noun_chunks(text)
         known_phrases = {"sign vehicle", "triadic relation", "sign function"}
         assert any(p in chunks for p in known_phrases), (
             f"Expected at least one of {known_phrases} in extracted chunks: {chunks}"

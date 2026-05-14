@@ -17,15 +17,13 @@ from concept_mapper.graph.builders import (
     graph_from_relations,
     graph_from_terms,
 )
+from concept_mapper.graph.aggregation import aggregate_graphs, merge_graphs
+from concept_mapper.graph.cluster import cluster_by_structure
 from concept_mapper.graph.operations import (
-    aggregate_graphs,
-    cluster_by_structure,
-    merge_graphs,
-    prune_edges,
-    prune_nodes,
     get_subgraph,
     filter_by_relation_type,
 )
+from concept_mapper.graph.pruning import prune_edges, prune_nodes
 from concept_mapper.graph.metrics import (
     centrality,
     detect_communities,

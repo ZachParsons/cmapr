@@ -350,69 +350,24 @@ def rarities(
         min_score=threshold, top_n=None if not no_lemmatize else top_n
     )
 
-    # Strip stray quote characters that can attach to tokens from PDF extraction
-    # e.g. "'animal'" -> "animal", "'instructional" -> "instructional"
-    _QUOTES = "'\u2018\u2019\u201a\u201b"
-    candidates = [
-        (term.strip(_QUOTES), score, components)
-        for term, score, components in candidates
-        if term.strip(_QUOTES)
-    ]
+    # Post-scoring filter chain. Each step lives in terms.scoring; the
+    # CLI handler keeps only the echo / verbose plumbing between steps.
+    from concept_mapper.terms import scoring as _sc
+
+    candidates = _sc.strip_stray_quotes(candidates)
     # Snapshot before name/fragment/top-n filters — used to re-include accepted terms
     raw_candidates = list(candidates)
 
     # Multi-word noun chunks (present when corpus was ingested with --spacy)
-    _mw_chunks: list = []
-    for _doc in docs:
-        _mw_chunks.extend(_doc.metadata.get("noun_chunks", []))
-    if _mw_chunks:
-        from collections import Counter as _Counter
-        from math import log as _log
-
-        _chunk_freq = _Counter(_mw_chunks)
-        _doc_chunk_sets = [set(_d.metadata.get("noun_chunks", [])) for _d in docs]
-        _n_docs = max(len(docs), 1)
-        _mw_scored = []
-        _min_freq = min(2, _n_docs)
-        for _chunk, _freq in _chunk_freq.items():
-            if _freq < _min_freq:
-                continue
-            _df = sum(1 for _dc in _doc_chunk_sets if _chunk in _dc)
-            _idf = _log((_n_docs + 1) / (_df + 1))
-            # log-frequency weighted by IDF; scale into a range comparable with
-            # the philosophical-term scorer (typical top terms score 1–4)
-            _score = _log(1 + _freq) * (1 + _idf)
-            _mw_scored.append((_chunk, _score, {"tfidf": _score, "total": _score}))
-        if _mw_scored:
-            candidates = sorted(
-                candidates + _mw_scored, key=lambda x: x[1], reverse=True
-            )
-            raw_candidates = list(candidates)
-            click.echo(
-                f"Added {len(_mw_scored)} multi-word candidate(s) from noun chunks"
-            )
+    mw_extra = _sc.score_multi_word_chunks(docs)
+    if mw_extra:
+        candidates = _sc.merge_extra_candidates(candidates, mw_extra)
+        raw_candidates = list(candidates)
+        click.echo(f"Added {len(mw_extra)} multi-word candidate(s) from noun chunks")
 
     if not no_filter_names:
-        from concept_mapper.analysis.rarity import proper_noun_ratios
-
-        pn_ratios = proper_noun_ratios(docs)
-        ref_total = sum(reference.values())
-
-        def _is_proper_name(term: str) -> bool:
-            # Must be frequently tagged as a proper noun in this corpus
-            if pn_ratios.get(term, 0) < 0.3:
-                return False
-            # Common English words (language, philosophy, symbol) appear often
-            # in the Brown reference corpus even if sometimes title-cased here
-            ref_ppm = reference.get(term, 0) / ref_total * 1_000_000
-            return ref_ppm < 25
-
         before = len(candidates)
-        candidates = [
-            (term, score, components)
-            for term, score, components in candidates
-            if not _is_proper_name(term)
-        ]
+        candidates = _sc.filter_proper_names(candidates, docs, reference)
         if verbose and len(candidates) < before:
             click.echo(
                 f"Filtered {before - len(candidates)} proper name(s) "
@@ -420,69 +375,11 @@ def rarities(
             )
 
     if not no_lemmatize:
-        from concept_mapper.preprocessing.lemmatize import lemmatize
-        from nltk.corpus import wordnet as wn
-
-        # Pass 1: merge inflected noun forms (e.g. "semiotics" -> "semiotic")
-        lemma_best: dict = {}
-        for term, score, components in candidates:
-            base = lemmatize(term, wn.NOUN)
-            if base not in lemma_best or score > lemma_best[base][1]:
-                lemma_best[base] = (base, score, components)
-
-        # Pass 2: merge derivational adjective/noun variants whose base form is
-        # already a candidate (e.g. "co-textual" -> "co-text", "referential" ->
-        # "reference" won't match, but "co-textual" -> "co-text" will).
-        # Longer suffixes are tried first to avoid partial matches.
-        _DERIV_SUFFIXES = (
-            "ual",
-            "ial",
-            "ical",
-            "ic",
-            "ive",
-            "ous",
-            "ity",
-            "ism",
-            "ist",
-            "ness",
-            "ary",
-            "ory",
-            "al",
-        )
-        merged: dict = {}
-        for base_form, entry in lemma_best.items():
-            canonical = base_form
-            for suffix in _DERIV_SUFFIXES:
-                if base_form.endswith(suffix) and len(base_form) - len(suffix) >= 3:
-                    shorter = base_form[: -len(suffix)]
-                    if shorter in lemma_best:
-                        canonical = shorter
-                        break
-            _, score, components = entry
-            if canonical not in merged or score > merged[canonical][1]:
-                merged[canonical] = (canonical, score, components)
-
-        candidates = sorted(merged.values(), key=lambda x: x[1], reverse=True)[:top_n]
+        candidates = _sc.lemma_and_derivational_merge(candidates, top_n=top_n)
 
     if not no_filter_fragments:
-        from nltk.corpus import wordnet as wn
-
-        _WN_WORDS = set(wn.words())
-        _COMPLETION_SUFFIXES = ("s", "y", "es", "ed", "er", "al", "ic", "is", "sis")
-
-        def _is_fragment(term: str) -> bool:
-            if len(term) < 4:
-                return True
-            if term in _WN_WORDS:
-                return False
-            return any((term + s) in _WN_WORDS for s in _COMPLETION_SUFFIXES)
-
         before = len(candidates)
-        candidates = [
-            (term, score, components)
-            for term, score, components in candidates
-            if not _is_fragment(term)
-        ]
+        candidates = _sc.filter_fragments(candidates)
         if verbose and len(candidates) < before:
             click.echo(
                 f"Filtered {before - len(candidates)} word fragment(s) "
@@ -491,58 +388,31 @@ def rarities(
 
     # B1 — POS filter
     if pos:
-        _POS_CATEGORY_MAP = {
-            "noun": {"NN", "NNS", "NNP", "NNPS"},
-            "verb": {"VB", "VBD", "VBG", "VBN", "VBP", "VBZ"},
-            "adj": {"JJ", "JJR", "JJS"},
-            "adv": {"RB", "RBR", "RBS"},
-        }
-        from concept_mapper.analysis.rarity import filter_by_pos_tags
-
-        requested_tags: set = set()
-        for _cat in pos.split(","):
-            _cat = _cat.strip().lower()
-            if _cat not in _POS_CATEGORY_MAP:
-                click.echo(
-                    f"Warning: unknown POS category '{_cat}'. "
-                    f"Valid: {', '.join(_POS_CATEGORY_MAP)}",
-                    err=True,
-                )
-            requested_tags.update(_POS_CATEGORY_MAP.get(_cat, set()))
-
-        if requested_tags:
-            allowed = filter_by_pos_tags(
-                docs, include_tags=requested_tags, exclude_tags=None
+        before = len(candidates)
+        candidates, unknown_pos = _sc.filter_by_pos_categories(candidates, docs, pos)
+        for _cat in unknown_pos:
+            click.echo(
+                f"Warning: unknown POS category '{_cat}'. "
+                f"Valid: noun, verb, adj, adv",
+                err=True,
             )
-            before = len(candidates)
-            candidates = [
-                (t, s, c)
-                for t, s, c in candidates
-                # multi-word noun chunks (contain space) always pass
-                if " " in t or t.lower() in allowed
-            ]
-            if verbose and len(candidates) < before:
-                click.echo(f"POS filter ({pos}): kept {len(candidates)}/{before} terms")
+        if verbose and len(candidates) < before:
+            click.echo(f"POS filter ({pos}): kept {len(candidates)}/{before} terms")
 
-    # Apply vetting: remove rejected terms
+    # Apply vetting: drop rejected first, then re-include accepted
     if vetting_rejected:
         before = len(candidates)
-        candidates = [
-            (t, s, c) for t, s, c in candidates if t.lower() not in vetting_rejected
-        ]
+        candidates = _sc.apply_vetting(
+            candidates, raw_candidates, accepted=set(), rejected=vetting_rejected
+        )
         removed = before - len(candidates)
         if removed:
             click.echo(f"Vetting: excluded {removed} rejected term(s)")
 
-    # Apply vetting: re-include explicitly accepted terms cut by top-n / filters
     if vetting_accepted:
-        current_terms = {t.lower() for t, _, _ in candidates}
-        for term, score, components in raw_candidates:
-            if term.lower() in vetting_accepted and term.lower() not in current_terms:
-                candidates.append((term, score, components))
-                current_terms.add(term.lower())
-        # Re-sort after potential additions
-        candidates = sorted(candidates, key=lambda x: x[1], reverse=True)
+        candidates = _sc.apply_vetting(
+            candidates, raw_candidates, accepted=vetting_accepted, rejected=set()
+        )
 
     # Check if any terms were found
     if not candidates:
@@ -1114,7 +984,7 @@ def graph(
     from collections import Counter
     from concept_mapper.graph.builders import build_proposition_graph
     from concept_mapper.graph.node_filter import NodeFilter
-    from concept_mapper.graph.operations import prune_to_ratio
+    from concept_mapper.graph.pruning import prune_to_ratio
 
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
@@ -2661,7 +2531,7 @@ def run(
     from collections import Counter
     from concept_mapper.graph.builders import build_proposition_graph
     from concept_mapper.graph.node_filter import NodeFilter
-    from concept_mapper.graph.operations import prune_to_ratio
+    from concept_mapper.graph.pruning import prune_to_ratio
 
     output_dir = ctx.obj["output_dir"]
     text_path = Path(text_file)
@@ -2689,77 +2559,19 @@ def run(
         min_score=0.5, top_n=None if not no_lemmatize else top_n
     )
 
-    # Quote stripping
-    _QUOTES = "'\u2018\u2019\u201a\u201b"
-    candidates = [
-        (t.strip(_QUOTES), s, c) for t, s, c in candidates if t.strip(_QUOTES)
-    ]
+    # Filter chain \u2014 same code path as `cmapr rarities`, single source of
+    # truth in terms.scoring.apply_run_pipeline.
+    from concept_mapper.terms.scoring import apply_run_pipeline
 
-    if not no_filter_names:
-        from concept_mapper.analysis.rarity import proper_noun_ratios
-
-        pn_ratios = proper_noun_ratios(docs)
-        ref_total = sum(reference.values())
-
-        def _is_proper(term):
-            if pn_ratios.get(term, 0) < 0.3:
-                return False
-            return reference.get(term, 0) / ref_total * 1_000_000 < 25
-
-        candidates = [(t, s, c) for t, s, c in candidates if not _is_proper(t)]
-
-    if not no_lemmatize:
-        from concept_mapper.preprocessing.lemmatize import lemmatize
-        from nltk.corpus import wordnet as wn
-
-        lemma_best: dict = {}
-        for term, score, components in candidates:
-            base = lemmatize(term, wn.NOUN)
-            if base not in lemma_best or score > lemma_best[base][1]:
-                lemma_best[base] = (base, score, components)
-        _DERIV = (
-            "ual",
-            "ial",
-            "ical",
-            "ic",
-            "ive",
-            "ous",
-            "ity",
-            "ism",
-            "ist",
-            "ness",
-            "ary",
-            "ory",
-            "al",
-        )
-        merged: dict = {}
-        for base_form, entry in lemma_best.items():
-            canonical = base_form
-            for suffix in _DERIV:
-                if base_form.endswith(suffix) and len(base_form) - len(suffix) >= 3:
-                    shorter = base_form[: -len(suffix)]
-                    if shorter in lemma_best:
-                        canonical = shorter
-                        break
-            _, score, components = entry
-            if canonical not in merged or score > merged[canonical][1]:
-                merged[canonical] = (canonical, score, components)
-        candidates = sorted(merged.values(), key=lambda x: x[1], reverse=True)[:top_n]
-
-    if not no_filter_fragments:
-        from nltk.corpus import wordnet as wn
-
-        _WN = set(wn.words())
-        _COMP = ("s", "y", "es", "ed", "er", "al", "ic", "is", "sis")
-
-        def _is_frag(term):
-            if len(term) < 4:
-                return True
-            if term in _WN:
-                return False
-            return any((term + s) in _WN for s in _COMP)
-
-        candidates = [(t, s, c) for t, s, c in candidates if not _is_frag(t)]
+    candidates = apply_run_pipeline(
+        candidates,
+        docs,
+        reference,
+        top_n=top_n,
+        no_filter_names=no_filter_names,
+        no_lemmatize=no_lemmatize,
+        no_filter_fragments=no_filter_fragments,
+    )
 
     if not candidates:
         click.echo("  No rare terms found. Try lowering --threshold or checking input.")
@@ -2872,7 +2684,7 @@ def merge(ctx, graphs, output, prune_ratio):
     """
     from concept_mapper.export import load_d3_json
     from concept_mapper.graph import ConceptGraph, aggregate_graphs
-    from concept_mapper.graph.operations import prune_to_ratio
+    from concept_mapper.graph.pruning import prune_to_ratio
 
     if len(graphs) < 2:
         raise click.UsageError("merge requires at least 2 graph files")
@@ -2974,7 +2786,7 @@ def cluster(ctx, corpus, terms, output, by, prune_ratio):
     from collections import Counter
     from concept_mapper.graph import cluster_by_structure
     from concept_mapper.graph.node_filter import NodeFilter
-    from concept_mapper.graph.operations import prune_to_ratio
+    from concept_mapper.graph.pruning import prune_to_ratio
 
     verbose = ctx.obj["verbose"]
 
