@@ -163,9 +163,23 @@ Run `cmapr <command> --help` for full options.
 
 ## Documentation
 
-- **[API Reference](docs/api-reference.md)** — Python API: function signatures, parameters, return types
-- **[Replacement Guide](docs/feat-replacement.md)** — Synonym replacement in depth
-- **[Roadmap](docs/roadmap.md)** — Development status and future plans
+```
+README.md                  ← intro, install, workflow, this doc map
+.claude/
+├── context.md             ← project purpose + AI-assistant meta-guidance
+└── rules.md               ← conventions + per-commit doc-update gate
+docs/
+├── roadmap.md             ← § Status — start here on cold re-entry
+├── architecture.md        ← navigation map — start here for code
+├── api-reference.md       ← Python API surface
+├── testing.md             ← test strategy
+├── research/              ← surveys / library comparisons (pre-scoping)
+├── specs/                 ← *what* a feature is (pre-impl)
+├── plans/                 ← *how* to implement (pre-impl; sub-task checkboxes)
+└── qa/                    ← manual verification checklists (post-impl)
+```
+
+Per-feature lifecycle: `research → specs → plans → qa`. The doc-update gate in `.claude/rules.md` blocks commits that touch a doc's subject without updating it.
 
 ---
 

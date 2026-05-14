@@ -20,7 +20,7 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 
 _Last updated: 2026-05-13. Cold-re-entry checklist — keep glance-able._
 
-- **Last completed:** Modularity refactor + wall-scale `docs/architecture.md` diagram (commit `1197d50`) — three pure-refactor splits (`terms/scoring.py`, four-way split of `graph/operations.py`, `preprocessing/noun_chunks.py`), no behavior change, 910 pass / 2 skip throughout. Architecture map now decomposes every scorer signal, every filter step, every extractor, all 12 CLI commands, and all 5 web UI steps for a 4K+ monitor view.
+- **Last completed:** README now carries the canonical doc map (project-level docs + per-feature `research → specs → plans → qa` lifecycle). Replaces the prior three-pointer "Documentation" section. Also rules.md gained a doc-update-gate (table of every canonical doc, when it must update, what to update) plus the sentence-transformers (st.1–st.8) and REBEL (rb.1–rb.7) initiatives queued in Future Work. Modularity refactor + wall-scale `docs/architecture.md` diagram landed in commit `1197d50`.
 - **Next up:** **sentence-transformers integration** (st.1–st.8 in Future Work) — recommended highest-payoff quality lift per the ecosystem survey. Start with st.1–st.3 (dep + embedding plumbing + `cmapr similar TERM`) which is the smallest entry point and shakes out the `[neural]` extra. **REBEL integration** (rb.1–rb.7) follows once the neural infrastructure is in place.
 - **Open issues:**
   - **Wizard reverted** — `cmapr wizard` was prototyped then reverted as redundant with the web UI. Don't re-propose without a distinct use case.
