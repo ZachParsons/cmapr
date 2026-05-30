@@ -23,7 +23,7 @@ import json
 from collections import Counter
 from math import log
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 Candidate = Tuple[str, float, Dict[str, Any]]
 
@@ -343,9 +343,7 @@ def apply_vetting(
     Returns a freshly sorted list.
     """
     if rejected:
-        candidates = [
-            (t, s, c) for t, s, c in candidates if t.lower() not in rejected
-        ]
+        candidates = [(t, s, c) for t, s, c in candidates if t.lower() not in rejected]
 
     if accepted:
         current = {t.lower() for t, _, _ in candidates}

@@ -20,6 +20,9 @@ dependencies = [
 spacy = [
     "spacy>=3.8",             # Multi-word noun chunk extraction
 ]
+embeddings = [
+    "sentence-transformers>=3.0",  # Definitional-sentence ranking; pulls torch + transformers
+]
 serve = [
     "fastapi>=0.115",         # Web framework for local UI
     "uvicorn>=0.32",          # ASGI server

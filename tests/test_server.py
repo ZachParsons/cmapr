@@ -267,6 +267,56 @@ class TestBuild:
         assert "--focus" in graph_cmd
         assert "sign" in graph_cmd
 
+    def test_does_not_rerun_rarities(self, tmp_data):
+        """The build step must filter the candidate pool, not overwrite it."""
+        with (
+            patch("concept_mapper.server.app._run") as mock_run,
+            TestClient(app, follow_redirects=False) as c,
+        ):
+            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+            c.post("/build", data={"work": "mywork", "top_n": "50", "threshold": "0.1"})
+        invoked = [call.args[0] for call in mock_run.call_args_list]
+        assert not any("rarities" in cmd for cmd in invoked), (
+            "build must not invoke `cmapr rarities` — that would shrink the "
+            "candidate pool that the review page shows"
+        )
+
+    def test_writes_seed_terms_filtered_by_vetting(self, tmp_data):
+        """Build derives seed_terms.json from candidates - rejected, capped to top_n."""
+        # Reject 'sign'; only 'interpretant' and 'semiosis' should remain.
+        vetting = {"accept": ["interpretant", "semiosis"], "reject": ["sign"]}
+        (tmp_data / "data/output/rarities/mywork/vetting.json").write_text(
+            json.dumps(vetting)
+        )
+        with (
+            patch("concept_mapper.server.app._run") as mock_run,
+            TestClient(app, follow_redirects=False) as c,
+        ):
+            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+            c.post("/build", data={"work": "mywork", "top_n": "10", "threshold": "0.1"})
+
+        seed_p = tmp_data / "data/output/rarities/mywork/seed_terms.json"
+        assert seed_p.exists()
+        seed = json.loads(seed_p.read_text())
+        seed_names = {s["term"] for s in seed}
+        assert "sign" not in seed_names
+        assert seed_names == {"interpretant", "semiosis"}
+        # Sorted by score descending: interpretant (1.8) before semiosis (1.2)
+        assert [s["term"] for s in seed] == ["interpretant", "semiosis"]
+
+    def test_seed_terms_capped_to_top_n(self, tmp_data):
+        with (
+            patch("concept_mapper.server.app._run") as mock_run,
+            TestClient(app, follow_redirects=False) as c,
+        ):
+            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+            c.post("/build", data={"work": "mywork", "top_n": "1", "threshold": "0.1"})
+        seed = json.loads(
+            (tmp_data / "data/output/rarities/mywork/seed_terms.json").read_text()
+        )
+        assert len(seed) == 1
+        assert seed[0]["term"] == "sign"  # highest score
+
     def test_redirects_to_options_on_graph_failure(self, tmp_data):
         call_count = 0
 
@@ -287,6 +337,60 @@ class TestBuild:
 
         assert r.status_code == 303
         assert "/options?work=mywork" in r.headers["location"]
+
+
+# ---------------------------------------------------------------------------
+# POST /rarities (adjust pool size from review page)
+# ---------------------------------------------------------------------------
+
+
+class TestRerunRarities:
+    def test_runs_rarities_with_pool_size(self, tmp_data):
+        with (
+            patch("concept_mapper.server.app._run") as mock_run,
+            TestClient(app, follow_redirects=False) as c,
+        ):
+            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+            r = c.post("/rarities", data={"work": "mywork", "pool_size": "300"})
+        cmd = mock_run.call_args.args[0]
+        assert cmd[1] == "rarities"
+        assert "--top-n" in cmd
+        assert "300" in cmd
+        assert r.status_code == 303
+        assert r.headers["location"] == "/review?work=mywork"
+
+    def test_clamps_pool_size_to_max(self, tmp_data):
+        with (
+            patch("concept_mapper.server.app._run") as mock_run,
+            TestClient(app, follow_redirects=False) as c,
+        ):
+            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+            c.post("/rarities", data={"work": "mywork", "pool_size": "99999"})
+        cmd = mock_run.call_args.args[0]
+        idx = cmd.index("--top-n")
+        assert cmd[idx + 1] == "2000"  # clamped
+
+    def test_clamps_pool_size_to_min(self, tmp_data):
+        with (
+            patch("concept_mapper.server.app._run") as mock_run,
+            TestClient(app, follow_redirects=False) as c,
+        ):
+            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+            c.post("/rarities", data={"work": "mywork", "pool_size": "1"})
+        cmd = mock_run.call_args.args[0]
+        idx = cmd.index("--top-n")
+        assert cmd[idx + 1] == "10"  # clamped
+
+    def test_redirects_with_error_on_failure(self, tmp_data):
+        with (
+            patch("concept_mapper.server.app._run") as mock_run,
+            TestClient(app, follow_redirects=False) as c,
+        ):
+            mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="oh no")
+            r = c.post("/rarities", data={"work": "mywork", "pool_size": "200"})
+        assert r.status_code == 303
+        assert "/review?work=mywork" in r.headers["location"]
+        assert "error=" in r.headers["location"]
 
 
 # ---------------------------------------------------------------------------

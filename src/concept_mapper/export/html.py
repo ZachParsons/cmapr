@@ -136,9 +136,14 @@ def _generate_html_template(
 
         .link-label {{
             font-size: 9px;
-            pointer-events: none;
+            pointer-events: bounding-box;
+            cursor: help;
             text-anchor: middle;
             fill: #555;
+            paint-order: stroke;
+            stroke: rgba(255,255,255,0.85);
+            stroke-width: 3px;
+            stroke-linejoin: round;
         }}
 
         .tooltip {{
@@ -467,6 +472,43 @@ def _generate_html_template(
                 }});
             }}
 
+            // Shared tooltip handler for both edge lines and edge labels
+            const showLinkTooltip = (event, d) => {{
+                const src = d.source.id || d.source;
+                const tgt = d.target.id || d.target;
+                const arrow = DIRECTED_TYPES.has(d.type) ? "→" : "↔";
+                let html = `<strong>${{src}} ${{arrow}} ${{tgt}}</strong><br>`;
+                html += `<span style="color:#bbb">${{d.verb || d.type || "relates to"}}</span>`;
+                if (d.weight && d.weight > 1) html += ` (×${{d.weight}})`;
+                if (d.relation_types && d.relation_types.length > 1) {{
+                    html += `<br><span style="color:#999;font-size:11px">also: `
+                        + d.relation_types.slice(1).map(t => {{
+                            const w = d.weight_by_type ? d.weight_by_type[t] : null;
+                            return w != null ? `${{t}} (×${{w}})` : t;
+                        }}).join(", ")
+                        + `</span>`;
+                }}
+                if (d.evidence_by_type && d.relation_types) {{
+                    d.relation_types.forEach(t => {{
+                        const ev = d.evidence_by_type[t] || [];
+                        if (ev.length) {{
+                            html += `<br><hr style="border-color:#444;margin:4px 0">`
+                                + `<div style="color:#888;font-size:11px;margin-bottom:2px">${{t}}</div>`
+                                + ev.map(s => `<em style="color:#ccc">${{s}}</em>`).join("<br>");
+                        }}
+                    }});
+                }} else if (d.evidence && d.evidence.length) {{
+                    html += d.evidence
+                        .map(s => `<br><hr style="border-color:#444;margin:4px 0"><em style="color:#ccc">${{s}}</em>`)
+                        .join("");
+                }}
+                tooltip.html(html)
+                    .style("left", (event.clientX + 12) + "px")
+                    .style("top", (event.clientY - 12) + "px")
+                    .style("opacity", 1);
+            }};
+            const hideLinkTooltip = () => tooltip.style("opacity", 0);
+
             // Links
             const link = g.append("g")
                 .attr("class", "links")
@@ -478,43 +520,8 @@ def _generate_html_template(
                 .attr("stroke-width", d => d.type === "cooccurrence" ? 1 : Math.min(4, 1 + Math.sqrt(d.weight || 1)))
                 .attr("stroke-dasharray", d => d.type === "cooccurrence" ? "6,4" : null)
                 .attr("marker-end", d => DIRECTED_TYPES.has(d.type) ? `url(#arrow-${{d.type}})` : null)
-                .on("mouseover", (event, d) => {{
-                    const src = d.source.id || d.source;
-                    const tgt = d.target.id || d.target;
-                    const arrow = DIRECTED_TYPES.has(d.type) ? "→" : "↔";
-                    let html = `<strong>${{src}} ${{arrow}} ${{tgt}}</strong><br>`;
-                    html += `<span style="color:#bbb">${{d.verb || d.type || "relates to"}}</span>`;
-                    if (d.weight && d.weight > 1) html += ` (×${{d.weight}})`;
-                    // Multi-type edges (from `cmapr merge`): list per-type breakdown
-                    if (d.relation_types && d.relation_types.length > 1) {{
-                        html += `<br><span style="color:#999;font-size:11px">also: `
-                            + d.relation_types.slice(1).map(t => {{
-                                const w = d.weight_by_type ? d.weight_by_type[t] : null;
-                                return w != null ? `${{t}} (×${{w}})` : t;
-                            }}).join(", ")
-                            + `</span>`;
-                    }}
-                    // Evidence: prefer per-type when available, else flat
-                    if (d.evidence_by_type && d.relation_types) {{
-                        d.relation_types.forEach(t => {{
-                            const ev = d.evidence_by_type[t] || [];
-                            if (ev.length) {{
-                                html += `<br><hr style="border-color:#444;margin:4px 0">`
-                                    + `<div style="color:#888;font-size:11px;margin-bottom:2px">${{t}}</div>`
-                                    + ev.map(s => `<em style="color:#ccc">${{s}}</em>`).join("<br>");
-                            }}
-                        }});
-                    }} else if (d.evidence && d.evidence.length) {{
-                        html += d.evidence
-                            .map(s => `<br><hr style="border-color:#444;margin:4px 0"><em style="color:#ccc">${{s}}</em>`)
-                            .join("");
-                    }}
-                    tooltip.html(html)
-                        .style("left", (event.clientX + 12) + "px")
-                        .style("top", (event.clientY - 12) + "px")
-                        .style("opacity", 1);
-                }})
-                .on("mouseout", () => tooltip.style("opacity", 0));
+                .on("mouseover", showLinkTooltip)
+                .on("mouseout", hideLinkTooltip);
 
             // Nodes
             const node = g.append("g")
@@ -528,10 +535,38 @@ def _generate_html_template(
                 .call(drag(simulation))
                 .on("mouseover", (event, d) => {{
                     let html = `<strong style="font-size:13px">${{d.label}}</strong>`;
-                    if (d.score) html += ` <span style="color:#bbb">(score: ${{d.score.toFixed(2)}})</span>`;
+                    if (d.score) {{
+                        html += `<br>Significance: <strong>${{d.score.toFixed(2)}}</strong>`
+                            + ` <span style="color:#888;font-size:11px">(rarity-based — higher = more distinctive in this corpus)</span>`;
+                    }}
                     if (d.frequency) html += `<br>Frequency: ${{d.frequency}}`;
-                    if (d.pos) html += `<br>POS: ${{d.pos}}`;
-                    if (d.definition) html += `<br><br>${{d.definition}}`;
+                    if (d.pos) html += `<br>Part of speech: ${{d.pos}}`;
+                    if (d.definition) {{
+                        html += `<br><br>${{d.definition}}`;
+                    }} else {{
+                        // Derive an in-corpus characterisation by searching outgoing
+                        // edges sourced at this node, preferring the most definitional
+                        // relation types first.
+                        const DEF_PRIORITY = ["definition", "kind-of", "property", "relation"];
+                        const TYPE_LABELS = {{
+                            "definition": "Definition",
+                            "kind-of":    "Kind of",
+                            "property":   "Described as",
+                            "relation":   "From the text",
+                        }};
+                        let chosen = null;
+                        for (const t of DEF_PRIORITY) {{
+                            chosen = data.links.find(l => {{
+                                const src = l.source.id !== undefined ? l.source.id : l.source;
+                                return src === d.id && l.type === t && l.evidence && l.evidence.length;
+                            }});
+                            if (chosen) break;
+                        }}
+                        if (chosen) {{
+                            html += `<br><br><div style="color:#888;font-size:11px;margin-bottom:2px">${{TYPE_LABELS[chosen.type]}}</div>`
+                                + `<em style="color:#ccc">${{chosen.evidence[0]}}</em>`;
+                        }}
+                    }}
                     tooltip.html(html)
                         .style("left", (event.clientX + 12) + "px")
                         .style("top", (event.clientY - 12) + "px")
@@ -577,6 +612,8 @@ def _generate_html_template(
                         }}
                         return d.verb || d.label || "";
                     }})
+                    .on("mouseover", showLinkTooltip)
+                    .on("mouseout", hideLinkTooltip)
                 : null;
 
             // Node labels — size proportional to score/radius

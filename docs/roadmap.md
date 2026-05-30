@@ -21,7 +21,7 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 _Last updated: 2026-05-13. Cold-re-entry checklist — keep glance-able._
 
 - **Last completed:** README now carries the canonical doc map (project-level docs + per-feature `research → specs → plans → qa` lifecycle). Replaces the prior three-pointer "Documentation" section. Also rules.md gained a doc-update-gate (table of every canonical doc, when it must update, what to update) plus the sentence-transformers (st.1–st.8) and REBEL (rb.1–rb.7) initiatives queued in Future Work. Modularity refactor + wall-scale `docs/architecture.md` diagram landed in commit `1197d50`.
-- **Next up:** **sentence-transformers integration** (st.1–st.8 in Future Work) — recommended highest-payoff quality lift per the ecosystem survey. Start with st.1–st.3 (dep + embedding plumbing + `cmapr similar TERM`) which is the smallest entry point and shakes out the `[neural]` extra. **REBEL integration** (rb.1–rb.7) follows once the neural infrastructure is in place.
+- **Next up:** **sentence-transformers integration** (st.1–st.8 in Future Work) — recommended highest-payoff quality lift per the library survey (`docs/survey.md`). Start with st.1–st.3 (dep + embedding plumbing + `cmapr similar TERM`) which is the smallest entry point and shakes out the `[neural]` extra. **REBEL integration** (rb.1–rb.7) follows once the neural infrastructure is in place.
 - **Open issues:**
   - **Wizard reverted** — `cmapr wizard` was prototyped then reverted as redundant with the web UI. Don't re-propose without a distinct use case.
   - **`cmapr try-extract` scrapped** — debug command originally on the backlog, removed per user direction (couldn't justify the use case).
@@ -501,6 +501,21 @@ src/concept_mapper/
 
 ---
 
+## Manual QA tracker
+
+Each `docs/qa/*.md` is an end-to-end manual walk-through against the live code. Tick the checkbox once the doc has been run on a representative corpus; re-open after structural changes.
+
+| Verified | QA doc | Covers |
+|---|---|---|
+| [ ] | [`qa/graph.md`](qa/graph.md) | ingest → rarities → graph → export pipeline |
+| [ ] | [`qa/cluster.md`](qa/cluster.md) | `cmapr cluster` — per-chapter sub-graphs + recurrence edges |
+| [ ] | `qa/neural-similarity.md` *(planned, st.8)* | sentence-transformers `--neural` mode |
+| [ ] | `qa/neural-relations.md` *(planned, rb.7)* | REBEL `--neural` mode |
+
+Add a row when a new `docs/qa/*.md` is created. When a doc is run successfully, tick it; if a subsequent refactor invalidates the verification, un-tick.
+
+---
+
 ## Future Work
 
 
@@ -512,9 +527,24 @@ src/concept_mapper/
 - [ ] **Structured ingestion pipeline** — a cleaner, isolated ingestion interface that produces richly labeled documents. Covers: (1) investigate whether an existing package (`docling`, `pymupdf4llm`, `unstructured`, `nougat`, `pdfplumber`) can replace the current two-file workflow (raw OCR text + manually cleaned TOC) by extracting structured text, TOC, and layout directly from PDF; (2) classify front-matter (title page, copyright, TOC, introduction) and back-matter (bibliography, references, index, appendix) sections by heuristic or model; (3) strip running headers and page numbers per page; (4) detect and label document structure (parts, chapters, sections) and paragraph boundaries automatically.
 - [ ] Usage-based definition generation (aggregate co-occurrences and relations into empirical definitions)
 - [ ] **Test suite cleanup** — use `pytest-cov` to identify undercovered code paths (add tests) and overcovered ones (redundant tests testing the same path with different labels); target reducing test count from ~718 to ~510-540 (~25% reduction) while improving branch coverage; delete redundant tests rather than merging them to keep intent legible.
-- [x] **Ecosystem survey** — `docs/research/ecosystem.md`. Top picks identified for the next analytical-depth initiatives: **REBEL** (neural relation extraction) + **sentence-transformers** (semantic embeddings) packaged as a `[neural]` extra + `--neural` flag; **PyKEEN** link prediction once extraction is at peak quality; **ConceptNet** as a future external validation/augmentation. Skips: pyvis (would lose custom D3 features), rdflib (no concrete RDF need), gensim (needs multi-document corpora).
 
-- [ ] **sentence-transformers integration** — semantic embeddings for terms and sentences. Chosen as the *first* neural addition because it's smaller (22–110M params), faster, lossless (no label mapping), and unlocks multiple quality wins from one integration. Plan file: `docs/plans/neural-similarity.md` (to be drafted before code).
+- [ ] **QA coverage & product mapping** — broaden manual-testing surface and document the product's user-story space. Two sub-deliverables:
+  - [ ] **Manual QA text samples** — create fixture texts at four scale levels for end-to-end manual testing. Land under `data/sample/` (or similar) and cite from `docs/qa/*.md` walk-throughs.
+    - sentence (single sentence)
+    - paragraph (multi-sentence)
+    - chapter (multi-paragraph)
+    - book (multi-paragraph chapters)
+  - [ ] **Product-level user-story diagram** — Mermaid graph (new `docs/product.md` or similar) enumerating the user-story dimensions cmapr must cover. Used to identify combinations not yet exercised by tests or QA samples.
+    - **source text location:** in-project (`data/`) · external filepath
+    - **source text file type:** `.txt` · `.pdf`
+    - **source text file content:** messy (OCR artifacts) · clean
+    - **source text guides:** with TOC · with index · neither
+    - **source text structure:** parts · sections · chapters · paragraphs · (etc.)
+
+- [x] **Library survey** — pipeline-keyed catalog of NLP / extraction / KG / viz libraries in `docs/survey.md`. Confirmed currently-integrated (per the survey's "Already integrated" verdicts): NLTK, NetworkX, pdfplumber, stanza, spaCy (`[spacy]` extra). Top-pick adoption tracked under the unticked item below.
+- [ ] **Adopt survey top-picks** — work through the candidates flagged **Augment** / **Investigate** in `docs/survey.md` in roughly the recommended order: (1) sentence-transformers — tracked as st.1–st.8 below; (2) REBEL — tracked as rb.1–rb.7 below; (3) GLiNER (zero-shot term typing on rarities); (4) KeyBERT (6th rarity signal); (5) LangExtract evaluation as a third `--neural` backend; (6) ConceptNet lookup helper; (7) PyKEEN link prediction (defer until extraction quality peaks). Items (3)–(7) get their own roadmap blocks + plan files when they reach the top of the queue.
+
+- [ ] **sentence-transformers integration** — semantic embeddings for terms and sentences. See `docs/survey.md` § Stage 3 for rationale. Plan file: `docs/plans/neural-similarity.md` (to be drafted before code).
   - [ ] **st.1 `[neural]` optional dependency** — add `sentence-transformers>=3.0` (and the implicit `torch` + `transformers` transitive deps) under `[project.optional-dependencies]` in `pyproject.toml`. Mirror the existing `[spacy]` / `[serve]` / `[wizard]` pattern.
   - [ ] **st.2 Embedding plumbing module** — new `analysis/embeddings.py`: lazy-load `all-MiniLM-L6-v2` (or configurable), `embed_terms(terms) -> dict[str, np.ndarray]`, `embed_sentences(sentences) -> ndarray`, `cosine_similarity(a, b) -> float`. Disk-cache embeddings per corpus identifier under `data/output/cache/embeddings/<work>/` so re-runs skip re-embedding. Smallest meaningful entry point.
   - [ ] **st.3 `cmapr similar TERM [--top-n N]` command** — uses st.2 to find k-nearest terms by cosine in an existing rarities list. ~100 lines + tests. Shakes out the embedding plumbing end-to-end; useful on its own for vetting / seed discovery.
@@ -524,7 +554,7 @@ src/concept_mapper/
   - [ ] **st.7 Spec/plan file** — `docs/plans/neural-similarity.md` with sub-task checklist mirroring this list, dev-loop snippet, pointer from roadmap Status.
   - [ ] **st.8 QA + tests** — `docs/qa/neural-similarity.md`; unit tests for each new function; CLI tests for `cmapr similar` + `cmapr graph --neural`; manual visual check that semantic-similarity edges render correctly.
 
-- [ ] **REBEL integration** — neural relation extraction. Land *after* sentence-transformers so the embedding infrastructure is already in place. Biggest single lift for typed-edge recall (current `cooccurrence`-fallback ratio drops dramatically when REBEL is on). Plan file: `docs/plans/neural-relations.md` (to be drafted before code).
+- [ ] **REBEL integration** — neural relation extraction. Land *after* sentence-transformers so the `[neural]` infrastructure is already in place. See `docs/survey.md` § Stage 3 for rationale. Plan file: `docs/plans/neural-relations.md` (to be drafted before code).
   - [ ] **rb.1 Add REBEL to `[neural]` extra** — `transformers` already a transitive dep from sentence-transformers; add an explicit pin if needed. Model: `Babelscape/rebel-large` (~500MB; user downloads on first run).
   - [ ] **rb.2 REBEL wrapper module** — new `analysis/rebel.py`: lazy-load the model, `extract_triples(sentence) -> list[(subject, relation, object, score)]`. Wraps the seq2seq generation + Wikidata-relation parsing. Disk-cache per (sentence_hash) so re-runs of the same corpus skip re-inference.
   - [ ] **rb.3 Wikidata → cmapr type mapping** — table mapping REBEL's ~250 Wikidata relation labels (`subclass_of`, `instance_of`, `has_part`, `cause`, etc.) to cmapr's 9 types (`definition`, `kind-of`, `production`, `dependence`, `component`, `opposition`, `property`, `relation`, fallback). Unmapped relations land as generic `relation`. Document the mapping in `docs/plans/neural-relations.md` so it's auditable.
@@ -534,7 +564,7 @@ src/concept_mapper/
   - [ ] **rb.7 QA + tests** — `docs/qa/neural-relations.md`; per-relation-type unit tests (plant sentence → expect mapped cmapr type); CLI test for `cmapr graph --neural`; before/after comparison on `eco_spl1` to quantify typed-edge yield uplift.
 - [x] **Graph merge command** — `cmapr merge ch1.json ch2.json [...] -o merged.json` aggregates per-chapter graphs. Frequencies sum; rarity scores are frequency-weighted means; same-pair-different-type edges keep both types via an additive multi-type schema (`relation_types`, `weight_by_type`, `evidence_by_type`, `verb_by_type`). HTML viz renders the per-type breakdown in tooltips and the detail panel. `aggregate_graphs()` in `graph/operations.py` is the underlying primitive; the legacy naïve `merge_graphs()` is kept as-is.
 - [x] **Multi-chapter clustered visualization** (v1, option A) — `cmapr cluster CORPUS -t TERMS -o OUT [--by chapter|section]` builds per-chapter sub-graphs from `sentence_locations`, namespaces nodes as `<term>__<chapter>`, and adds `recurrence` edges between consecutive same-term occurrences (weight = span). HTML viz auto-detects cluster membership and adds a D3 cluster force that pulls each node toward its chapter's centroid; legend toggle hides recurrence edges. See `docs/plans/multi-chapter.md`. **Display options B (constellation) and C (timeline spine) remain deferred.**
-- [ ] **Session status doc** — `docs/status.md`: a one-page always-current file recording *last worked on*, *next step*, and *open questions / known issues*. Updated at the end of each session. Separate from the roadmap (history + future) and QA doc (verification); purpose is cold re-entry after days away.
+- [x] **Session status doc** — resolved by the **Status** block at the top of this roadmap, which already records *last completed*, *next up*, *open issues*, and *tests* for cold re-entry. No separate `docs/status.md` needed.
 - [x] **Pipeline architecture diagram** — `docs/architecture.md`: Mermaid flowchart with all 10 CLI commands and the processing modules grouped by stage (`corpus/`, `preprocessing/`, `analysis/`, `terms/`, `graph/`, `export/`, plus auxiliary `search/`, `transformations/`, `syntax/`, `server/`). README points at it.
 - [ ] Database backend for large-scale corpora
 - [ ] Temporal analysis across an author's career

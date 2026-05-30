@@ -80,6 +80,28 @@ class TestDefinitionExtraction:
         props = e.extract("sign", "code")
         assert not any(p.type == "definition" for p in props)
 
+    def test_means(self):
+        s = "Sign means any object that stands for an interpretant."
+        e = self._extractor(s)
+        props = e.extract("sign", "interpretant")
+        assert any(p.type == "definition" for p in props)
+        p = next(p for p in props if p.type == "definition")
+        assert p.source.lower() == "sign"
+
+    def test_is_also_known_as(self):
+        s = "The sign is also known as the signifier in some traditions."
+        e = self._extractor(s)
+        props = e.extract("sign", "signifier")
+        assert any(p.type == "definition" for p in props)
+
+    def test_can_be_understood_as(self):
+        s = "Abduction can be understood as a form of inference."
+        e = self._extractor(s)
+        props = e.extract("abduction", "inference")
+        assert any(p.type == "definition" for p in props)
+        p = next(p for p in props if p.type == "definition")
+        assert p.source.lower() == "abduction"
+
 
 # ---------------------------------------------------------------------------
 # Kind-of extraction
@@ -126,6 +148,48 @@ class TestKindOfExtraction:
         e = self._extractor(s)
         props = e.extract("sign", "code")
         assert not any(p.type == "kind-of" for p in props)
+
+    def test_hearst_such_as(self):
+        s = "Signs such as the icon participate in semiosis."
+        e = self._extractor(s)
+        props = e.extract("sign", "icon")
+        assert any(p.type == "kind-of" for p in props)
+        p = next(p for p in props if p.type == "kind-of")
+        assert p.source.lower() == "icon"  # subtype
+        assert p.target.lower() == "sign"  # supertype
+
+    def test_hearst_including(self):
+        s = "Several signs, including the icon, behave as symbols."
+        e = self._extractor(s)
+        props = e.extract("sign", "icon")
+        assert any(p.type == "kind-of" for p in props)
+        p = next(p for p in props if p.type == "kind-of")
+        assert p.source.lower() == "icon"
+        assert p.target.lower() == "sign"
+
+    def test_hearst_especially(self):
+        s = "Signs, especially the icon, deserve attention."
+        e = self._extractor(s)
+        props = e.extract("sign", "icon")
+        assert any(p.type == "kind-of" for p in props)
+        p = next(p for p in props if p.type == "kind-of")
+        assert p.source.lower() == "icon"
+        assert p.target.lower() == "sign"
+
+    def test_hearst_and_other(self):
+        s = "Icons and other signs share a referential function."
+        e = self._extractor(s)
+        props = e.extract("icon", "sign")
+        assert any(p.type == "kind-of" for p in props)
+        p = next(p for p in props if p.type == "kind-of")
+        assert p.source.lower() == "icon"
+        assert p.target.lower() == "sign"
+
+    def test_hearst_or_other(self):
+        s = "An icon or other sign always refers to something."
+        e = self._extractor(s)
+        props = e.extract("icon", "sign")
+        assert any(p.type == "kind-of" for p in props)
 
 
 # ---------------------------------------------------------------------------

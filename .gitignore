@@ -216,3 +216,4 @@ data/output/
 *.ps
 .DS_Store
 README.old
+docs/local_only/notes.md

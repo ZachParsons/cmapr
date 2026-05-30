@@ -78,6 +78,20 @@ _DEFINITION_PATTERNS = [
     (r"\b{A}\b\s+denotes\b", "denotes"),
     # "sign stands for ..."
     (r"\b{A}\b\s+stands\s+for\b", "stands for"),
+    # "sign means ..."
+    (r"\b{A}\b\s+means\b", "means"),
+    # "sign is also known as ..." / "is also called ..."
+    (
+        r"\b{A}\b\s+(?:is|are|was|were)\s+also\s+(?:known\s+as|called)\b",
+        "is also known as",
+    ),
+    # "sign can/may/might be defined/understood/conceived/construed as ..."
+    (
+        r"\b{A}\b\s+(?:can|may|might|could)\s+be\s+"
+        r"(?:defined|understood|conceived|construed|characterized|described|"
+        r"interpreted|taken|regarded|treated|viewed|seen)\s+as",
+        "can be defined as",
+    ),
 ]
 
 _KIND_MARKERS = (
@@ -188,6 +202,30 @@ _OPPOSITION_PATTERNS = [
 _COMPOSITION_VERBS = (
     r"(?:forms?|constitutes?|composes?|makes?\s+up|comprises?|consists?\s+of)"
 )
+
+# Hearst-style hypernymy patterns. Each entry uses __SUPER__ for the supertype
+# slot and __SUB__ for the subtype. The relation produced is `kind-of` with
+# direction subtype → supertype, matching `_try_kind_of`.
+_HEARST_PATTERNS = [
+    # "supertype such as subtype"
+    (r"\b__SUPER__\w*\b.{0,40}\bsuch\s+as\b.{0,40}\b__SUB__\w*\b", "is a kind of"),
+    # "such supertype as subtype"
+    (r"\bsuch\s+\b__SUPER__\w*\b.{0,40}\bas\b.{0,40}\b__SUB__\w*\b", "is a kind of"),
+    # "supertype including subtype"
+    (r"\b__SUPER__\w*\b.{0,40}\bincluding\b.{0,40}\b__SUB__\w*\b", "is a kind of"),
+    # "supertype, especially/particularly/notably subtype"
+    (
+        r"\b__SUPER__\w*\b,\s+(?:especially|particularly|notably)\b.{0,40}"
+        r"\b__SUB__\w*\b",
+        "is a kind of",
+    ),
+    # "subtype and other supertypes" / "subtype or other supertypes"
+    # Allow up to 3 modifier tokens between "other" and the supertype.
+    (
+        r"\b__SUB__\w*\b\s+(?:and|or)\s+other\s+(?:\w+\s+){0,3}\b__SUPER__\w*\b",
+        "is a kind of",
+    ),
+]
 
 
 # ---------------------------------------------------------------------------
@@ -466,6 +504,7 @@ class PropositionExtractor:
         for extractor in (
             self._try_definition,
             self._try_kind_of,
+            self._try_hearst,
             self._try_production,
             self._try_dependence,
             self._try_opposition,
@@ -537,6 +576,30 @@ class PropositionExtractor:
                     evidence=[sentence],
                     directed=True,
                 )
+        return None
+
+    def _try_hearst(
+        self, sentence: str, term_a: str, term_b: str
+    ) -> Optional[Proposition]:
+        """
+        Detect Hearst-style hypernymy patterns: 'X such as Y', 'X including Y',
+        'Y and other X', etc. Produces a `kind-of` proposition oriented
+        subtype → supertype, matching `_try_kind_of`.
+        """
+        for subtype, supertype in [(term_a, term_b), (term_b, term_a)]:
+            sub = re.escape(subtype)
+            sup = re.escape(supertype)
+            for pattern_tmpl, label in _HEARST_PATTERNS:
+                pattern = pattern_tmpl.replace("__SUB__", sub).replace("__SUPER__", sup)
+                if re.search(pattern, sentence, re.IGNORECASE):
+                    return Proposition(
+                        source=subtype,
+                        target=supertype,
+                        label=label,
+                        type="kind-of",
+                        evidence=[sentence],
+                        directed=True,
+                    )
         return None
 
     def _try_production(

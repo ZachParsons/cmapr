@@ -680,7 +680,7 @@ Concrete "if you want to do X, edit Y" map. Each row points at the files that ne
 | **Tweak the HTML viz layout / interactions** | `export/html.py` — the file is a single template string with inlined JS. Edit force params (link distance, charge strength), node size formula, edge dasharray, legend layout, detail-panel HTML, expand/collapse logic. | Browser-side; covered by `docs/qa/graph.md` and `docs/qa/cluster.md` visual checklists. |
 | **Add a new pipeline stage to ingest** | `preprocessing/pipeline.py:preprocess()` — call the new module between existing stages. Add the module under `preprocessing/`. Persist new outputs via `ProcessedDocument` (add a field to `corpus/models.py:ProcessedDocument` and update `to_dict`/`from_dict`). | `tests/test_preprocessing.py`. |
 | **Change rarities filter ordering** | `cli.py:rarities` (~275–705) — the `candidates = [...]` reductions happen in sequence. Reorder with care; vetting must run after top-n cut so accepted terms can be re-included. | `tests/test_cli.py:TestRaritiesPOSFilter`, `TestRaritiesBySection`. |
-| **Add a new neural component (REBEL, sentence-transformers, etc.)** | Add as optional dep in `pyproject.toml` `[project.optional-dependencies]`. New module under `analysis/` (for extraction) or `graph/` (for graph-level ops). Wire as `--neural` flag on the relevant CLI command, lazy-imported. See `docs/research/ecosystem.md` for the survey-level rationale. | Mirror the spaCy-extra pattern: gate tests with `@requires_spacy`-style skipif. |
+| **Add a new neural component (REBEL, sentence-transformers, etc.)** | Add as optional dep in `pyproject.toml` `[project.optional-dependencies]`. New module under `analysis/` (for extraction) or `graph/` (for graph-level ops). Wire as `--neural` flag on the relevant CLI command, lazy-imported. See `docs/survey.md` for the survey-level rationale. | Mirror the spaCy-extra pattern: gate tests with `@requires_spacy`-style skipif. |
 | **Add a clustered-viz display option (constellation, timeline spine)** | `export/html.py` — extend the cluster-force block. Read a `clusterLayout` attr from JSON or a new CLI flag; pick centroid placement function accordingly. Centroids on circle (current), grid, or x-axis spine. | `docs/qa/cluster.md` visual checks. |
 
 ---
@@ -738,7 +738,7 @@ Search results. `find.py:SentenceMatch` (sentence + positions); `context.py:Cont
 - `docs/plans/multi-chapter.md` — clustered viz implementation plan
 - `docs/qa/graph.md` — manual QA checklist for ingest→rarities→graph→export
 - `docs/qa/cluster.md` — manual QA checklist for `cmapr cluster`
-- `docs/research/ecosystem.md` — library landscape survey + next-initiative picks
+- `docs/survey.md` — library landscape survey, organized by pipeline stage + next-initiative picks
 - `docs/api-reference.md` — Python API reference (separate from this navigation map)
 - `.claude/rules.md` — code conventions, layering, doc discipline
 - `.claude/context.md` — pointer-only (this file is the authoritative architecture map)

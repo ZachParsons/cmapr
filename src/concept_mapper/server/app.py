@@ -95,7 +95,10 @@ def start(
             err = (result.stderr or result.stdout)[:300].replace('"', "'")
             return RedirectResponse(f"/?error={err}", status_code=303)
 
-    # Run rarities with a generous top-n so the review page shows all candidates
+    # Run rarities with a generous top-n so the review page shows a wide
+    # candidate pool. The build step does NOT re-run rarities; it filters
+    # this pool by the user's vetting + graph top-n. The user can adjust
+    # this pool size from the review page via POST /rarities.
     terms_p = _rarities_path(work)
     terms_p.parent.mkdir(parents=True, exist_ok=True)
     result = _run(
@@ -104,7 +107,7 @@ def start(
             "rarities",
             str(_corpus_path(work)),
             "--top-n",
-            "100",
+            "200",
             "--output",
             str(terms_p),
         ]
@@ -117,7 +120,7 @@ def start(
 
 
 @app.get("/review", response_class=HTMLResponse)
-def review(request: Request, work: str):
+def review(request: Request, work: str, error: str = ""):
     terms_p = _rarities_path(work)
     if not terms_p.exists():
         return RedirectResponse("/", status_code=303)
@@ -148,8 +151,39 @@ def review(request: Request, work: str):
         {
             "work": work,
             "terms": rows,
+            "pool_size": len(rows),
+            "error": error,
+            "has_vetting": _vetting_path(work).exists(),
+            "has_export": _export_path(work).exists(),
         },
     )
+
+
+@app.post("/rarities")
+def rerun_rarities(
+    work: Annotated[str, Form()],
+    pool_size: Annotated[int, Form()] = 200,
+):
+    """Re-run only the rarities step to widen/narrow the candidate pool."""
+    # Clamp to a sane upper bound to avoid runaway runs.
+    pool_size = max(10, min(pool_size, 2000))
+    terms_p = _rarities_path(work)
+    terms_p.parent.mkdir(parents=True, exist_ok=True)
+    result = _run(
+        [
+            "cmapr",
+            "rarities",
+            str(_corpus_path(work)),
+            "--top-n",
+            str(pool_size),
+            "--output",
+            str(terms_p),
+        ]
+    )
+    if result.returncode != 0:
+        err = (result.stderr or result.stdout)[:300].replace('"', "'")
+        return RedirectResponse(f"/review?work={work}&error={err}", status_code=303)
+    return RedirectResponse(f"/review?work={work}", status_code=303)
 
 
 @app.post("/vet")
@@ -190,8 +224,32 @@ def options(request: Request, work: str, error: str = ""):
         {
             "work": work,
             "error": error,
+            "has_export": _export_path(work).exists(),
         },
     )
+
+
+def _build_seed_terms_file(work: str, top_n: int) -> Path | None:
+    """
+    Filter the candidate pool (terms.json) by the user's vetting and the
+    graph's top-n cap; write the result to seed_terms.json and return its
+    path. Does not re-run rarities — the candidate pool is preserved so
+    the review page keeps showing the full set.
+    """
+    terms_p = _rarities_path(work)
+    if not terms_p.exists():
+        return None
+    candidates = json.loads(terms_p.read_text())
+    rejected: set[str] = set()
+    vp = _vetting_path(work)
+    if vp.exists():
+        rejected = {t.lower() for t in json.loads(vp.read_text()).get("reject", [])}
+    accepted = [c for c in candidates if c["term"].lower() not in rejected]
+    accepted.sort(key=lambda c: c.get("metadata", {}).get("score", 0.0), reverse=True)
+    seed = accepted[:top_n]
+    seed_p = terms_p.parent / "seed_terms.json"
+    seed_p.write_text(json.dumps(seed, indent=2, ensure_ascii=False))
+    return seed_p
 
 
 @app.post("/build")
@@ -201,24 +259,13 @@ def build(
     threshold: Annotated[float, Form()] = 0.1,
     depth: Annotated[str, Form()] = "",
     focus: Annotated[str, Form()] = "",
+    definitions: Annotated[bool, Form()] = False,
 ):
-    # Re-run rarities with final top-n (vetting file already applied automatically)
-    terms_p = _rarities_path(work)
-    terms_p.parent.mkdir(parents=True, exist_ok=True)
-    result = _run(
-        [
-            "cmapr",
-            "rarities",
-            str(_corpus_path(work)),
-            "--top-n",
-            str(top_n),
-            "--output",
-            str(terms_p),
-        ]
-    )
-    if result.returncode != 0:
+    # Filter candidate pool → seed terms; the pool itself is preserved.
+    seed_p = _build_seed_terms_file(work, top_n)
+    if seed_p is None:
         return RedirectResponse(
-            f"/options?work={work}&error=rarities+failed", status_code=303
+            f"/options?work={work}&error=no+candidate+pool+found", status_code=303
         )
 
     # Build graph
@@ -229,7 +276,7 @@ def build(
         "graph",
         str(_corpus_path(work)),
         "-t",
-        str(terms_p),
+        str(seed_p),
         "--threshold",
         str(threshold),
         "--output",
@@ -239,6 +286,8 @@ def build(
         cmd += ["--depth", depth.strip()]
     if focus.strip():
         cmd += ["--focus", focus.strip()]
+    if definitions:
+        cmd.append("--definitions")
     result = _run(cmd)
     if result.returncode != 0:
         return RedirectResponse(

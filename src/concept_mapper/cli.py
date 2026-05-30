@@ -392,8 +392,7 @@ def rarities(
         candidates, unknown_pos = _sc.filter_by_pos_categories(candidates, docs, pos)
         for _cat in unknown_pos:
             click.echo(
-                f"Warning: unknown POS category '{_cat}'. "
-                f"Valid: noun, verb, adj, adv",
+                f"Warning: unknown POS category '{_cat}'. Valid: noun, verb, adj, adv",
                 err=True,
             )
         if verbose and len(candidates) < before:
@@ -953,6 +952,14 @@ def search(
     default=None,
     help="Centre graph on this term, including only nodes directly connected to it.",
 )
+@click.option(
+    "--definitions",
+    is_flag=True,
+    help=(
+        "Attach a definitional sentence to each node using sentence-embedding "
+        "similarity (requires: uv sync --extra embeddings)."
+    ),
+)
 @click.pass_context
 def graph(
     ctx,
@@ -968,6 +975,7 @@ def graph(
     output,
     depth,
     focus,
+    definitions,
 ):
     """
     Build concept graph by running analyze on each term in a terms file.
@@ -1102,6 +1110,29 @@ def graph(
         f"ratio {ratio:.1f}:1\n  {type_summary}"
     )
 
+    if definitions:
+        try:
+            from concept_mapper.analysis.embeddings import (
+                enrich_graph_with_definitions,
+            )
+        except ImportError as e:
+            raise click.ClickException(
+                "The --definitions flag requires the embeddings extra. "
+                "Install with: uv sync --extra embeddings"
+            ) from e
+        work_id = derive_identifier(Path(corpus).parent)
+        cache_dir = output_dir / "embeddings" / work_id
+        click.echo("Ranking sentences for definitional content (embeddings)...")
+        try:
+            n_def = enrich_graph_with_definitions(
+                concept_graph, docs, cache_dir=cache_dir
+            )
+        except RuntimeError as e:
+            raise click.ClickException(str(e)) from e
+        click.echo(
+            f"✓ Attached definitions to {n_def} of {concept_graph.node_count()} node(s)"
+        )
+
     validate_concept_graph(concept_graph)
 
     if output:
@@ -1176,8 +1207,11 @@ def export(ctx, graph_file, format, output, title):
     # Reconstruct graph
     from concept_mapper.graph import ConceptGraph
 
-    # Check if it's directed by looking at the data
-    concept_graph = ConceptGraph(directed=False)
+    # Builders produce directed graphs; loading as undirected silently flips
+    # edge direction for relation types where it matters (kind-of, definition,
+    # production, dependence) because NetworkX's Graph.edges() returns edges
+    # in canonical order.
+    concept_graph = ConceptGraph(directed=True)
 
     # Add nodes
     for node_data in data["nodes"]:
