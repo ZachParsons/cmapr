@@ -18,16 +18,18 @@ A tool for extracting and visualizing an author's idiosyncratic conceptual vocab
 
 ## Status
 
-_Last updated: 2026-05-13. Cold-re-entry checklist — keep glance-able._
+_Last updated: 2026-06-07. Cold-re-entry checklist — keep glance-able._
 
-- **Last completed:** README now carries the canonical doc map (project-level docs + per-feature `research → specs → plans → qa` lifecycle). Replaces the prior three-pointer "Documentation" section. Also rules.md gained a doc-update-gate (table of every canonical doc, when it must update, what to update) plus the sentence-transformers (st.1–st.8) and REBEL (rb.1–rb.7) initiatives queued in Future Work. Modularity refactor + wall-scale `docs/architecture.md` diagram landed in commit `1197d50`.
+- **Last completed:** **Node concordance sidebar** (`docs/plans/node-concordance.md`) — revived the CLI `search --lemma` concordance in the graph viz. Clicking a node now opens a second right sidebar (beside the relationship-types panel) listing every sentence the node's lemmatized term appears in, in document order, independently scrollable, each with a chapter › section breadcrumb and the term highlighted. New `search/concordance.py:build_concordance` (single-pass lemma index) is precomputed and inlined into the standalone HTML. Wired via `generate_html(docs=)`, a new `cmapr export --corpus PATH` option, `cmapr run` (in-process docs), and the `serve` build step. No page numbers (not tracked at ingest). New `tests/test_concordance.py` + export/CLI assertions.
+- **Earlier:** **Term-review cleanup** (`docs/plans/term-review-cleanup.md`) — fixed three classes of noise surfacing in the web review step / `terms.json`: (1) function words (`since`, `whether`, `could`, …) via a new `filter_stopwords` step wired into both the rarities chain and `apply_run_pipeline`; (2) broken non-words — root-caused the `-s` corruption (`semiosis`→`semiosi`) to an unguarded `inflect.singular_noun` in `preprocessing/lemmatize.py`, plus broadened edge-punctuation stripping (`/man/`→`man`) and a conservative `filter_ocr_artifacts` for function-word merges (`thesecase`) and leading-char drops (`ictionary`); (3) derivational duplicates (`taxonomic`/`taxonomy`) via a WordNet `derivationally_related_forms` merge pass that prefers the noun form. New `tests/test_scoring.py`.
+- **Earlier:** README now carries the canonical doc map (project-level docs + per-feature `research → specs → plans → qa` lifecycle). Replaces the prior three-pointer "Documentation" section. Also rules.md gained a doc-update-gate (table of every canonical doc, when it must update, what to update) plus the sentence-transformers (st.1–st.8) and REBEL (rb.1–rb.7) initiatives queued in Future Work. Modularity refactor + wall-scale `docs/architecture.md` diagram landed in commit `1197d50`.
 - **Next up:** **sentence-transformers integration** (st.1–st.8 in Future Work) — recommended highest-payoff quality lift per the library survey (`docs/survey.md`). Start with st.1–st.3 (dep + embedding plumbing + `cmapr similar TERM`) which is the smallest entry point and shakes out the `[neural]` extra. **REBEL integration** (rb.1–rb.7) follows once the neural infrastructure is in place.
 - **Open issues:**
   - **Wizard reverted** — `cmapr wizard` was prototyped then reverted as redundant with the web UI. Don't re-propose without a distinct use case.
   - **`cmapr try-extract` scrapped** — debug command originally on the backlog, removed per user direction (couldn't justify the use case).
   - **Cluster feature lacks manual QA** — `docs/qa/cluster.md` is now ready; not yet exercised on the eco_spl1 corpus.
   - **`.claude/context.md` partly duplicates architecture.md** — the module tree and design-decision sections overlap. Candidate for slimming to a pointer.
-- **Tests:** 910 passed, 2 skipped (spaCy-required). Pure-refactor batch — no behavior change, no new tests.
+- **Tests:** 954 passed, 3 skipped (spaCy-required). `tests/test_concordance.py` added for the node concordance; `tests/test_export.py` + `tests/test_cli.py` gained concordance-inlining assertions. (Prior batch: `tests/test_scoring.py` for the term-review filters; `-s`-corruption regression in `tests/test_preprocessing.py`.)
 
 ---
 

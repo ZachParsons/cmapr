@@ -374,6 +374,13 @@ def rarities(
                 f"(use --no-filter-names to keep them)"
             )
 
+    # Stopword removal — runs before the top-N trim so function words don't
+    # consume candidate slots.
+    before = len(candidates)
+    candidates = _sc.filter_stopwords(candidates)
+    if verbose and len(candidates) < before:
+        click.echo(f"Filtered {before - len(candidates)} stopword(s)")
+
     if not no_lemmatize:
         candidates = _sc.lemma_and_derivational_merge(candidates, top_n=top_n)
 
@@ -383,6 +390,13 @@ def rarities(
         if verbose and len(candidates) < before:
             click.echo(
                 f"Filtered {before - len(candidates)} word fragment(s) "
+                f"(use --no-filter-fragments to keep them)"
+            )
+        before = len(candidates)
+        candidates = _sc.filter_ocr_artifacts(candidates)
+        if verbose and len(candidates) < before:
+            click.echo(
+                f"Filtered {before - len(candidates)} OCR artifact(s) "
                 f"(use --no-filter-fragments to keep them)"
             )
 
@@ -1181,8 +1195,17 @@ def graph(
     default="Concept Network",
     help="Visualization title (for HTML)",
 )
+@click.option(
+    "--corpus",
+    type=click.Path(exists=True),
+    default=None,
+    help=(
+        "Corpus JSON (HTML only). Enables the node-click concordance sidebar: "
+        "every sentence a node's term appears in, with structural location."
+    ),
+)
 @click.pass_context
-def export(ctx, graph_file, format, output, title):
+def export(ctx, graph_file, format, output, title, corpus):
     """
     Export graph to various formats.
 
@@ -1276,7 +1299,15 @@ def export(ctx, graph_file, format, output, title):
         click.echo(f"✓ Exported to {output_path}")
 
     elif format == "html":
-        html_path = generate_html(concept_graph, output_path, title=title)
+        docs = None
+        if corpus:
+            from concept_mapper.corpus.models import ProcessedDocument
+
+            with open(corpus, "r", encoding="utf-8") as _cf:
+                docs = [ProcessedDocument.from_dict(d) for d in json.load(_cf)]
+            if verbose:
+                click.echo(f"Loaded corpus for concordance: {len(docs)} document(s)")
+        html_path = generate_html(concept_graph, output_path, title=title, docs=docs)
         click.echo(f"✓ Generated HTML visualization at {html_path}")
         click.echo(f"  Open in browser: file://{html_path.absolute()}")
 
@@ -2661,7 +2692,9 @@ def run(
 
     if format == "html":
         export_path.mkdir(parents=True, exist_ok=True)
-        result_path = generate_html(concept_graph, export_path, title=viz_title)
+        result_path = generate_html(
+            concept_graph, export_path, title=viz_title, docs=docs
+        )
     elif format == "graphml":
         from concept_mapper.export.formats import export_graphml
 

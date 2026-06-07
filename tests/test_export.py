@@ -396,6 +396,41 @@ class TestHTMLGeneration:
             # At least one link should have evidence
             assert any("evidence" in link for link in data["links"])
 
+    def test_concordance_panel_always_present(self, sample_graph, temp_output_dir):
+        """The concordance sidebar markup is always emitted."""
+        html_path = generate_html(sample_graph, temp_output_dir)
+        html = html_path.read_text(encoding="utf-8")
+        assert 'id="concordance-panel"' in html
+        assert "showConcordance(d)" in html
+
+    def test_concordance_empty_without_docs(self, sample_graph, temp_output_dir):
+        """Without a corpus the inlined CONCORDANCE is an empty object."""
+        html_path = generate_html(sample_graph, temp_output_dir)
+        html = html_path.read_text(encoding="utf-8")
+        assert "const CONCORDANCE = {};" in html
+
+    def test_concordance_inlined_with_docs(self, sample_graph, temp_output_dir):
+        """With docs, sentences containing a node's term are inlined."""
+        from concept_mapper.corpus.models import ProcessedDocument
+
+        docs = [
+            ProcessedDocument(
+                raw_text="Consciousness is being.",
+                sentences=["Consciousness is being.", "Being unfolds."],
+                tokens=[],
+                lemmas=[],
+                pos_tags=[],
+                metadata={"source_path": "d.txt"},
+                sentence_locations=[],
+            )
+        ]
+        html_path = generate_html(sample_graph, temp_output_dir, docs=docs)
+        html = html_path.read_text(encoding="utf-8")
+        seg = html.split("const CONCORDANCE = ", 1)[1].split(";", 1)[0]
+        assert seg.strip() not in ("{}", "")
+        # "consciousness" node term should map to the sentence containing it.
+        assert "Consciousness is being." in seg
+
 
 # ============================================================================
 # Integration Tests

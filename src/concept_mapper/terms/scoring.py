@@ -27,8 +27,10 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 Candidate = Tuple[str, float, Dict[str, Any]]
 
-# Curly + straight single quotes that frequently attach to OCR'd tokens
-_QUOTE_CHARS = "'‘’‚‛"
+# Edge characters that frequently attach to OCR'd tokens: curly + straight
+# single quotes plus stray slashes (e.g. "/man/" → "man"). Stripped from the
+# ends only, so internal hyphens/slashes (co-text, sign-function) survive.
+_EDGE_CHARS = "'‘’‚‛/\\"
 
 # Derivational suffixes used by lemma_and_derivational_merge to collapse
 # adjective/noun variants whose base is already a candidate.
@@ -52,6 +54,27 @@ _DERIVATIONAL_SUFFIXES = (
 # completions (e.g. 'tion' is a fragment of 'proposition' + 's').
 _COMPLETION_SUFFIXES = ("s", "y", "es", "ed", "er", "al", "ic", "is", "sis")
 
+# Closed-class words that OCR commonly fuses onto the next word with a
+# dropped space ("these case" → "thesecase", "into play" → "intoplay").
+# Restricted to determiners/pronouns + into/onto/upon: longer, low-ambiguity
+# prefixes that won't clip the head off real terms (e.g. "ontic" → on+tic).
+_OCR_MERGE_PREFIXES = (
+    "these",
+    "those",
+    "this",
+    "that",
+    "your",
+    "their",
+    "into",
+    "onto",
+    "upon",
+    "his",
+    "her",
+    "our",
+    "its",
+    "my",
+)
+
 # Coarse POS categories used by filter_by_pos_categories.
 _POS_CATEGORY_MAP: Dict[str, Set[str]] = {
     "noun": {"NN", "NNS", "NNP", "NNPS"},
@@ -67,15 +90,16 @@ _POS_CATEGORY_MAP: Dict[str, Set[str]] = {
 
 
 def strip_stray_quotes(candidates: List[Candidate]) -> List[Candidate]:
-    """Strip leading/trailing quote characters from terms; drop empties.
+    """Strip leading/trailing quote/slash characters from terms; drop empties.
 
-    OCR'd PDFs frequently leave stray apostrophes or curly quotes attached
-    to tokens (e.g. ``"'animal'"`` → ``"animal"``).
+    OCR'd PDFs frequently leave stray apostrophes, curly quotes, or slashes
+    attached to tokens (e.g. ``"'animal'"`` → ``"animal"``, ``"/man/"`` →
+    ``"man"``). Internal punctuation is preserved (``co-text`` is untouched).
     """
     return [
-        (term.strip(_QUOTE_CHARS), score, components)
+        (term.strip(_EDGE_CHARS), score, components)
         for term, score, components in candidates
-        if term.strip(_QUOTE_CHARS)
+        if term.strip(_EDGE_CHARS)
     ]
 
 
@@ -128,6 +152,30 @@ def merge_extra_candidates(
     if not extra:
         return candidates
     return sorted(candidates + extra, key=lambda x: x[1], reverse=True)
+
+
+# ---------------------------------------------------------------------------
+# Filter step 2.5 — stopword removal
+# ---------------------------------------------------------------------------
+
+
+def filter_stopwords(candidates: List[Candidate]) -> List[Candidate]:
+    """Drop common function words that aren't topical concepts.
+
+    Words like ``since``, ``whether``, ``although``, ``could``, ``would``,
+    ``else``, ``onto`` are scored by the rarity signals but carry no
+    conceptual content. Filtered against the shared ``STOPWORDS`` set in
+    :mod:`concept_mapper.search.extract` (the same set
+    :class:`graph.node_filter.NodeFilter` uses). Multi-word phrases
+    (containing a space) always pass.
+    """
+    from concept_mapper.search.extract import STOPWORDS  # noqa: PLC0415
+
+    return [
+        (term, score, components)
+        for term, score, components in candidates
+        if " " in term or term.lower() not in STOPWORDS
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -212,10 +260,89 @@ def lemma_and_derivational_merge(
         if canonical not in merged or score > merged[canonical][1]:
             merged[canonical] = (canonical, score, components)
 
-    out = sorted(merged.values(), key=lambda x: x[1], reverse=True)
+    # Pass 3: collapse WordNet derivational variants (taxonomic ↔ taxonomy).
+    out = merge_derivational_variants(list(merged.values()))
     if top_n is not None:
         out = out[:top_n]
     return out
+
+
+def merge_derivational_variants(candidates: List[Candidate]) -> List[Candidate]:
+    """Collapse candidates linked by WordNet derivational relations.
+
+    The suffix table in :func:`lemma_and_derivational_merge` only collapses a
+    suffixed form onto its *bare* stem; it can't handle ``-y ↔ -ic``
+    alternations or cross-POS pairs. WordNet's
+    ``derivationally_related_forms()`` links these directly
+    (``taxonomic ↔ taxonomy``, ``iconic ↔ icon``).
+
+    Only single-token candidates that are *both* already present are merged
+    (so no off-list noise is pulled in). Within a cluster the canonical form
+    is the noun (highest-scoring noun if several); if no member has a noun
+    sense, the highest-scoring member wins. The kept entry carries the
+    cluster's maximum score so it ranks correctly. Returns a sorted list.
+    """
+    from nltk.corpus import wordnet as wn  # noqa: PLC0415
+
+    # Best-scoring entry per surface term.
+    by_term: Dict[str, Candidate] = {}
+    for term, score, components in candidates:
+        if term not in by_term or score > by_term[term][1]:
+            by_term[term] = (term, score, components)
+
+    terms = list(by_term)
+    term_set = set(terms)
+
+    # Union-find over derivational links among candidates.
+    parent: Dict[str, str] = {t: t for t in terms}
+
+    def _find(x: str) -> str:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def _union(a: str, b: str) -> None:
+        ra, rb = _find(a), _find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    def _related(term: str) -> Set[str]:
+        out: Set[str] = set()
+        for syn in wn.synsets(term):
+            for lemma in syn.lemmas():
+                if lemma.name().replace("_", " ").lower() == term:
+                    for d in lemma.derivationally_related_forms():
+                        out.add(d.name().replace("_", " ").lower())
+        return out
+
+    for term in terms:
+        if " " in term:  # phrases never merge
+            continue
+        for rel in _related(term):
+            if rel != term and rel in term_set:
+                _union(term, rel)
+
+    clusters: Dict[str, List[str]] = {}
+    for term in terms:
+        clusters.setdefault(_find(term), []).append(term)
+
+    def _is_noun(term: str) -> bool:
+        return bool(wn.synsets(term, pos=wn.NOUN))
+
+    result: List[Candidate] = []
+    for members in clusters.values():
+        if len(members) == 1:
+            result.append(by_term[members[0]])
+            continue
+        nouns = [m for m in members if _is_noun(m)]
+        pool = nouns or members
+        canonical = max(pool, key=lambda m: by_term[m][1])
+        max_score = max(by_term[m][1] for m in members)
+        _, _, components = by_term[canonical]
+        result.append((canonical, max_score, components))
+
+    return sorted(result, key=lambda x: x[1], reverse=True)
 
 
 # ---------------------------------------------------------------------------
@@ -245,6 +372,58 @@ def filter_fragments(candidates: List[Candidate]) -> List[Candidate]:
         (term, score, components)
         for term, score, components in candidates
         if not _is_fragment(term)
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Filter step 5.5 — OCR artifact removal (merges + leading-char drops)
+# ---------------------------------------------------------------------------
+
+
+def filter_ocr_artifacts(candidates: List[Candidate]) -> List[Candidate]:
+    """Drop OCR-corrupted non-words via two conservative heuristics.
+
+    A single-token term that is neither a WordNet word nor a stopword is
+    dropped when either:
+
+    * **Function-word merge** — it begins with a closed-class prefix
+      (``these``, ``my``, ``into``, …) and the ≥3-char remainder is a
+      WordNet word (``thesecase`` → ``these`` + ``case``, ``intoplay`` →
+      ``into`` + ``play``).
+    * **Leading-char drop** — it is ≥4 chars and prepending some single
+      ``a``–``z`` letter yields a WordNet word (``ictionary`` →
+      ``dictionary``, ``ther`` → ``other``).
+
+    Both rules require the term to be absent from WordNet, so genuine
+    technical neologisms (``interpretant``, ``biconditional``,
+    ``metasemiotic``) are never touched.
+    """
+    from nltk.corpus import wordnet as wn  # noqa: PLC0415
+    from concept_mapper.search.extract import STOPWORDS  # noqa: PLC0415
+
+    wn_words = set(wn.words())
+
+    def _is_artifact(term: str) -> bool:
+        if " " in term:
+            return False
+        t = term.lower()
+        if t in wn_words or t in STOPWORDS:
+            return False
+        for prefix in _OCR_MERGE_PREFIXES:
+            if (
+                t.startswith(prefix)
+                and len(t) - len(prefix) >= 3
+                and t[len(prefix) :] in wn_words
+            ):
+                return True
+        if len(t) >= 4 and any(chr(c) + t in wn_words for c in range(97, 123)):
+            return True
+        return False
+
+    return [
+        (term, score, components)
+        for term, score, components in candidates
+        if not _is_artifact(term)
     ]
 
 
@@ -373,15 +552,17 @@ def apply_run_pipeline(
 ) -> List[Candidate]:
     """The simplified filter chain used by ``cmapr run``.
 
-    Order: quote-strip → proper-name → lemma+suffix merge (top-N) →
-    fragment. Does *not* include multi-word noun chunks, POS filter, or
-    vetting — those are rarities-only steps.
+    Order: quote-strip → proper-name → stopword → lemma+suffix+derivational
+    merge (top-N) → fragment → OCR artifact. Does *not* include multi-word
+    noun chunks, POS filter, or vetting — those are rarities-only steps.
     """
     candidates = strip_stray_quotes(candidates)
     if not no_filter_names:
         candidates = filter_proper_names(candidates, docs, reference)
+    candidates = filter_stopwords(candidates)
     if not no_lemmatize:
         candidates = lemma_and_derivational_merge(candidates, top_n=top_n)
     if not no_filter_fragments:
         candidates = filter_fragments(candidates)
+        candidates = filter_ocr_artifacts(candidates)
     return candidates

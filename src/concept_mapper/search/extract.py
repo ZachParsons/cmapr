@@ -130,6 +130,10 @@ STOPWORDS = {
     "since",
     "without",
     "within",
+    "upon",
+    "onto",
+    "versa",
+    "vice",
     "along",
     "among",
     "and",
@@ -191,6 +195,7 @@ STOPWORDS = {
     "never",
     "once",
     "even",
+    "else",
     # Common adverbs
     "not",
     "no",

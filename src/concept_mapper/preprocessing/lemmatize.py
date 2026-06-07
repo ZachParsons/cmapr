@@ -15,6 +15,12 @@ import inflect
 _lemmatizer = WordNetLemmatizer()
 _inflect_engine = inflect.engine()
 
+# Word endings where inflect.singular_noun() wrongly strips a trailing -s
+# (treating a non-plural -s ending as a plural). These are Greek/Latin
+# singulars (-sis, -is, -us) or non-noun function words (-ss, -as, -os).
+# e.g. "semiosis" -> "semiosi", "whereas" -> "wherea", "unless" -> "unles".
+_NON_PLURAL_S_ENDINGS = ("ss", "us", "is", "as", "os", "sis")
+
 
 def get_wordnet_pos(treebank_tag: str) -> str:
     """
@@ -80,8 +86,13 @@ def lemmatize(word: str, pos: str = wordnet.NOUN) -> str:
     lemma = _lemmatizer.lemmatize(word_lower, pos=pos)
 
     # If WordNet didn't change the word and it's a noun, try inflect
-    # to handle specialized terms (e.g., "semiotics" -> "semiotic")
-    if lemma == word_lower and pos == wordnet.NOUN:
+    # to handle specialized terms (e.g., "semiotics" -> "semiotic").
+    # Skip endings inflect mis-singularizes (e.g. "semiosis" -> "semiosi").
+    if (
+        lemma == word_lower
+        and pos == wordnet.NOUN
+        and not word_lower.endswith(_NON_PLURAL_S_ENDINGS)
+    ):
         singular = _inflect_engine.singular_noun(word_lower)
         # singular_noun returns False if already singular, or the singular form
         if singular:
@@ -123,7 +134,11 @@ def lemmatize_tagged(tagged_tokens: List[tuple[str, str]]) -> List[str]:
         # try inflect to handle specialized terms not in WordNet
         # Only apply to NNS (plural noun) and NNPS (proper plural noun) to avoid
         # incorrectly singularizing words like "semiosis", "process", "Paris"
-        if lemma == word_lower and pos_tag in ("NNS", "NNPS"):
+        if (
+            lemma == word_lower
+            and pos_tag in ("NNS", "NNPS")
+            and not word_lower.endswith(_NON_PLURAL_S_ENDINGS)
+        ):
             singular = _inflect_engine.singular_noun(word_lower)
             if singular:
                 lemma = singular

@@ -306,6 +306,9 @@ def build(
             "html",
             "--output",
             str(export_p),
+            # Enables the node-click concordance sidebar in the embedded graph.
+            "--corpus",
+            str(_corpus_path(work)),
         ]
     )
     if result.returncode != 0:

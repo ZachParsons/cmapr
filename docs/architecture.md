@@ -176,14 +176,16 @@ flowchart TB
             f2a["<i>score_multi_word_chunks</i><br/>TF-IDF over noun_chunks<br/>scoring formula:<br/>log(1+freq) · (1 + log((N+1)/(df+1)))<br/>min_freq = min(2, n_docs)"]
             f2b["<i>merge_extra_candidates</i><br/>re-sort + raw_candidates update"]
             f3["<i>filter_proper_names</i><br/>pn_ratios from POS tags<br/>pn_ratio ≥ 0.3 AND<br/>Brown freq &lt; 25 ppm"]
-            f4["<i>lemma_and_derivational_merge</i><br/>Pass 1: WordNet noun lemma<br/>(semiotics → semiotic)<br/>Pass 2: 13 derivational suffixes<br/>(co-textual → co-text)<br/><b>top-N applied here</b>"]
+            f3b["<i>filter_stopwords</i><br/>shared STOPWORDS (search/extract.py)<br/>drops since/whether/could/…<br/>phrases bypass · runs before top-N"]
+            f4["<i>lemma_and_derivational_merge</i><br/>Pass 1: WordNet noun lemma<br/>(semiotics → semiotic)<br/>Pass 2: 13 derivational suffixes<br/>(co-textual → co-text)<br/>Pass 3: merge_derivational_variants<br/>WordNet derivationally_related_forms<br/>(taxonomic → taxonomy, prefer noun)<br/><b>top-N applied here</b>"]
             f5["<i>filter_fragments</i><br/>&lt; 4 chars OR<br/>(not in WordNet AND<br/>+s/+y/+ed/+er/+al/+ic/+is/+sis<br/>completes a WordNet word)"]
+            f5b["<i>filter_ocr_artifacts</i><br/>non-WordNet non-stopword AND<br/>fn-word merge (thesecase→these+case)<br/>OR leading-char drop (ictionary→dictionary)"]
             f6["<i>filter_by_pos_categories</i><br/>POS_CATEGORY_MAP:<br/>noun {NN,NNS,NNP,NNPS}<br/>verb {VB,VBD,VBG,VBN,VBP,VBZ}<br/>adj {JJ,JJR,JJS} · adv {RB,RBR,RBS}<br/>multi-word phrases bypass"]
             f7a["<i>load_vetting</i><br/>read vetting.json<br/>(accept + reject sets)"]
             f7b["<i>apply_vetting</i><br/>drop rejected ·<br/>re-include accepted from raw"]
             f7c["<i>save_vetting</i><br/>(when <code>--vet</code>)"]
             note_chain -.-> f1
-            f1 --> f2a --> f2b --> f3 --> f4 --> f5 --> f6
+            f1 --> f2a --> f2b --> f3 --> f3b --> f4 --> f5 --> f5b --> f6
             f7a --> f7b --> f7c
             f6 --> f7b
         end
@@ -310,11 +312,13 @@ flowchart TB
     %% =====================================================================
     %% STAGE 4 — EXPORT (low)
     %% =====================================================================
-    subgraph S4["<b>stage 4 · export</b>  &nbsp;·&nbsp;  <code>cmapr export --format {html|d3|graphml|csv|gexf}</code>"]
+    subgraph S4["<b>stage 4 · export</b>  &nbsp;·&nbsp;  <code>cmapr export --format {html|d3|graphml|csv|gexf} [--corpus PATH]</code>"]
         direction LR
         x1["<b>export/d3.py</b><br/><i>to_d3_dict</i><br/><i>export_d3_json</i><br/><i>load_d3_json</i>"]
-        x2["<b>export/html.py</b><br/><i>generate_html</i><br/>D3 force sim · legend ·<br/>node detail panel · cluster force ·<br/>expand/collapse · per-type colours"]
+        x2["<b>export/html.py</b><br/><i>generate_html(…, docs=)</i><br/>D3 force sim · legend ·<br/>node detail panel · cluster force ·<br/>concordance sidebar (--corpus) ·<br/>expand/collapse · per-type colours"]
+        x2b["<b>search/concordance.py</b><br/><i>build_concordance</i><br/>per-node sentence list +<br/>location + highlight marks<br/>(inlined when --corpus given)"]
         x3["<b>export/formats.py</b><br/><i>export_graphml</i> · <i>export_gexf</i><br/><i>export_csv</i> · <i>export_dot</i>"]
+        x2b -.-> x2
     end
 
     out_html(["<b>index.html</b>"]):::io
@@ -459,13 +463,14 @@ src/concept_mapper/
 │   ├── models.py                       # TermList, TermEntry (term, lemma, pos, definition, examples, metadata)
 │   ├── manager.py                      # TermManager — JSON / CSV / TXT I/O, CRUD, merging
 │   ├── suggester.py                    # suggest_terms_from_analysis (wraps PhilosophicalTermScorer + examples)
-│   └── scoring.py                      # post-scoring filter chain: quote-strip, multi-word chunks, proper names, lemma+suffix merge, fragments, POS, vetting
+│   └── scoring.py                      # post-scoring filter chain: quote/slash-strip, multi-word chunks, proper names, stopwords, lemma+suffix+derivational merge, fragments, OCR artifacts, POS, vetting
 │
 ├── search/
 │   ├── find.py                         # SentenceMatch, find_sentences, find_sentences_any/all, count_term_occurrences
 │   ├── context.py                      # ContextWindow, get_context, get_context_with_highlights
 │   ├── dispersion.py                   # dispersion, dispersion_plot_data, get_concentrated_regions
-│   └── extract.py                      # extract_terms_from_sentence_set; POS_TAG_GROUPS, STOPWORDS shared constants
+│   ├── extract.py                      # extract_terms_from_sentence_set; POS_TAG_GROUPS, STOPWORDS shared constants
+│   └── concordance.py                  # build_concordance — per-node sentence list (location + highlight marks) for the HTML viz sidebar
 │
 ├── syntax/
 │   └── diagram.py                      # diagram_sentence — Stanza dependency parse → ASCII / GraphML
@@ -542,15 +547,17 @@ src/concept_mapper/
    - **Definitional context**: appears in "X is Y", "by X I mean", etc. (weight 0.3) — `get_definitional_contexts`
    - **Capitalization**: mid-sentence capitals = reified abstraction (weight 0.2)
    Weights/signals configurable per-scorer. Returns `[(term, total_score, components_dict), ...]`.
-5. **Strip stray quotes** — handle `'sign'` → `sign` artifacts.
+5. **Strip stray quotes/slashes** — `strip_stray_quotes` handles `'sign'` → `sign` and `/man/` → `man` edge artifacts; internal punctuation (`co-text`) preserved.
 6. **Multi-word noun chunks** — if any `metadata["noun_chunks"]` present (spaCy run upstream), TF-IDF score them across docs and merge into the ranked list.
 7. **Proper-name filter** (default on, `--no-filter-names`) — `proper_noun_ratios` × Brown frequency check; rejects rare-in-Brown frequently-capitalized terms.
-8. **Lemma + derivational suffix merge** (default on, `--no-lemmatize`) — collapses `semiotics` → `semiotic`, `co-textual` → `co-text`. Keeps highest-scoring form. Applies `[:top_n]` cut here.
-9. **Fragment filter** (default on, `--no-filter-fragments`) — drops terms < 4 chars and prefix fragments of WordNet words.
-10. **POS filter** (`--pos noun,verb,adj,adv`) — uses `filter_by_pos_tags`. Multi-word phrases always pass.
-11. **Vetting** — read existing `vetting.json` (`accept`/`reject` lists); rejected terms removed, accepted terms re-included even past top-n. If `--vet`, interactive y/n prompt per unvetted term; only `y`/`n` accepted (anything else loops).
-12. **By-section grouping** (`--by-section`) — assigns each term to the section it appears in most often (resolved from `sentence_locations`), writes `<work>_by_section.json` alongside.
-13. **Export** — `TermManager(term_list).export_to_json(output_path)`.
+8. **Stopword filter** — `filter_stopwords` drops function words (`since`, `whether`, `could`, …) using the shared `STOPWORDS` set from `search/extract.py`. Phrases bypass. Runs *before* the top-N trim so junk doesn't consume slots.
+9. **Lemma + derivational merge** (default on, `--no-lemmatize`) — Pass 1/2 collapse `semiotics` → `semiotic`, `co-textual` → `co-text`; Pass 3 (`merge_derivational_variants`) collapses WordNet `derivationally_related_forms` pairs like `taxonomic` ↔ `taxonomy`, keeping the noun form. Keeps highest cluster score. Applies `[:top_n]` cut here.
+10. **Fragment filter** (default on, `--no-filter-fragments`) — drops terms < 4 chars and prefix fragments of WordNet words.
+11. **OCR-artifact filter** (default on, same `--no-filter-fragments` gate) — `filter_ocr_artifacts` drops non-WordNet non-stopword terms that are function-word merges (`thesecase` → `these`+`case`) or leading-char drops (`ictionary` → `dictionary`). Genuine neologisms (absent from WordNet) are untouched.
+12. **POS filter** (`--pos noun,verb,adj,adv`) — uses `filter_by_pos_tags`. Multi-word phrases always pass.
+13. **Vetting** — read existing `vetting.json` (`accept`/`reject` lists); rejected terms removed, accepted terms re-included even past top-n. If `--vet`, interactive y/n prompt per unvetted term; only `y`/`n` accepted (anything else loops).
+14. **By-section grouping** (`--by-section`) — assigns each term to the section it appears in most often (resolved from `sentence_locations`), writes `<work>_by_section.json` alongside.
+15. **Export** — `TermManager(term_list).export_to_json(output_path)`.
 
 **Output:** `TermList` JSON — list of `{"term": str, "metadata": {"score": float}}`. Optional companion `vetting.json` and `_by_section.json`.
 
@@ -616,14 +623,15 @@ src/concept_mapper/
 2. **Reconstruct `ConceptGraph`** — flat `add_node` / `add_edge` from nodes/links.
 3. **Convert / write** based on `--format`:
    - `d3` → `export_d3_json` (round-trip).
-   - `html` → `generate_html(graph, output_dir, title)` — standalone interactive page. Internal flow:
+   - `html` → `generate_html(graph, output_dir, title, docs=None)` — standalone interactive page. Internal flow:
      - `to_d3_dict` runs first: validates, consolidates duplicate labels (with chapter-aware dedup key for cluster graphs), strips isolated nodes (errors logged), computes communities (Louvain via NetworkX), sizes nodes, builds the JSON inlined into the page.
+     - When `docs` is supplied (CLI `--corpus`, or in-process from `cmapr run`/`serve`), `search/concordance.build_concordance` precomputes, per node term, every sentence its lemma appears in (document order, structural location, highlight surface-forms) and inlines it as a `CONCORDANCE` const. Omitted → inlines `{}`.
      - Template inlines D3 v7 from CDN, the JSON, and JS for the simulation.
      - Forces: `link` (distance ∝ 1/√weight), `charge` (-400, or -600 for high-degree hubs), `center`, `collide` (label-length aware), optional `cluster` (auto-engages when ≥ 2 distinct `chapter` values are present, pulls nodes toward centroids on a circle around the canvas centre).
      - Edge styling per type from `EDGE_COLORS`; `DIRECTED_TYPES` get arrowheads; `cooccurrence` and `recurrence` rendered dashed.
      - Legend (`LEGEND_TYPES`): checkbox per type that toggles `hiddenTypes` set; `applyVisibility` filters nodes and edges.
      - Tooltip on edge hover: term pair + verb + weight; multi-type edges (from `cmapr merge`) show `also: type2 (×W), ...` plus per-type evidence sections.
-     - Click a node → side detail panel (right, 280px) with frequency, score, list of connected edges and their types.
+     - Click a node → two right sidebars open together: the detail panel (far right, 280px) with frequency, score, and connected edges/types; and, just to its left, the **concordance panel** (380px) listing every sentence the node's lemmatized term appears in — document order, independently scrollable, each with a chapter › section breadcrumb and the term `<mark>`-highlighted (`showConcordance`, fed by the inlined `CONCORDANCE`). Empty-canvas click closes both. The concordance panel is silent when no corpus was supplied.
      - Double-click a node → expand/collapse (show only that node + its direct neighbours; respect type filters).
      - Drag pins a node (`fx`/`fy`); simulation keeps running around it.
    - `graphml` → `export_graphml` (Gephi / yEd / Cytoscape).

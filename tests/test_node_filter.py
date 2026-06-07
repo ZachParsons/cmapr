@@ -76,10 +76,10 @@ class TestPOSCriterion:
 
     def test_no_pos_skips_check(self):
         """When pos is not supplied the POS criterion is not applied."""
-        f = make_filter(freqs={"upon": 5})
-        ok, _ = f.is_valid("upon", pos=None)
+        f = make_filter(freqs={"signal": 5})
+        ok, _ = f.is_valid("signal", pos=None)
         # Should pass POS check but may still fail stopword/length etc.
-        # 'upon' is not in STOPWORDS and len 4 so should pass all
+        # 'signal' is not in STOPWORDS and len 6 so should pass all
         assert ok
 
 

@@ -482,6 +482,53 @@ class TestExportCommand:
         assert result.exit_code == 0
         assert (output_dir / "index.html").exists()
 
+    def test_export_html_with_corpus_concordance(
+        self, runner, sample_corpus_json, tmp_path
+    ):
+        """--corpus inlines a per-node sentence concordance into the HTML."""
+        # Graph node term must match the corpus content (Geist).
+        graph_file = tmp_path / "graph.json"
+        with open(graph_file, "w") as f:
+            json.dump(
+                {
+                    "nodes": [
+                        {"id": "geist", "label": "Geist", "size": 10, "group": 0},
+                        {
+                            "id": "dialectic",
+                            "label": "Dialectic",
+                            "size": 8,
+                            "group": 0,
+                        },
+                    ],
+                    "links": [
+                        {"source": "geist", "target": "dialectic", "weight": 1.0}
+                    ],
+                },
+                f,
+            )
+
+        output_dir = tmp_path / "viz"
+        result = runner.invoke(
+            cli,
+            [
+                "export",
+                str(graph_file),
+                "--format",
+                "html",
+                "--output",
+                str(output_dir),
+                "--corpus",
+                str(sample_corpus_json),
+            ],
+        )
+
+        assert result.exit_code == 0
+        html = (output_dir / "index.html").read_text(encoding="utf-8")
+        seg = html.split("const CONCORDANCE = ", 1)[1].split(";", 1)[0]
+        # Non-empty object, and at least one Geist sentence inlined.
+        assert seg.strip() not in ("{}", "")
+        assert "Geist" in seg
+
     def test_export_csv(self, runner, sample_graph_json, tmp_path):
         """Test exporting to CSV."""
         output_dir = tmp_path / "csv"

@@ -150,6 +150,20 @@ class TestLemmatization:
         assert lemmatize("cats", wordnet.NOUN) == "cat"
         assert lemmatize("mice", wordnet.NOUN) == "mouse"
 
+    def test_lemmatize_preserves_non_plural_s_endings(self):
+        """Words ending in -sis/-ss/-as etc. must not be mis-singularized.
+
+        Regression: inflect.singular_noun strips a trailing -s off these
+        (semiosis -> semiosi), corrupting valid terms. WordNet leaves them
+        unchanged and the inflect fallback must be skipped for these endings.
+        """
+        assert lemmatize("semiosis", wordnet.NOUN) == "semiosis"
+        assert lemmatize("whereas", wordnet.NOUN) == "whereas"
+        assert lemmatize("unless", wordnet.NOUN) == "unless"
+        assert lemmatize("analysis", wordnet.NOUN) == "analysis"
+        # The legitimate -ics fallback still works.
+        assert lemmatize("semiotics", wordnet.NOUN) == "semiotic"
+
     def test_lemmatize_adjective(self):
         """Test lemmatizing adjectives."""
         assert lemmatize("better", wordnet.ADJ) == "good"

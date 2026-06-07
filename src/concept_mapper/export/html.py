@@ -18,6 +18,7 @@ def generate_html(
     width: int = 1200,
     height: int = 800,
     include_evidence: bool = True,
+    docs: list = None,
 ) -> Path:
     """
     Generate standalone HTML visualization of the graph.
@@ -33,6 +34,10 @@ def generate_html(
         width: Visualization width in pixels (default: 1200)
         height: Visualization height in pixels (default: 800)
         include_evidence: Include evidence sentences in tooltips (default: False)
+        docs: Optional preprocessed documents. When supplied, a per-node
+            sentence concordance is computed and inlined so clicking a node
+            shows every sentence its lemmatized term appears in. Without it the
+            concordance sidebar stays empty (standalone export with no corpus).
 
     Returns:
         Path to generated HTML file
@@ -73,6 +78,17 @@ def generate_html(
     graph_data = to_d3_dict(graph, include_evidence=include_evidence)
     graph_data_json = json.dumps(graph_data, ensure_ascii=False)
 
+    # Per-node sentence concordance (only when a corpus is supplied).
+    concordance: dict = {}
+    if docs:
+        from concept_mapper.search.concordance import build_concordance
+
+        node_terms = [
+            n.get("term") or n.get("label") or n["id"] for n in graph_data["nodes"]
+        ]
+        concordance = build_concordance(docs, node_terms)
+    concordance_json = json.dumps(concordance, ensure_ascii=False)
+
     # Generate HTML file with inlined data
     html_path = output_dir / html_filename
 
@@ -81,6 +97,7 @@ def generate_html(
         width=width,
         height=height,
         graph_data_json=graph_data_json,
+        concordance_json=concordance_json,
     )
 
     with open(html_path, "w", encoding="utf-8") as f:
@@ -94,6 +111,7 @@ def _generate_html_template(
     width: int,
     height: int,
     graph_data_json: str,
+    concordance_json: str = "{}",
 ) -> str:
     """Generate HTML template with D3.js visualization and inlined data."""
     return f"""<!DOCTYPE html>
@@ -312,6 +330,85 @@ def _generate_html_template(
             font-size: 10px;
             color: #888;
         }}
+
+        /* Secondary sidebar: sentence concordance, sits left of #detail-panel */
+        #concordance-panel {{
+            position: fixed;
+            top: 0;
+            right: 280px;
+            width: 380px;
+            height: 100%;
+            background: rgba(255,255,255,0.98);
+            border-left: 1px solid #ddd;
+            padding: 16px 16px 32px;
+            overflow-y: auto;
+            transform: translateX(calc(100% + 280px));
+            transition: transform 0.2s ease;
+            z-index: 199;
+            box-sizing: border-box;
+            font-size: 12px;
+        }}
+
+        #concordance-panel.open {{
+            transform: translateX(0);
+        }}
+
+        #concordance-panel h2 {{
+            margin: 0 24px 4px 0;
+            font-size: 15px;
+            color: #222;
+            word-break: break-word;
+        }}
+
+        #concordance-panel .conc-count {{
+            color: #888;
+            font-size: 11px;
+            margin-bottom: 10px;
+        }}
+
+        #concordance-panel .close-btn {{
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: #888;
+            padding: 2px 6px;
+        }}
+
+        #concordance-panel .close-btn:hover {{
+            color: #333;
+            background: #eee;
+            border-radius: 3px;
+        }}
+
+        .conc-item {{
+            margin: 0 0 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            line-height: 1.45;
+        }}
+
+        .conc-loc {{
+            color: #999;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-bottom: 3px;
+        }}
+
+        .conc-text {{
+            color: #333;
+        }}
+
+        .conc-text mark {{
+            background: #ffe9a8;
+            color: inherit;
+            padding: 0 1px;
+            border-radius: 2px;
+        }}
     </style>
 </head>
 <body>
@@ -326,6 +423,11 @@ def _generate_html_template(
     <div id="detail-panel">
         <button class="close-btn" onclick="closeDetailPanel()">✕</button>
         <div id="detail-panel-content"></div>
+    </div>
+
+    <div id="concordance-panel">
+        <button class="close-btn" onclick="closeConcordance()">✕</button>
+        <div id="concordance-panel-content"></div>
     </div>
 
     <div id="overlay">
@@ -411,14 +513,17 @@ def _generate_html_template(
 
         svg.call(zoom);
 
-        // Close detail panel when clicking on empty canvas
-        svg.on("click", () => closeDetailPanel());
+        // Close both side panels when clicking on empty canvas
+        svg.on("click", () => {{ closeDetailPanel(); closeConcordance(); }});
 
         // Tooltip
         const tooltip = d3.select("#tooltip");
 
         // Inlined graph data
         const data = {graph_data_json};
+
+        // Inlined per-node sentence concordance ({{}} when no corpus supplied)
+        const CONCORDANCE = {concordance_json};
 
         // Initialize visualization
         (function() {{
@@ -576,6 +681,7 @@ def _generate_html_template(
                 .on("click", (event, d) => {{
                     event.stopPropagation();
                     showDetailPanel(d);
+                    showConcordance(d);
                 }})
                 .on("dblclick", (event, d) => {{
                     event.stopPropagation();
@@ -776,7 +882,61 @@ def _generate_html_template(
                 document.getElementById("detail-panel").classList.add("open");
             }}
 
+            // ----------------------------------------------------------------
+            // 11.3 — Concordance panel (sentences containing the node's term)
+            // ----------------------------------------------------------------
+            function escapeHtml(s) {{
+                return s.replace(/[&<>"']/g, c => ({{
+                    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+                    '"': "&quot;", "'": "&#39;"
+                }}[c]));
+            }}
+
+            function escapeRegExp(s) {{
+                return s.replace(/[.*+?^${{}}()|[\\]\\\\]/g, "\\\\$&");
+            }}
+
+            function highlightSentence(text, marks) {{
+                let html = escapeHtml(text);
+                const forms = (marks || []).filter(Boolean);
+                if (!forms.length) return html;
+                // Longest first so overlapping forms don't partially match.
+                forms.sort((a, b) => b.length - a.length);
+                const pattern = forms.map(escapeRegExp).join("|");
+                const re = new RegExp("\\\\b(" + pattern + ")\\\\b", "gi");
+                return html.replace(re, "<mark>$1</mark>");
+            }}
+
+            function showConcordance(d) {{
+                const records =
+                    CONCORDANCE[d.term] || CONCORDANCE[d.label] || CONCORDANCE[d.id] || [];
+                const panel = document.getElementById("concordance-panel");
+                const sentences = records.filter(r => r.text !== undefined);
+                const trunc = records.find(r => r.truncated !== undefined);
+
+                let html = `<h2>${{escapeHtml(d.label)}}</h2>`;
+                if (!sentences.length) {{
+                    html += `<div class="conc-count">No sentences found.</div>`;
+                }} else if (trunc) {{
+                    html += `<div class="conc-count">Showing first ${{trunc.truncated}} of ${{trunc.total}} sentences</div>`;
+                }} else {{
+                    html += `<div class="conc-count">${{sentences.length}} sentence${{sentences.length === 1 ? "" : "s"}}</div>`;
+                }}
+
+                sentences.forEach(r => {{
+                    html += `<div class="conc-item">`;
+                    if (r.loc) html += `<div class="conc-loc">${{escapeHtml(r.loc)}}</div>`;
+                    html += `<div class="conc-text">${{highlightSentence(r.text, r.marks)}}</div>`;
+                    html += `</div>`;
+                }});
+
+                document.getElementById("concordance-panel-content").innerHTML = html;
+                panel.classList.add("open");
+                panel.scrollTop = 0;
+            }}
+
             window.showDetailPanel = showDetailPanel;
+            window.showConcordance = showConcordance;
         }})();
 
         // Drag behavior
@@ -808,6 +968,10 @@ def _generate_html_template(
 
         function closeDetailPanel() {{
             document.getElementById("detail-panel").classList.remove("open");
+        }}
+
+        function closeConcordance() {{
+            document.getElementById("concordance-panel").classList.remove("open");
         }}
     </script>
 </body>
