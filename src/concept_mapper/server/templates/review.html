@@ -21,26 +21,68 @@
 <div class="error">{{ error }}</div>
 {% endif %}
 
-<div class="card" style="padding:14px 24px;display:flex;align-items:center;gap:14px">
-  <form method="post" action="/rarities"
-        style="display:flex;align-items:center;gap:8px;margin:0">
+{% set pos_list = params.pos.split(',') if params.pos else [] %}
+<div class="card" style="padding:16px 24px">
+  <form method="post" action="/rarities" style="margin:0">
     <input type="hidden" name="work" value="{{ work }}">
-    <label for="pool_size" style="margin:0;font-size:13px;color:#444">
-      Show top
-    </label>
-    <input type="number" id="pool_size" name="pool_size"
-           value="{{ pool_size }}" min="10" max="2000" step="10"
-           style="width:90px;margin:0">
-    <label for="pool_size" style="margin:0;font-size:13px;color:#444">
-      candidates
-    </label>
-    <button type="submit" class="btn btn-secondary" style="padding:5px 12px">
-      Update
-    </button>
+
+    <div style="display:flex;flex-wrap:wrap;gap:22px;align-items:flex-end">
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <label for="threshold" style="font-size:12px;color:#444">Min score</label>
+        <input type="number" id="threshold" name="threshold"
+               value="{{ params.threshold }}" min="0" max="100" step="0.05"
+               style="width:90px;margin:0">
+        <span style="font-size:11px;color:#aaa">lower = more terms</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <label for="pool_size" style="font-size:12px;color:#444">Show top</label>
+        <input type="number" id="pool_size" name="pool_size"
+               value="{{ params.top_n }}" placeholder="100"
+               min="10" max="2000" step="10"
+               style="width:90px;margin:0">
+        <span style="font-size:11px;color:#aaa">caps the pool</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <span style="font-size:12px;color:#444">Part of speech</span>
+        <div style="display:flex;gap:12px;font-size:13px;padding-top:4px">
+          {% for p in ["noun", "verb", "adj", "adv"] %}
+          <label style="display:flex;align-items:center;gap:4px;margin:0">
+            <input type="checkbox" name="pos" value="{{ p }}"
+                   {% if p in pos_list %}checked{% endif %}> {{ p }}
+          </label>
+          {% endfor %}
+        </div>
+        <span style="font-size:11px;color:#aaa">none = all</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:12px;color:#444">Keep (skip filter)</span>
+        <div style="display:flex;flex-direction:column;gap:2px;font-size:13px">
+          <label style="display:flex;align-items:center;gap:4px;margin:0">
+            <input type="checkbox" name="keep_names" value="true"
+                   {% if params.keep_names %}checked{% endif %}> proper names
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;margin:0">
+            <input type="checkbox" name="keep_fragments" value="true"
+                   {% if params.keep_fragments %}checked{% endif %}> fragments / OCR junk
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;margin:0">
+            <input type="checkbox" name="no_lemmatize" value="true"
+                   {% if params.no_lemmatize %}checked{% endif %}> don't merge inflections
+          </label>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-secondary" style="padding:6px 14px">
+        Update candidates
+      </button>
+    </div>
+    <div style="color:#aaa;font-size:12px;margin-top:10px">
+      re-runs rarities only — no re-ingest
+    </div>
   </form>
-  <span style="color:#aaa;font-size:12px;margin-left:auto">
-    re-runs rarities only — no re-ingest
-  </span>
 </div>
 
 <div class="card">
@@ -51,13 +93,20 @@
   <form method="post" action="/vet">
     <input type="hidden" name="work" value="{{ work }}">
 
-    <table style="width:100%;border-collapse:collapse">
+    <table id="terms-table" style="width:100%;border-collapse:collapse">
       <thead>
         <tr style="text-align:left;font-size:12px;color:#888;border-bottom:1px solid #eee">
-          <th style="padding:4px 8px;width:32px"></th>
-          <th style="padding:4px 8px">Term</th>
-          <th style="padding:4px 8px;text-align:right">Score</th>
-          <th style="padding:4px 8px;text-align:right">Freq</th>
+          <th style="padding:4px 8px;width:32px;cursor:pointer"
+              onclick="sortTerms(0,'check',this)" title="Sort by selected">✓</th>
+          <th style="padding:4px 8px;cursor:pointer"
+              onclick="sortTerms(1,'str',this)">Term</th>
+          <th style="padding:4px 8px;text-align:right;cursor:pointer"
+              onclick="sortTerms(2,'num',this)">Score</th>
+          <th style="padding:4px 8px;text-align:right;cursor:pointer"
+              onclick="sortTerms(3,'num',this)">Freq</th>
+          <th style="padding:4px 8px;cursor:pointer"
+              onclick="sortTerms(4,'sel',this)"
+              title="Why excluded (optional)">Reason</th>
         </tr>
       </thead>
       <tbody>
@@ -70,6 +119,23 @@
           <td style="padding:5px 8px;font-weight:500">{{ t.term }}</td>
           <td style="padding:5px 8px;text-align:right;color:#888">{{ t.score }}</td>
           <td style="padding:5px 8px;text-align:right;color:#888">{{ t.freq }}</td>
+          <td style="padding:5px 8px">
+            <select name="reason::{{ t.term }}" onchange="onReason(this)"
+                    style="font-size:12px;color:#666;padding:1px 4px">
+              {% set reasons = [
+                ("", "—"),
+                ("proper_name", "proper name"),
+                ("junk", "parse junk"),
+                ("duplicate", "duplicate / lemma"),
+                ("atopic", "common & atopic"),
+                ("other", "other"),
+              ] %}
+              {% for value, label in reasons %}
+              <option value="{{ value }}"
+                      {% if t.reason == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -109,4 +175,47 @@
     </form>
   </div>
 </details>
+
+<script>
+  // Client-side column sort for the review table. Reordering <tr> rows keeps
+  // each checkbox's state and value, so the /vet submission is unaffected.
+  function sortTerms(idx, type, th) {
+    const table = document.getElementById("terms-table");
+    const tbody = table.tBodies[0];
+    const rows = Array.from(tbody.rows);
+    const asc = th.dataset.asc !== "true";
+
+    table.querySelectorAll("th").forEach(h => {
+      h.dataset.asc = "";
+      h.textContent = h.textContent.replace(/\s*[▲▼]$/, "");
+    });
+    th.dataset.asc = asc ? "true" : "false";
+    th.textContent = th.textContent.replace(/\s*[▲▼]$/, "") + (asc ? " ▲" : " ▼");
+
+    const val = (row) => {
+      const cell = row.cells[idx];
+      if (type === "check") return cell.querySelector("input").checked ? 1 : 0;
+      if (type === "num") return parseFloat(cell.innerText) || 0;
+      if (type === "sel") return cell.querySelector("select").value;
+      return cell.innerText.trim().toLowerCase();
+    };
+
+    rows.sort((a, b) => {
+      const x = val(a), y = val(b);
+      if (type === "str" || type === "sel")
+        return asc ? (x > y ? 1 : x < y ? -1 : 0) : (x < y ? 1 : x > y ? -1 : 0);
+      return asc ? x - y : y - x;
+    });
+    rows.forEach(r => tbody.appendChild(r));
+  }
+
+  // Picking a reason marks the term for exclusion (unchecks its row); a reason
+  // only makes sense for a rejected term.
+  function onReason(sel) {
+    if (sel.value) {
+      const cb = sel.closest("tr").querySelector('input[type="checkbox"]');
+      if (cb) cb.checked = false;
+    }
+  }
+</script>
 {% endblock %}

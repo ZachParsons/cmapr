@@ -41,6 +41,125 @@ def _export_path(work: str) -> Path:
     return Path("data/output/exports") / work / "index.html"
 
 
+def _params_path(work: str) -> Path:
+    return Path("data/output/rarities") / work / "rarities_params.json"
+
+
+# Cross-work learned filters, grown from review reasons and read by the rarities
+# run (output-dir root, matching `cmapr --output-dir data/output`).
+def _stopwords_supplement_path() -> Path:
+    return Path("data/output/stopwords_extra.json")
+
+
+def _aliases_path() -> Path:
+    return Path("data/output/aliases.json")
+
+
+def _grow_learned_filters(reasons: dict, accepted_terms: set) -> None:
+    """Feed rejection reasons into the cross-work learned filters.
+
+    "common & atopic" terms join the stopword supplement; "duplicate / lemma"
+    terms become aliases onto a canonical inferred from the accepted (kept)
+    terms. Both files are unions/updates, so corrections accumulate over time.
+    """
+    atopic = sorted(t for t, code in reasons.items() if code == "atopic")
+    duplicates = [t for t, code in reasons.items() if code == "duplicate"]
+
+    if atopic:
+        sp = _stopwords_supplement_path()
+        sp.parent.mkdir(parents=True, exist_ok=True)
+        existing: set = set()
+        if sp.exists():
+            try:
+                existing = set(json.loads(sp.read_text()).get("stopwords", []))
+            except (ValueError, OSError):
+                existing = set()
+        existing.update(atopic)
+        sp.write_text(
+            json.dumps({"stopwords": sorted(existing)}, indent=2, ensure_ascii=False)
+        )
+
+    if duplicates:
+        from concept_mapper.terms.scoring import infer_canonical
+
+        ap = _aliases_path()
+        ap.parent.mkdir(parents=True, exist_ok=True)
+        amap: dict = {}
+        if ap.exists():
+            try:
+                amap = dict(json.loads(ap.read_text()).get("aliases", {}))
+            except (ValueError, OSError):
+                amap = {}
+        pool = sorted(accepted_terms)
+        for dup in duplicates:
+            canonical = infer_canonical(dup, pool)
+            if canonical and canonical.lower() != dup:
+                amap[dup] = canonical.lower()
+        if amap:
+            ap.write_text(
+                json.dumps(
+                    {"aliases": dict(sorted(amap.items()))},
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+
+
+# Defaults mirror the `cmapr rarities` CLI defaults.
+_DEFAULT_PARAMS: dict = {
+    "top_n": 100,
+    "threshold": 0.5,
+    "pos": "",  # comma-separated subset of noun,verb,adj,adv ("" = all)
+    "keep_names": False,  # --no-filter-names
+    "keep_fragments": False,  # --no-filter-fragments
+    "no_lemmatize": False,  # --no-lemmatize
+}
+
+
+def _load_params(work: str) -> dict:
+    """Last-used rarities params for this work, falling back to defaults."""
+    p = _params_path(work)
+    if p.exists():
+        try:
+            return {**_DEFAULT_PARAMS, **json.loads(p.read_text())}
+        except (ValueError, OSError):
+            pass
+    return dict(_DEFAULT_PARAMS)
+
+
+def _run_rarities(work: str, params: dict) -> subprocess.CompletedProcess:
+    """Run `cmapr rarities` with the given params; persist them on success.
+
+    `top_n` only *caps* the candidate pool — to surface MORE terms, lower
+    `threshold` (the minimum score). Both are exposed on the review page.
+    """
+    terms_p = _rarities_path(work)
+    terms_p.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        "cmapr",
+        "rarities",
+        str(_corpus_path(work)),
+        "--top-n",
+        str(params["top_n"]),
+        "--threshold",
+        str(params["threshold"]),
+        "--output",
+        str(terms_p),
+    ]
+    if params.get("pos"):
+        cmd += ["--pos", params["pos"]]
+    if params.get("keep_names"):
+        cmd.append("--no-filter-names")
+    if params.get("keep_fragments"):
+        cmd.append("--no-filter-fragments")
+    if params.get("no_lemmatize"):
+        cmd.append("--no-lemmatize")
+    result = _run(cmd)
+    if result.returncode == 0:
+        _params_path(work).write_text(json.dumps(params, indent=2), encoding="utf-8")
+    return result
+
+
 def _list_works() -> list[str]:
     corpus_dir = Path("data/output/corpus")
     if not corpus_dir.exists():
@@ -95,23 +214,12 @@ def start(
             err = (result.stderr or result.stdout)[:300].replace('"', "'")
             return RedirectResponse(f"/?error={err}", status_code=303)
 
-    # Run rarities with a generous top-n so the review page shows a wide
-    # candidate pool. The build step does NOT re-run rarities; it filters
-    # this pool by the user's vetting + graph top-n. The user can adjust
-    # this pool size from the review page via POST /rarities.
-    terms_p = _rarities_path(work)
-    terms_p.parent.mkdir(parents=True, exist_ok=True)
-    result = _run(
-        [
-            "cmapr",
-            "rarities",
-            str(_corpus_path(work)),
-            "--top-n",
-            "200",
-            "--output",
-            str(terms_p),
-        ]
-    )
+    # Run rarities with the default params (generous top-n) so the review
+    # page shows a wide candidate pool. The build step does NOT re-run
+    # rarities; it filters this pool by the user's vetting + graph top-n. The
+    # user can adjust the params (top-n, threshold, POS, filters) from the
+    # review page via POST /rarities.
+    result = _run_rarities(work, dict(_DEFAULT_PARAMS))
     if result.returncode != 0:
         err = (result.stderr or result.stdout)[:300].replace('"', "'")
         return RedirectResponse(f"/?error={err}", status_code=303)
@@ -131,6 +239,8 @@ def review(request: Request, work: str, error: str = ""):
     if vp.exists():
         vet = json.loads(vp.read_text())
     rejected = {t.lower() for t in vet.get("reject", [])}
+    # Optional per-term rejection reason (parallel to reject — see POST /vet).
+    reasons = {k.lower(): v for k, v in (vet.get("reasons") or {}).items()}
 
     rows = []
     for t in terms:
@@ -142,6 +252,7 @@ def review(request: Request, work: str, error: str = ""):
                 "score": round(meta.get("score", 0), 2),
                 "freq": meta.get("corpus_count") or meta.get("count", 0),
                 "checked": name.lower() not in rejected,
+                "reason": reasons.get(name.lower(), ""),
             }
         )
 
@@ -152,6 +263,7 @@ def review(request: Request, work: str, error: str = ""):
             "work": work,
             "terms": rows,
             "pool_size": len(rows),
+            "params": _load_params(work),
             "error": error,
             "has_vetting": _vetting_path(work).exists(),
             "has_export": _export_path(work).exists(),
@@ -160,26 +272,35 @@ def review(request: Request, work: str, error: str = ""):
 
 
 @app.post("/rarities")
-def rerun_rarities(
-    work: Annotated[str, Form()],
-    pool_size: Annotated[int, Form()] = 200,
-):
-    """Re-run only the rarities step to widen/narrow the candidate pool."""
-    # Clamp to a sane upper bound to avoid runaway runs.
-    pool_size = max(10, min(pool_size, 2000))
-    terms_p = _rarities_path(work)
-    terms_p.parent.mkdir(parents=True, exist_ok=True)
-    result = _run(
-        [
-            "cmapr",
-            "rarities",
-            str(_corpus_path(work)),
-            "--top-n",
-            str(pool_size),
-            "--output",
-            str(terms_p),
-        ]
-    )
+async def rerun_rarities(request: Request):
+    """Re-run only the rarities step with user-adjusted detection params.
+
+    Exposes top-n, minimum score threshold, POS restriction, and the filter
+    toggles. `top_n` caps the pool; lower `threshold` to surface more terms.
+    """
+    form = await request.form()
+    work = form.get("work", "")
+
+    try:
+        pool_size = int(form.get("pool_size") or 100)
+    except ValueError:
+        pool_size = 100
+    try:
+        threshold = float(form.get("threshold") or 0.5)
+    except ValueError:
+        threshold = 0.5
+
+    params = {
+        "top_n": max(10, min(pool_size, 2000)),
+        "threshold": max(0.0, min(threshold, 100.0)),
+        # POS arrives as 0+ checkbox values; join to the CLI's comma form.
+        "pos": ",".join(form.getlist("pos")),
+        "keep_names": bool(form.get("keep_names")),
+        "keep_fragments": bool(form.get("keep_fragments")),
+        "no_lemmatize": bool(form.get("no_lemmatize")),
+    }
+
+    result = _run_rarities(work, params)
     if result.returncode != 0:
         err = (result.stderr or result.stdout)[:300].replace('"', "'")
         return RedirectResponse(f"/review?work={work}&error={err}", status_code=303)
@@ -192,11 +313,21 @@ async def vet(request: Request):
     work = form.get("work", "")
     accepted_terms = set(t.lower() for t in form.getlist("terms"))
 
+    # Per-term rejection reason from the single "Reason" column. Field name is
+    # "reason::<term>"; only non-empty selections are kept. Stored in a parallel
+    # `reasons` map so `reject` stays a plain string list for the CLI loaders.
+    reasons: dict = {}
+
     terms_p = _rarities_path(work)
     if terms_p.exists():
         all_terms = json.loads(terms_p.read_text())
         all_names = [t["term"].lower() for t in all_terms]
         rejected = sorted(n for n in all_names if n not in accepted_terms)
+        for t in all_terms:
+            name = t["term"]
+            r = (form.get(f"reason::{name}") or "").strip()
+            if r:
+                reasons[name.lower()] = r
     else:
         rejected = []
 
@@ -207,11 +338,15 @@ async def vet(request: Request):
             {
                 "accept": sorted(accepted_terms),
                 "reject": rejected,
+                "reasons": dict(sorted(reasons.items())),
             },
             indent=2,
             ensure_ascii=False,
         )
     )
+
+    # Feed atopic/duplicate reasons into the cross-work learned filters.
+    _grow_learned_filters(reasons, accepted_terms)
 
     return RedirectResponse(f"/options?work={work}", status_code=303)
 
@@ -297,20 +432,23 @@ def build(
     # Export to HTML
     export_p = _export_path(work)
     export_p.parent.mkdir(parents=True, exist_ok=True)
-    result = _run(
-        [
-            "cmapr",
-            "export",
-            str(graph_p),
-            "--format",
-            "html",
-            "--output",
-            str(export_p),
-            # Enables the node-click concordance sidebar in the embedded graph.
-            "--corpus",
-            str(_corpus_path(work)),
-        ]
-    )
+    export_cmd = [
+        "cmapr",
+        "export",
+        str(graph_p),
+        "--format",
+        "html",
+        "--output",
+        str(export_p),
+        # Enables the node-click concordance sidebar in the embedded graph.
+        "--corpus",
+        str(_corpus_path(work)),
+    ]
+    # Extend the concordance to pipeline-merged variants when available.
+    variants_p = _rarities_path(work).parent / "variants.json"
+    if variants_p.exists():
+        export_cmd += ["--variants", str(variants_p)]
+    result = _run(export_cmd)
     if result.returncode != 0:
         return RedirectResponse(
             f"/options?work={work}&error=export+failed", status_code=303

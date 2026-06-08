@@ -59,10 +59,53 @@ class TestBuildConcordance:
         assert recs[0]["marks"] == ["sign"]
         assert recs[1]["marks"] == ["signs"]
 
+    def test_matches_all_inflected_surface_forms(self):
+        # A node term must find every inflected form in the text, not just the
+        # exact lemma — including the inflect-singularized noun (semiotics ->
+        # semiotic) that POS-aware lemmatization can miss mid-sentence.
+        docs = [
+            _doc(
+                [
+                    "Semiotics studies signs.",
+                    "Modern semiotics analyses the sign.",
+                    "He signed and signs documents.",
+                ]
+            )
+        ]
+        semiotic = build_concordance(docs, ["semiotic"])["semiotic"]
+        assert len(semiotic) == 2  # both "Semiotics" and "semiotics"
+
+        sign = build_concordance(docs, ["sign"])["sign"]
+        # sign / signs / signed all map back to the node term.
+        assert len(sign) == 3
+        marks = {m.lower() for r in sign for m in r["marks"]}
+        assert {"signs", "signed"} <= marks
+
     def test_document_order_across_docs(self):
         docs = [_doc(["First sign."]), _doc(["Second sign."])]
         recs = build_concordance(docs, ["sign"])["sign"]
         assert [r["text"] for r in recs] == ["First sign.", "Second sign."]
+
+    def test_variants_extend_matching_to_merged_forms(self):
+        # A pipeline-merged variant (taxonomy ⇐ taxonomic) is matched and marked.
+        docs = [
+            _doc(["Taxonomic rank matters.", "A taxonomy is built.", "Unrelated here."])
+        ]
+        recs = build_concordance(
+            docs, ["taxonomy"], variants={"taxonomy": ["taxonomic"]}
+        )["taxonomy"]
+        texts = [r["text"] for r in recs if "text" in r]
+        assert "Taxonomic rank matters." in texts
+        assert "A taxonomy is built." in texts
+        marks = {m.lower() for r in recs if "text" in r for m in r["marks"]}
+        assert {"taxonomic", "taxonomy"} <= marks
+
+    def test_without_variants_excludes_derivational_form(self):
+        # No variants map → derivational form is NOT included (only inflections).
+        docs = [_doc(["Taxonomic rank matters.", "A taxonomy is built."])]
+        recs = build_concordance(docs, ["taxonomy"])["taxonomy"]
+        texts = [r["text"] for r in recs if "text" in r]
+        assert texts == ["A taxonomy is built."]
 
     def test_phrase_substring_match(self):
         docs = [_doc(["The content plane differs.", "Only content here."])]

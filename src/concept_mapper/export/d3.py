@@ -95,6 +95,8 @@ def to_d3_dict(
             node_data["pos"] = node_attrs["pos"]
         if "definition" in node_attrs:
             node_data["definition"] = node_attrs["definition"]
+        if "definition_source" in node_attrs:
+            node_data["definition_source"] = node_attrs["definition_source"]
         if "score" in node_attrs:
             node_data["score"] = node_attrs["score"]
         if "community" in node_attrs:

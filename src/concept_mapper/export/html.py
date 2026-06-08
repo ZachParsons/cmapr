@@ -19,6 +19,7 @@ def generate_html(
     height: int = 800,
     include_evidence: bool = True,
     docs: list = None,
+    variants: dict = None,
 ) -> Path:
     """
     Generate standalone HTML visualization of the graph.
@@ -38,6 +39,9 @@ def generate_html(
             sentence concordance is computed and inlined so clicking a node
             shows every sentence its lemmatized term appears in. Without it the
             concordance sidebar stays empty (standalone export with no corpus).
+        variants: Optional ``{canonical: [merged forms]}`` map (from the
+            rarities ``variants.json``) so a node's concordance also covers the
+            derivational variants the pipeline merged into it.
 
     Returns:
         Path to generated HTML file
@@ -86,7 +90,7 @@ def generate_html(
         node_terms = [
             n.get("term") or n.get("label") or n["id"] for n in graph_data["nodes"]
         ]
-        concordance = build_concordance(docs, node_terms)
+        concordance = build_concordance(docs, node_terms, variants=variants)
     concordance_json = json.dumps(concordance, ensure_ascii=False)
 
     # Generate HTML file with inlined data
@@ -236,6 +240,8 @@ def _generate_html_template(
             font-size: 11px;
             color: #333;
             line-height: 1.8;
+            /* Slides left to clear the right-side drawers — see layoutDrawers() */
+            transition: right 0.2s ease;
         }}
 
         .legend-row {{
@@ -267,25 +273,23 @@ def _generate_html_template(
             accent-color: #555;
         }}
 
+        /* Both drawers are positioned by JS (layoutDrawers): `right` slides
+           them on/off and lets the concordance fill the relations footprint
+           when relations closes. Start off-screen until the first layout. */
         #detail-panel {{
             position: fixed;
             top: 0;
-            right: 0;
+            right: -360px;
             width: 280px;
             height: 100%;
             background: rgba(255,255,255,0.97);
             border-left: 1px solid #ddd;
             padding: 16px 16px 32px;
             overflow-y: auto;
-            transform: translateX(100%);
-            transition: transform 0.2s ease;
+            transition: right 0.2s ease;
             z-index: 200;
             box-sizing: border-box;
             font-size: 12px;
-        }}
-
-        #detail-panel.open {{
-            transform: translateX(0);
         }}
 
         #detail-panel h2 {{
@@ -313,6 +317,45 @@ def _generate_html_template(
             border-radius: 3px;
         }}
 
+        /* Unobtrusive half-tone drawer label (Relations / Concordance) */
+        .drawer-title {{
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #c4c4c4;
+            margin: 0 0 8px;
+            user-select: none;
+        }}
+
+        /* Draggable left boundary for each drawer (positioned by layoutDrawers) */
+        .resize-handle {{
+            position: fixed;
+            top: 0;
+            width: 7px;
+            height: 100%;
+            cursor: ew-resize;
+            z-index: 201;
+            display: none;
+            transition: left 0.2s ease;
+        }}
+
+        .resize-handle:hover {{
+            background: rgba(0,0,0,0.07);
+        }}
+
+        body.resizing {{
+            cursor: ew-resize;
+            user-select: none;
+        }}
+
+        body.resizing #detail-panel,
+        body.resizing #concordance-panel,
+        body.resizing #legend,
+        body.resizing .resize-handle {{
+            transition: none;
+        }}
+
         .panel-meta {{
             color: #555;
             margin: 2px 0;
@@ -335,22 +378,17 @@ def _generate_html_template(
         #concordance-panel {{
             position: fixed;
             top: 0;
-            right: 280px;
+            right: -800px;
             width: 380px;
             height: 100%;
             background: rgba(255,255,255,0.98);
             border-left: 1px solid #ddd;
             padding: 16px 16px 32px;
             overflow-y: auto;
-            transform: translateX(calc(100% + 280px));
-            transition: transform 0.2s ease;
+            transition: right 0.2s ease;
             z-index: 199;
             box-sizing: border-box;
             font-size: 12px;
-        }}
-
-        #concordance-panel.open {{
-            transform: translateX(0);
         }}
 
         #concordance-panel h2 {{
@@ -422,13 +460,20 @@ def _generate_html_template(
 
     <div id="detail-panel">
         <button class="close-btn" onclick="closeDetailPanel()">✕</button>
+        <div class="drawer-title">Relations</div>
         <div id="detail-panel-content"></div>
     </div>
 
     <div id="concordance-panel">
         <button class="close-btn" onclick="closeConcordance()">✕</button>
+        <div class="drawer-title">Concordance</div>
         <div id="concordance-panel-content"></div>
     </div>
+
+    <div id="detail-handle" class="resize-handle"
+         onmousedown="startResize('detail', event)"></div>
+    <div id="conc-handle" class="resize-handle"
+         onmousedown="startResize('conc', event)"></div>
 
     <div id="overlay">
         <div class="info" id="info">Loading graph...</div>
@@ -855,7 +900,12 @@ def _generate_html_template(
                 if (d.score    != null) html += `<div class="panel-meta">Rarity score: ${{d.score.toFixed(2)}}</div>`;
                 if (d.frequency != null) html += `<div class="panel-meta">Frequency: ${{d.frequency}}</div>`;
                 if (d.pos)              html += `<div class="panel-meta">POS: ${{d.pos}}</div>`;
-                if (d.definition)       html += `<div class="panel-meta" style="margin-top:6px">${{d.definition}}</div>`;
+                if (d.definition) {{
+                    html += `<div class="panel-meta" style="margin-top:6px;font-style:italic">${{d.definition}}</div>`;
+                    if (d.definition_source) {{
+                        html += `<div class="panel-meta" style="color:#aaa;font-size:10px">— ${{d.definition_source}}</div>`;
+                    }}
+                }}
 
                 html += `<hr style="margin:10px 0"><div style="font-weight:600;margin-bottom:6px">Connections (${{edges.length}})</div>`;
 
@@ -880,6 +930,7 @@ def _generate_html_template(
 
                 document.getElementById("detail-panel-content").innerHTML = html;
                 document.getElementById("detail-panel").classList.add("open");
+                layoutDrawers();
             }}
 
             // ----------------------------------------------------------------
@@ -933,6 +984,7 @@ def _generate_html_template(
                 document.getElementById("concordance-panel-content").innerHTML = html;
                 panel.classList.add("open");
                 panel.scrollTop = 0;
+                layoutDrawers();
             }}
 
             window.showDetailPanel = showDetailPanel;
@@ -968,11 +1020,89 @@ def _generate_html_template(
 
         function closeDetailPanel() {{
             document.getElementById("detail-panel").classList.remove("open");
+            layoutDrawers();
         }}
 
         function closeConcordance() {{
             document.getElementById("concordance-panel").classList.remove("open");
+            layoutDrawers();
         }}
+
+        // User-resizable drawer widths (px). Persisted only for the session.
+        let DETAIL_W = 280;
+        let CONC_W = 380;
+        const MIN_DRAWER_W = 220;
+
+        // Single source of truth for drawer + handle + legend geometry.
+        // Relations (detail) anchors to the right edge; the concordance sits
+        // just left of it — or fills the relations footprint (right:0) when
+        // relations is closed. The legend is pushed left of the open drawers.
+        function layoutDrawers() {{
+            const detail = document.getElementById("detail-panel");
+            const conc = document.getElementById("concordance-panel");
+            const detailHandle = document.getElementById("detail-handle");
+            const concHandle = document.getElementById("conc-handle");
+            const detailOpen = detail.classList.contains("open");
+            const concOpen = conc.classList.contains("open");
+            const vw = window.innerWidth;
+
+            detail.style.width = DETAIL_W + "px";
+            conc.style.width = CONC_W + "px";
+
+            // Relations: flush to the right edge, or off-screen when closed.
+            detail.style.right = detailOpen ? "0px" : (-DETAIL_W - 40) + "px";
+
+            // Concordance: left of relations (or at the edge if relations is
+            // closed) when open, else parked off the right edge.
+            const concRight = detailOpen ? DETAIL_W : 0;
+            conc.style.right = concOpen
+                ? concRight + "px"
+                : (-(CONC_W + concRight) - 40) + "px";
+
+            // Resize handles ride each open drawer's left boundary.
+            detailHandle.style.display = detailOpen ? "block" : "none";
+            detailHandle.style.left = (vw - DETAIL_W - 3) + "px";
+            concHandle.style.display = concOpen ? "block" : "none";
+            concHandle.style.left = (vw - concRight - CONC_W - 3) + "px";
+
+            // Legend stays top-right of the open graph area, left of the drawers.
+            let extent = 0;
+            if (detailOpen) extent = Math.max(extent, DETAIL_W);
+            if (concOpen) extent = Math.max(extent, concRight + CONC_W);
+            document.getElementById("legend").style.right = (16 + extent) + "px";
+        }}
+
+        // Drag a drawer's left boundary to resize it.
+        let _resize = null;
+        function startResize(which, event) {{
+            _resize = {{
+                which: which,
+                startX: event.clientX,
+                startW: which === "detail" ? DETAIL_W : CONC_W,
+            }};
+            document.body.classList.add("resizing");
+            event.preventDefault();
+        }}
+        window.addEventListener("mousemove", (e) => {{
+            if (!_resize) return;
+            // Dragging the left edge leftwards (smaller clientX) widens it.
+            const delta = _resize.startX - e.clientX;
+            const maxW = window.innerWidth - 140;
+            const w = Math.max(MIN_DRAWER_W, Math.min(_resize.startW + delta, maxW));
+            if (_resize.which === "detail") DETAIL_W = w;
+            else CONC_W = w;
+            layoutDrawers();
+        }});
+        window.addEventListener("mouseup", () => {{
+            if (_resize) {{
+                _resize = null;
+                document.body.classList.remove("resizing");
+            }}
+        }});
+        window.addEventListener("resize", layoutDrawers);
+
+        // Initial layout (both drawers closed → parked off-screen).
+        layoutDrawers();
     </script>
 </body>
 </html>"""

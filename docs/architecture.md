@@ -312,7 +312,7 @@ flowchart TB
     %% =====================================================================
     %% STAGE 4 — EXPORT (low)
     %% =====================================================================
-    subgraph S4["<b>stage 4 · export</b>  &nbsp;·&nbsp;  <code>cmapr export --format {html|d3|graphml|csv|gexf} [--corpus PATH]</code>"]
+    subgraph S4["<b>stage 4 · export</b>  &nbsp;·&nbsp;  <code>cmapr export --format {html|d3|graphml|csv|gexf} [--corpus PATH] [--variants PATH]</code>"]
         direction LR
         x1["<b>export/d3.py</b><br/><i>to_d3_dict</i><br/><i>export_d3_json</i><br/><i>load_d3_json</i>"]
         x2["<b>export/html.py</b><br/><i>generate_html(…, docs=)</i><br/>D3 force sim · legend ·<br/>node detail panel · cluster force ·<br/>concordance sidebar (--corpus) ·<br/>expand/collapse · per-type colours"]
@@ -356,7 +356,7 @@ flowchart TB
         direction TB
         ui_home["<b>home</b> · GET /<br/>scan data/output/corpus/<br/>list works as resume-shortcuts"]
         ui_step1["<b>step 1 · configure</b> · POST /ingest<br/>source path · TOC · checkboxes:<br/><code>--clean-ocr</code> · <code>--spacy</code>"]
-        ui_step2["<b>step 2 · term review</b> · POST /review<br/>checkbox-per-term<br/>writes vetting.json"]
+        ui_step2["<b>step 2 · term review</b> · POST /review<br/>checkbox-per-term · sortable cols · Reason selector<br/>re-run params (POST /rarities): top-n · threshold ·<br/>POS · keep names/fragments · no-lemmatize<br/>writes vetting.json (+ reasons) · rarities_params.json<br/>reasons grow stopwords_extra.json + aliases.json"]
         ui_step3["<b>step 3 · graph options</b> · POST /build<br/>top-n · threshold ·<br/>depth · focus"]
         ui_step4["<b>step 4 · result</b> · GET /result<br/>embedded D3 (iframe)<br/>'open full screen' · 'export' ·<br/>'re-run graph' shortcut"]
         ui_home --> ui_step1 --> ui_step2 --> ui_step3 --> ui_step4
@@ -457,7 +457,9 @@ src/concept_mapper/
 │   ├── frequency.py                    # word_frequencies, corpus_frequencies, document_frequencies, pos_filtered_frequencies
 │   ├── cooccurrence.py                 # cooccurs_in_sentence, pmi, log_likelihood_ratio, build_cooccurrence_matrix
 │   ├── relations.py                    # SVOTriple, CopularRelation, PrepRelation, Relation; extract_* + get_relations
-│   └── contextual_relations.py         # analyze_context — windowed SVO + co-occurrence (used by `cmapr analyze`)
+│   ├── contextual_relations.py         # analyze_context — windowed SVO + co-occurrence (used by `cmapr analyze`)
+│   ├── definitions.py                  # derive_definitions — composite extractive definition per node (concordance-ranked, guaranteed coverage)
+│   └── embeddings.py                   # DefinitionRanker — sentence-embedding definitional ranker (optional booster; [embeddings] extra)
 │
 ├── terms/
 │   ├── models.py                       # TermList, TermEntry (term, lemma, pos, definition, examples, metadata)
@@ -550,16 +552,17 @@ src/concept_mapper/
 5. **Strip stray quotes/slashes** — `strip_stray_quotes` handles `'sign'` → `sign` and `/man/` → `man` edge artifacts; internal punctuation (`co-text`) preserved.
 6. **Multi-word noun chunks** — if any `metadata["noun_chunks"]` present (spaCy run upstream), TF-IDF score them across docs and merge into the ranked list.
 7. **Proper-name filter** (default on, `--no-filter-names`) — `proper_noun_ratios` × Brown frequency check; rejects rare-in-Brown frequently-capitalized terms.
-8. **Stopword filter** — `filter_stopwords` drops function words (`since`, `whether`, `could`, …) using the shared `STOPWORDS` set from `search/extract.py`. Phrases bypass. Runs *before* the top-N trim so junk doesn't consume slots.
-9. **Lemma + derivational merge** (default on, `--no-lemmatize`) — Pass 1/2 collapse `semiotics` → `semiotic`, `co-textual` → `co-text`; Pass 3 (`merge_derivational_variants`) collapses WordNet `derivationally_related_forms` pairs like `taxonomic` ↔ `taxonomy`, keeping the noun form. Keeps highest cluster score. Applies `[:top_n]` cut here.
+8. **Stopword filter** — `filter_stopwords` drops function words (`since`, `whether`, `could`, …) using the shared `STOPWORDS` set from `search/extract.py`, plus a **learned supplement** (`<output-dir>/stopwords_extra.json`, grown by the review UI from terms marked "common & atopic"). Phrases bypass. Runs *before* the top-N trim so junk doesn't consume slots.
+9. **Lemma + derivational merge** (default on, `--no-lemmatize`) — Pass 1/2 collapse `semiotics` → `semiotic`, `co-textual` → `co-text`; Pass 3 (`merge_derivational_variants`) collapses WordNet `derivationally_related_forms` pairs like `taxonomic` ↔ `taxonomy`, keeping the noun form. Keeps highest cluster score. Applies `[:top_n]` cut here. With `return_provenance`, reports `{canonical: {absorbed forms}}` → written to `variants.json` so the node concordance can surface the merged forms.
 10. **Fragment filter** (default on, `--no-filter-fragments`) — drops terms < 4 chars and prefix fragments of WordNet words.
 11. **OCR-artifact filter** (default on, same `--no-filter-fragments` gate) — `filter_ocr_artifacts` drops non-WordNet non-stopword terms that are function-word merges (`thesecase` → `these`+`case`) or leading-char drops (`ictionary` → `dictionary`). Genuine neologisms (absent from WordNet) are untouched.
-12. **POS filter** (`--pos noun,verb,adj,adv`) — uses `filter_by_pos_tags`. Multi-word phrases always pass.
-13. **Vetting** — read existing `vetting.json` (`accept`/`reject` lists); rejected terms removed, accepted terms re-included even past top-n. If `--vet`, interactive y/n prompt per unvetted term; only `y`/`n` accepted (anything else loops).
-14. **By-section grouping** (`--by-section`) — assigns each term to the section it appears in most often (resolved from `sentence_locations`), writes `<work>_by_section.json` alongside.
-15. **Export** — `TermManager(term_list).export_to_json(output_path)`.
+12. **Learned aliases** — `apply_aliases` drops "duplicate / lemma" variants onto a surviving canonical (`<output-dir>/aliases.json`, grown by the review UI; canonical inferred via WordNet/lemma/stem). The dropped term's `corpus_count` folds into the canonical.
+13. **POS filter** (`--pos noun,verb,adj,adv`) — uses `filter_by_pos_tags`. Multi-word phrases always pass.
+14. **Vetting** — read existing `vetting.json` (`accept`/`reject` lists, optional `reasons` map); rejected terms removed, accepted terms re-included even past top-n. If `--vet`, interactive y/n prompt per unvetted term; only `y`/`n` accepted (anything else loops).
+15. **By-section grouping** (`--by-section`) — assigns each term to the section it appears in most often (resolved from `sentence_locations`), writes `<work>_by_section.json` alongside.
+16. **Export** — `TermManager(term_list).export_to_json(output_path)`.
 
-**Output:** `TermList` JSON — list of `{"term": str, "metadata": {"score": float}}`. Optional companion `vetting.json` and `_by_section.json`.
+**Output:** `TermList` JSON — list of `{"term": str, "metadata": {"score": float, "corpus_count": int}}`. Optional companions: `vetting.json` (`accept`/`reject`/`reasons`), `_by_section.json`, and the cross-work learned files `stopwords_extra.json` + `aliases.json`.
 
 ---
 
@@ -591,10 +594,11 @@ src/concept_mapper/
 9. **Score-aware node attrs** — `term_scores` dict copied onto node `score` for HTML sizing.
 10. **Prune** — `prune_to_ratio(graph, target_ratio=3.0)` — drops cooccurrence edges first (never the sole edge for a node), then lowest-weight grammatical edges. Never isolates nodes.
 11. **Focus / depth** (`--focus TERM`, `--depth N`) — `nx.ego_graph(g, centre, radius=N, undirected=True)`. Centre = focus term or highest-scoring seed.
-12. **Validate** — `validation.validate_concept_graph`.
-13. **Export** — `export_d3_json(graph, path, include_evidence=True)`.
+12. **Definitions** (default on) — `analysis/definitions.py:derive_definitions` gives **every** node a text-derived `definition`: the best sentence from the term's concordance, ranked by a composite score (definitional patterns + optional embedding similarity + subject-position + intro-bonus − length penalty). No floor — coverage is guaranteed via the fallback chain *best concordance sentence → `_edge_gloss` (kind-of/property/relation) → first occurrence*. `--definitions` adds the `DefinitionRanker` (embeddings extra) as the ranking booster; off → fully offline. Stores `definition` (+ `definition_source` location).
+13. **Validate** — `validation.validate_concept_graph`.
+14. **Export** — `export_d3_json(graph, path, include_evidence=True)`.
 
-**Output:** D3 JSON. Nodes: `{id, label, size, group, frequency?, pos?, score?, chapter?, section?, term?}`. Links: `{source, target, weight, type, label, verb, evidence?, relation_types?, weight_by_type?, evidence_by_type?, verb_by_type?}`.
+**Output:** D3 JSON. Nodes: `{id, label, size, group, frequency?, pos?, score?, chapter?, section?, term?, definition?, definition_source?}`. Links: `{source, target, weight, type, label, verb, evidence?, relation_types?, weight_by_type?, evidence_by_type?, verb_by_type?}`.
 
 **Edge type vocabulary:**
 
@@ -625,7 +629,7 @@ src/concept_mapper/
    - `d3` → `export_d3_json` (round-trip).
    - `html` → `generate_html(graph, output_dir, title, docs=None)` — standalone interactive page. Internal flow:
      - `to_d3_dict` runs first: validates, consolidates duplicate labels (with chapter-aware dedup key for cluster graphs), strips isolated nodes (errors logged), computes communities (Louvain via NetworkX), sizes nodes, builds the JSON inlined into the page.
-     - When `docs` is supplied (CLI `--corpus`, or in-process from `cmapr run`/`serve`), `search/concordance.build_concordance` precomputes, per node term, every sentence its lemma appears in (document order, structural location, highlight surface-forms) and inlines it as a `CONCORDANCE` const. Omitted → inlines `{}`.
+     - When `docs` is supplied (CLI `--corpus`, or in-process from `cmapr run`/`serve`), `search/concordance.build_concordance` precomputes, per node term, every sentence its lemma appears in (document order, structural location, highlight surface-forms) and inlines it as a `CONCORDANCE` const. Omitted → inlines `{}`. Matching is symmetric with how the term was lemmatized, so all inflected surface forms are caught; with the `--variants` map (rarities `variants.json`) it also covers the pipeline-merged derivational variants (`taxonomy` ⇒ `taxonomic`).
      - Template inlines D3 v7 from CDN, the JSON, and JS for the simulation.
      - Forces: `link` (distance ∝ 1/√weight), `charge` (-400, or -600 for high-degree hubs), `center`, `collide` (label-length aware), optional `cluster` (auto-engages when ≥ 2 distinct `chapter` values are present, pulls nodes toward centroids on a circle around the canvas centre).
      - Edge styling per type from `EDGE_COLORS`; `DIRECTED_TYPES` get arrowheads; `cooccurrence` and `recurrence` rendered dashed.

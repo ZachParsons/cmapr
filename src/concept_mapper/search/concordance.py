@@ -88,6 +88,7 @@ def build_concordance(
     docs: List[ProcessedDocument],
     terms: List[str],
     *,
+    variants: Optional[Dict[str, List[str]]] = None,
     per_term_cap: int = 400,
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Map each term to its located, highlight-ready sentence occurrences.
@@ -95,28 +96,56 @@ def build_concordance(
     Args:
         docs: Preprocessed documents (sentences + sentence_locations).
         terms: Node terms to build concordances for (single words or phrases).
+        variants: Optional ``{term: [merged-variant forms]}`` — forms the
+            rarities pipeline collapsed into the node (derivational dedup +
+            learned aliases, e.g. ``taxonomy → [taxonomic]``). The node then
+            also matches sentences containing those forms. Inflections are
+            already covered by lemma matching, so this only adds the
+            pipeline-sanctioned derivational variants.
         per_term_cap: Max sentences kept per term; extras are dropped and a
             ``{"truncated": shown, "total": total}`` sentinel is appended.
 
     Returns:
         ``{term: [record, ...]}``. Terms with no occurrences map to ``[]``.
     """
-    # Pre-lemmatize every sentence once; keep doc order.
+    variants = variants or {}
+    # Cache noun-lemma lookups — the inflect fallback is comparatively slow and
+    # the same surface tokens recur across a corpus.
+    _noun_lemma: Dict[str, str] = {}
+
+    def _nl(word: str) -> str:
+        cached = _noun_lemma.get(word)
+        if cached is None:
+            cached = lemmatize(word, _wn.NOUN)
+            _noun_lemma[word] = cached
+        return cached
+
+    # Pre-index every sentence once (document order). For each token we record
+    # *every* normalization that could tie it back to a node term:
+    #   - the raw surface form (lowercased),
+    #   - the POS-aware lemma (lemmatize_tagged — verb/adj/adv inflections),
+    #   - the standalone noun lemma (lemmatize(_, NOUN) — same path rarities
+    #     used to build the node term, incl. the inflect singular fallback that
+    #     lemmatize_tagged only applies to NNS/NNPS).
+    # `norms` → {surface forms} lets a node term find all its inflected forms.
     indexed: List[Dict[str, Any]] = []
     for doc in docs:
         sentences = doc.sentences or []
         locations = getattr(doc, "sentence_locations", None) or []
         for sent_idx, sentence in enumerate(sentences):
             tokens = tokenize_words(sentence)
-            lemmas = lemmatize_tagged(tag_tokens(tokens)) if tokens else []
+            pos_lemmas = lemmatize_tagged(tag_tokens(tokens)) if tokens else []
+            norms: Dict[str, set] = {}
+            for tok, plem in zip(tokens, pos_lemmas):
+                tl = tok.lower()
+                for form in (tl, plem.lower(), _nl(tl)):
+                    norms.setdefault(form, set()).add(tok)
             loc = locations[sent_idx] if sent_idx < len(locations) else None
             indexed.append(
                 {
                     "text": sentence.strip(),
                     "lower": sentence.lower(),
-                    "tokens": tokens,
-                    "lemmas": lemmas,
-                    "lemma_set": set(lemmas),
+                    "norms": norms,
                     "loc": _format_location(loc),
                 }
             )
@@ -129,12 +158,15 @@ def build_concordance(
         records: List[Dict[str, Any]] = []
         total = 0
 
+        term_variants = variants.get(term, variants.get(term.lower(), []))
+
         if " " in term:
             # Phrase: case-insensitive substring match (lemma search only keys
-            # off the first token, so it would be wrong for phrases).
-            needle = term.lower()
+            # off the first token, so it would be wrong for phrases). Merged
+            # variants (rare for phrases) are matched the same way.
+            needles = [term.lower()] + [v.lower() for v in term_variants]
             for sent in indexed:
-                if needle in sent["lower"]:
+                if any(n in sent["lower"] for n in needles):
                     total += 1
                     if len(records) < per_term_cap:
                         records.append(
@@ -145,21 +177,21 @@ def build_concordance(
                             }
                         )
         else:
-            term_lemma = lemmatize(term, _wn.NOUN)
+            # Match any surface form whose normalization equals the term, its
+            # noun lemma, or a pipeline-merged variant (taxonomy ⇒ taxonomic).
+            targets = {term.lower(), _nl(term.lower())}
+            for v in term_variants:
+                vl = v.lower()
+                targets.add(vl)
+                targets.add(_nl(vl))
             for sent in indexed:
-                if term_lemma not in sent["lemma_set"]:
+                hits = targets & sent["norms"].keys()
+                if not hits:
                     continue
                 total += 1
                 if len(records) >= per_term_cap:
                     continue
-                # Surface forms in this sentence whose lemma matches.
-                marks = sorted(
-                    {
-                        tok
-                        for tok, lem in zip(sent["tokens"], sent["lemmas"])
-                        if lem == term_lemma
-                    }
-                )
+                marks = sorted({s for n in hits for s in sent["norms"][n]})
                 records.append(
                     {
                         "text": sent["text"],

@@ -159,23 +159,145 @@ def merge_extra_candidates(
 # ---------------------------------------------------------------------------
 
 
-def filter_stopwords(candidates: List[Candidate]) -> List[Candidate]:
+def filter_stopwords(
+    candidates: List[Candidate], extra: Optional[Set[str]] = None
+) -> List[Candidate]:
     """Drop common function words that aren't topical concepts.
 
     Words like ``since``, ``whether``, ``although``, ``could``, ``would``,
     ``else``, ``onto`` are scored by the rarity signals but carry no
     conceptual content. Filtered against the shared ``STOPWORDS`` set in
     :mod:`concept_mapper.search.extract` (the same set
-    :class:`graph.node_filter.NodeFilter` uses). Multi-word phrases
+    :class:`graph.node_filter.NodeFilter` uses), plus ``extra`` — learned
+    stopwords accumulated from terms the user marked "common & atopic" during
+    review (see :func:`load_learned_stopwords`). Multi-word phrases
     (containing a space) always pass.
     """
     from concept_mapper.search.extract import STOPWORDS  # noqa: PLC0415
 
+    blocked = STOPWORDS if not extra else (STOPWORDS | extra)
     return [
         (term, score, components)
         for term, score, components in candidates
-        if " " in term or term.lower() not in STOPWORDS
+        if " " in term or term.lower() not in blocked
     ]
+
+
+def load_learned_stopwords(path: Path) -> Set[str]:
+    """Read the learned-stopword supplement (lowercased); empty if absent.
+
+    File shape: ``{"stopwords": ["however", ...]}``. Grown by the web review
+    UI from terms marked "common & atopic"; applied on every later run so the
+    correction carries across works.
+    """
+    p = Path(path)
+    if not p.exists():
+        return set()
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return set()
+    return {str(t).lower() for t in data.get("stopwords", [])}
+
+
+def load_aliases(path: Path) -> Dict[str, str]:
+    """Read the learned alias map ``{alias: canonical}`` (lowercased).
+
+    File shape: ``{"aliases": {"taxonomic": "taxonomy", ...}}``. Grown by the
+    web review UI from terms marked "duplicate / lemma"; applied by
+    :func:`apply_aliases`.
+    """
+    p = Path(path)
+    if not p.exists():
+        return {}
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return {}
+    return {
+        str(a).lower(): str(c).lower()
+        for a, c in (data.get("aliases") or {}).items()
+        if a and c
+    }
+
+
+def apply_aliases(
+    candidates: List[Candidate], aliases: Dict[str, str]
+) -> Tuple[List[Candidate], List[Tuple[str, str]]]:
+    """Drop redundant variants that alias to a surviving canonical term.
+
+    For each candidate whose lowercased term is a known alias *and* whose
+    canonical is also present, the candidate is removed (the canonical
+    represents it). Aliases whose canonical is absent are kept, so a
+    cross-work alias never silently erases a concept that stands alone here.
+
+    Returns ``(kept_candidates, dropped)`` where ``dropped`` is a list of
+    ``(alias_term, canonical_lower)`` — the caller may fold the dropped term's
+    corpus frequency into its canonical.
+    """
+    if not aliases:
+        return candidates, []
+    present = {term.lower() for term, _, _ in candidates}
+    kept: List[Candidate] = []
+    dropped: List[Tuple[str, str]] = []
+    for term, score, components in candidates:
+        canonical = aliases.get(term.lower())
+        if canonical and canonical in present:
+            dropped.append((term, canonical))
+            continue
+        kept.append((term, score, components))
+    return kept, dropped
+
+
+def infer_canonical(term: str, pool: List[str]) -> Optional[str]:
+    """Best-guess canonical form for a duplicate ``term`` among ``pool``.
+
+    Used when the user marks a term "duplicate / lemma" but the UI captures no
+    explicit target. Tries, in order: a WordNet derivational link, a shared
+    noun lemma, then a shared stem prefix (≥ 4 chars). Returns a member of
+    ``pool`` (original casing) or ``None`` if nothing plausible is found.
+    """
+    from nltk.corpus import wordnet as wn  # noqa: PLC0415
+    from concept_mapper.preprocessing.lemmatize import lemmatize  # noqa: PLC0415
+
+    term_l = term.lower()
+    pool_map: Dict[str, str] = {}
+    for p in pool:
+        pl = p.lower()
+        if pl != term_l and pl not in pool_map:
+            pool_map[pl] = p
+    if not pool_map:
+        return None
+
+    # 1. WordNet derivationally-related forms.
+    related: Set[str] = set()
+    for syn in wn.synsets(term_l):
+        for lemma in syn.lemmas():
+            if lemma.name().replace("_", " ").lower() == term_l:
+                for d in lemma.derivationally_related_forms():
+                    related.add(d.name().replace("_", " ").lower())
+    for rel in related:
+        if rel in pool_map:
+            return pool_map[rel]
+
+    # 2. Shared noun lemma.
+    term_nl = lemmatize(term_l, wn.NOUN)
+    for pl, original in pool_map.items():
+        if lemmatize(pl, wn.NOUN) == term_nl:
+            return original
+
+    # 3. Shared stem prefix (≥ 4 chars), preferring the longest match.
+    best: Optional[str] = None
+    best_len = 0
+    for pl, original in pool_map.items():
+        common = 0
+        for a, b in zip(term_l, pl):
+            if a != b:
+                break
+            common += 1
+        if common >= 4 and common > best_len:
+            best, best_len = original, common
+    return best
 
 
 # ---------------------------------------------------------------------------
@@ -220,8 +342,11 @@ def filter_proper_names(
 
 
 def lemma_and_derivational_merge(
-    candidates: List[Candidate], top_n: Optional[int] = None
-) -> List[Candidate]:
+    candidates: List[Candidate],
+    top_n: Optional[int] = None,
+    *,
+    return_provenance: bool = False,
+):
     """Collapse inflected and derivational variants to a canonical base.
 
     Pass 1: merge inflected noun forms via WordNet lemma (``semiotics`` →
@@ -235,19 +360,26 @@ def lemma_and_derivational_merge(
     happens *here*, not at the end of the pipeline, because subsequent
     filters (fragments, POS, vetting) should refine a bounded list rather
     than a long one.
+
+    With ``return_provenance``, also returns ``{canonical: {original terms
+    absorbed}}`` (lowercased, canonical excluded) so callers can surface the
+    merged variant forms — e.g. in the node concordance.
     """
     from concept_mapper.preprocessing.lemmatize import lemmatize  # noqa: PLC0415
     from nltk.corpus import wordnet as wn  # noqa: PLC0415
 
-    # Pass 1
+    # Pass 1 — track which original surface terms land on each lemma base.
     lemma_best: Dict[str, Candidate] = {}
+    lemma_members: Dict[str, Set[str]] = {}
     for term, score, components in candidates:
         base = lemmatize(term, wn.NOUN)
+        lemma_members.setdefault(base, set()).add(term)
         if base not in lemma_best or score > lemma_best[base][1]:
             lemma_best[base] = (base, score, components)
 
     # Pass 2
     merged: Dict[str, Candidate] = {}
+    merged_members: Dict[str, Set[str]] = {}
     for base_form, entry in lemma_best.items():
         canonical = base_form
         for suffix in _DERIVATIONAL_SUFFIXES:
@@ -257,17 +389,38 @@ def lemma_and_derivational_merge(
                     canonical = shorter
                     break
         _, score, components = entry
+        members = merged_members.setdefault(canonical, set())
+        members |= lemma_members.get(base_form, set())
+        members.add(base_form)
         if canonical not in merged or score > merged[canonical][1]:
             merged[canonical] = (canonical, score, components)
 
     # Pass 3: collapse WordNet derivational variants (taxonomic ↔ taxonomy).
-    out = merge_derivational_variants(list(merged.values()))
+    out, groups = merge_derivational_variants(list(merged.values()), return_groups=True)
     if top_n is not None:
         out = out[:top_n]
-    return out
+
+    if not return_provenance:
+        return out
+
+    # Compose provenance: union Pass-2 members across each Pass-3 cluster.
+    survivors = {term for term, _, _ in out}
+    provenance: Dict[str, Set[str]] = {}
+    for canonical, cluster in groups.items():
+        if canonical not in survivors:
+            continue
+        absorbed: Set[str] = set()
+        for member in cluster:
+            absorbed |= merged_members.get(member, {member})
+        absorbed.discard(canonical)
+        if absorbed:
+            provenance[canonical] = absorbed
+    return out, provenance
 
 
-def merge_derivational_variants(candidates: List[Candidate]) -> List[Candidate]:
+def merge_derivational_variants(
+    candidates: List[Candidate], *, return_groups: bool = False
+):
     """Collapse candidates linked by WordNet derivational relations.
 
     The suffix table in :func:`lemma_and_derivational_merge` only collapses a
@@ -331,9 +484,11 @@ def merge_derivational_variants(candidates: List[Candidate]) -> List[Candidate]:
         return bool(wn.synsets(term, pos=wn.NOUN))
 
     result: List[Candidate] = []
+    groups: Dict[str, List[str]] = {}
     for members in clusters.values():
         if len(members) == 1:
             result.append(by_term[members[0]])
+            groups[members[0]] = list(members)
             continue
         nouns = [m for m in members if _is_noun(m)]
         pool = nouns or members
@@ -341,8 +496,12 @@ def merge_derivational_variants(candidates: List[Candidate]) -> List[Candidate]:
         max_score = max(by_term[m][1] for m in members)
         _, _, components = by_term[canonical]
         result.append((canonical, max_score, components))
+        groups[canonical] = list(members)
 
-    return sorted(result, key=lambda x: x[1], reverse=True)
+    result.sort(key=lambda x: x[1], reverse=True)
+    if return_groups:
+        return result, groups
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -549,20 +708,25 @@ def apply_run_pipeline(
     no_filter_names: bool = False,
     no_lemmatize: bool = False,
     no_filter_fragments: bool = False,
+    learned_stopwords: Optional[Set[str]] = None,
+    aliases: Optional[Dict[str, str]] = None,
 ) -> List[Candidate]:
     """The simplified filter chain used by ``cmapr run``.
 
-    Order: quote-strip → proper-name → stopword → lemma+suffix+derivational
-    merge (top-N) → fragment → OCR artifact. Does *not* include multi-word
-    noun chunks, POS filter, or vetting — those are rarities-only steps.
+    Order: quote-strip → proper-name → stopword (incl. learned) →
+    lemma+suffix+derivational merge (top-N) → fragment → OCR artifact →
+    learned aliases. Does *not* include multi-word noun chunks, POS filter,
+    or vetting — those are rarities-only steps.
     """
     candidates = strip_stray_quotes(candidates)
     if not no_filter_names:
         candidates = filter_proper_names(candidates, docs, reference)
-    candidates = filter_stopwords(candidates)
+    candidates = filter_stopwords(candidates, extra=learned_stopwords)
     if not no_lemmatize:
         candidates = lemma_and_derivational_merge(candidates, top_n=top_n)
     if not no_filter_fragments:
         candidates = filter_fragments(candidates)
         candidates = filter_ocr_artifacts(candidates)
+    if aliases:
+        candidates, _ = apply_aliases(candidates, aliases)
     return candidates

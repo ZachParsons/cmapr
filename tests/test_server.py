@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -168,6 +169,41 @@ class TestReview:
         assert r.status_code == 303
         assert r.headers["location"] == "/"
 
+    def test_renders_corpus_count_as_freq(self, tmp_data):
+        with TestClient(app, follow_redirects=False) as c:
+            r = c.get("/review?work=mywork")
+        # corpus_count from term metadata is shown in the Freq column.
+        assert ">40</td>" in r.text and ">25</td>" in r.text
+
+    def test_exposes_detection_params_and_sortable_headers(self, tmp_data):
+        with TestClient(app, follow_redirects=False) as c:
+            r = c.get("/review?work=mywork")
+        # Params beyond top-n.
+        assert 'name="threshold"' in r.text
+        assert 'name="pos" value="noun"' in r.text
+        assert all(
+            tok in r.text for tok in ("keep_names", "keep_fragments", "no_lemmatize")
+        )
+        # Sortable column headers.
+        assert "sortTerms(1" in r.text and "sortTerms(3" in r.text
+
+    def test_review_prefills_persisted_params(self, tmp_data):
+        params = {
+            "top_n": 120,
+            "threshold": 0.25,
+            "pos": "noun",
+            "keep_names": True,
+            "keep_fragments": False,
+            "no_lemmatize": False,
+        }
+        (tmp_data / "data/output/rarities/mywork/rarities_params.json").write_text(
+            json.dumps(params)
+        )
+        with TestClient(app, follow_redirects=False) as c:
+            r = c.get("/review?work=mywork")
+        assert 'value="120"' in r.text  # top_n
+        assert 'value="0.25"' in r.text  # threshold
+
 
 # ---------------------------------------------------------------------------
 # POST /vet
@@ -202,6 +238,55 @@ class TestVet:
         vet = json.loads(vp.read_text())
         assert len(vet["reject"]) == 3
         assert vet["accept"] == []
+
+    def test_persists_rejection_reasons_parallel_to_reject(self, tmp_data):
+        with TestClient(app, follow_redirects=False) as c:
+            c.post(
+                "/vet",
+                data={
+                    "work": "mywork",
+                    "terms": ["sign"],  # accept sign; reject the rest
+                    "reason::interpretant": "duplicate",
+                    "reason::semiosis": "",  # blank reasons are dropped
+                },
+            )
+        vet = json.loads(
+            (tmp_data / "data/output/rarities/mywork/vetting.json").read_text()
+        )
+        # reject stays a plain string list (CLI loaders depend on this).
+        assert vet["reject"] == sorted(["interpretant", "semiosis"])
+        assert all(isinstance(x, str) for x in vet["reject"])
+        # reasons recorded in a parallel map, blanks omitted.
+        assert vet["reasons"] == {"interpretant": "duplicate"}
+
+    def test_review_prefills_saved_reason(self, tmp_data):
+        vp = tmp_data / "data/output/rarities/mywork/vetting.json"
+        vp.write_text(
+            json.dumps(
+                {"accept": [], "reject": ["sign"], "reasons": {"sign": "atopic"}}
+            )
+        )
+        with TestClient(app, follow_redirects=False) as c:
+            r = c.get("/review?work=mywork")
+        sign_select = re.search(
+            r'name="reason::sign".*?</select>', r.text, re.DOTALL
+        ).group(0)
+        assert re.search(r'value="atopic"\s+selected', sign_select)
+
+    def test_reasons_grow_learned_filters(self, tmp_data):
+        # atopic → stopword supplement; duplicate → alias onto an accepted term.
+        with TestClient(app, follow_redirects=False) as c:
+            c.post(
+                "/vet",
+                data={
+                    "work": "mywork",
+                    "terms": ["sign"],  # accept sign (canonical for the alias)
+                    "reason::interpretant": "atopic",
+                    "reason::semiosis": "atopic",
+                },
+            )
+        sw = json.loads((tmp_data / "data/output/stopwords_extra.json").read_text())
+        assert {"interpretant", "semiosis"} <= set(sw["stopwords"])
 
 
 # ---------------------------------------------------------------------------
@@ -391,6 +476,38 @@ class TestRerunRarities:
         assert r.status_code == 303
         assert "/review?work=mywork" in r.headers["location"]
         assert "error=" in r.headers["location"]
+
+    def test_passes_extra_params_to_cli_and_persists(self, tmp_data):
+        with (
+            patch("concept_mapper.server.app._run") as mock_run,
+            TestClient(app, follow_redirects=False) as c,
+        ):
+            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+            r = c.post(
+                "/rarities",
+                data={
+                    "work": "mywork",
+                    "pool_size": "120",
+                    "threshold": "0.2",
+                    "pos": ["noun", "verb"],
+                    "keep_fragments": "true",
+                },
+            )
+        assert r.status_code == 303
+        cmd = mock_run.call_args.args[0]
+        assert cmd[cmd.index("--threshold") + 1] == "0.2"
+        assert cmd[cmd.index("--top-n") + 1] == "120"
+        assert cmd[cmd.index("--pos") + 1] == "noun,verb"
+        assert "--no-filter-fragments" in cmd
+        assert "--no-filter-names" not in cmd  # not requested
+
+        saved = json.loads(
+            (tmp_data / "data/output/rarities/mywork/rarities_params.json").read_text()
+        )
+        assert saved["top_n"] == 120
+        assert saved["threshold"] == 0.2
+        assert saved["pos"] == "noun,verb"
+        assert saved["keep_fragments"] is True
 
 
 # ---------------------------------------------------------------------------

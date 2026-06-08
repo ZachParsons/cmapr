@@ -7,8 +7,13 @@ OCR-artifact heuristics. See docs/plans/term-review-cleanup.md.
 """
 
 from src.concept_mapper.terms.scoring import (
+    apply_aliases,
     filter_ocr_artifacts,
     filter_stopwords,
+    infer_canonical,
+    lemma_and_derivational_merge,
+    load_aliases,
+    load_learned_stopwords,
     merge_derivational_variants,
     strip_stray_quotes,
 )
@@ -60,6 +65,54 @@ class TestFilterStopwords:
         out = filter_stopwords(_cands(("content plane", 4)))
         assert _terms(out) == ["content plane"]
 
+    def test_extra_learned_stopwords(self):
+        # Learned (atopic) stopwords drop in addition to the built-in set.
+        out = filter_stopwords(
+            _cands(("sign", 5), ("abduction", 4)), extra={"abduction"}
+        )
+        assert _terms(out) == ["sign"]
+
+
+class TestLearnedFilters:
+    def test_load_missing_files_empty(self, tmp_path):
+        assert load_learned_stopwords(tmp_path / "nope.json") == set()
+        assert load_aliases(tmp_path / "nope.json") == {}
+
+    def test_load_learned_stopwords(self, tmp_path):
+        p = tmp_path / "stopwords_extra.json"
+        p.write_text('{"stopwords": ["However", "abduction"]}')
+        assert load_learned_stopwords(p) == {"however", "abduction"}
+
+    def test_load_aliases(self, tmp_path):
+        p = tmp_path / "aliases.json"
+        p.write_text('{"aliases": {"Taxonomic": "Taxonomy"}}')
+        assert load_aliases(p) == {"taxonomic": "taxonomy"}
+
+    def test_apply_aliases_drops_when_canonical_present(self):
+        kept, dropped = apply_aliases(
+            _cands(("taxonomic", 5), ("taxonomy", 3), ("semiosis", 2)),
+            {"taxonomic": "taxonomy"},
+        )
+        assert _terms(kept) == ["taxonomy", "semiosis"]
+        assert dropped == [("taxonomic", "taxonomy")]
+
+    def test_apply_aliases_keeps_when_canonical_absent(self):
+        # Cross-work alias must not erase a term that stands alone here.
+        kept, dropped = apply_aliases(
+            _cands(("taxonomic", 5), ("semiosis", 2)), {"taxonomic": "taxonomy"}
+        )
+        assert _terms(kept) == ["taxonomic", "semiosis"]
+        assert dropped == []
+
+    def test_infer_canonical_derivational(self):
+        assert infer_canonical("taxonomic", ["taxonomy", "sign", "code"]) == "taxonomy"
+
+    def test_infer_canonical_stem_prefix(self):
+        assert infer_canonical("signification", ["signify", "code"]) == "signify"
+
+    def test_infer_canonical_none(self):
+        assert infer_canonical("zzqx", ["sign", "code"]) is None
+
 
 class TestDerivationalDedup:
     def test_prefers_noun_form(self):
@@ -79,6 +132,32 @@ class TestDerivationalDedup:
     def test_phrases_never_merge(self):
         out = merge_derivational_variants(_cands(("iconic sign", 4), ("icon", 2)))
         assert set(_terms(out)) == {"iconic sign", "icon"}
+
+    def test_return_groups_maps_canonical_to_cluster(self):
+        out, groups = merge_derivational_variants(
+            _cands(("taxonomic", 5), ("taxonomy", 3)), return_groups=True
+        )
+        assert _terms(out) == ["taxonomy"]
+        assert set(groups["taxonomy"]) == {"taxonomic", "taxonomy"}
+
+
+class TestMergeProvenance:
+    def test_provenance_records_absorbed_variants(self):
+        out, prov = lemma_and_derivational_merge(
+            _cands(("taxonomic", 5), ("taxonomy", 3), ("iconic", 4), ("icon", 2)),
+            return_provenance=True,
+        )
+        assert set(_terms(out)) == {"taxonomy", "icon"}
+        # Each surviving canonical lists the derivational form it absorbed.
+        assert "taxonomic" in prov["taxonomy"]
+        assert "iconic" in prov["icon"]
+
+    def test_no_provenance_for_standalone_terms(self):
+        _out, prov = lemma_and_derivational_merge(
+            _cands(("semiosis", 5), ("interpretant", 4)), return_provenance=True
+        )
+        # Unmerged terms carry no variants.
+        assert prov == {}
 
 
 class TestFilterOcrArtifacts:

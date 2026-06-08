@@ -354,6 +354,12 @@ def rarities(
     # CLI handler keeps only the echo / verbose plumbing between steps.
     from concept_mapper.terms import scoring as _sc
 
+    # Learned filters, grown by the review UI from rejection reasons and shared
+    # across works (output-dir scoped): "common & atopic" → stopwords_extra.json,
+    # "duplicate / lemma" → aliases.json.
+    learned_stopwords = _sc.load_learned_stopwords(output_dir / "stopwords_extra.json")
+    aliases = _sc.load_aliases(output_dir / "aliases.json")
+
     candidates = _sc.strip_stray_quotes(candidates)
     # Snapshot before name/fragment/top-n filters — used to re-include accepted terms
     raw_candidates = list(candidates)
@@ -375,14 +381,23 @@ def rarities(
             )
 
     # Stopword removal — runs before the top-N trim so function words don't
-    # consume candidate slots.
+    # consume candidate slots. Includes learned ("common & atopic") stopwords.
     before = len(candidates)
-    candidates = _sc.filter_stopwords(candidates)
+    candidates = _sc.filter_stopwords(candidates, extra=learned_stopwords)
     if verbose and len(candidates) < before:
         click.echo(f"Filtered {before - len(candidates)} stopword(s)")
 
+    # Track variant forms merged into each canonical, so the node concordance
+    # can surface them (taxonomy ⇒ taxonomic). Keyed by canonical (lowercased).
+    variants_map: dict = {}
     if not no_lemmatize:
-        candidates = _sc.lemma_and_derivational_merge(candidates, top_n=top_n)
+        candidates, _prov = _sc.lemma_and_derivational_merge(
+            candidates, top_n=top_n, return_provenance=True
+        )
+        for _canon, _absorbed in _prov.items():
+            variants_map.setdefault(_canon.lower(), set()).update(
+                a.lower() for a in _absorbed
+            )
 
     if not no_filter_fragments:
         before = len(candidates)
@@ -399,6 +414,16 @@ def rarities(
                 f"Filtered {before - len(candidates)} OCR artifact(s) "
                 f"(use --no-filter-fragments to keep them)"
             )
+
+    # Learned aliases — drop "duplicate / lemma" variants onto their canonical
+    # form; their corpus frequency is folded into the canonical below.
+    candidates, alias_dropped = _sc.apply_aliases(candidates, aliases)
+    for _alias_term, _canonical in alias_dropped:
+        variants_map.setdefault(_canonical.lower(), set()).add(_alias_term.lower())
+    if verbose and alias_dropped:
+        click.echo(
+            f"Merged {len(alias_dropped)} duplicate variant(s) into canonical terms"
+        )
 
     # B1 — POS filter
     if pos:
@@ -552,9 +577,35 @@ def rarities(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Corpus frequency per term (drives the review-page Freq column). Single
+    # words resolve against the lemma counts; phrases fall back to substring.
+    from concept_mapper.analysis.frequency import corpus_frequencies
+
+    _lemma_freqs = corpus_frequencies(docs, use_lemmas=True)
+
+    def _term_freq(t: str) -> int:
+        if " " in t:
+            tl = t.lower()
+            return sum(s.lower().count(tl) for doc in docs for s in doc.sentences)
+        return int(_lemma_freqs.get(t.lower(), _lemma_freqs.get(t, 0)))
+
+    # Fold frequency of alias-merged duplicates into their canonical term.
+    _alias_extra: dict = {}
+    for _alias_term, _canonical in alias_dropped:
+        _alias_extra[_canonical] = _alias_extra.get(_canonical, 0) + _term_freq(
+            _alias_term
+        )
+
     # Create term list (flat, always saved — needed by cmapr graph)
     term_data = [
-        {"term": term, "metadata": {"score": score}} for term, score, _ in candidates
+        {
+            "term": term,
+            "metadata": {
+                "score": score,
+                "corpus_count": _term_freq(term) + _alias_extra.get(term.lower(), 0),
+            },
+        }
+        for term, score, _ in candidates
     ]
 
     # Validate before saving (should never fail here since we checked above)
@@ -566,6 +617,18 @@ def rarities(
 
     click.echo(f"\n✓ Saved {len(candidates)} terms to {output_path}")
 
+    # Variant map (canonical → merged forms) for the node concordance. Only
+    # surviving canonicals with at least one distinct variant are recorded.
+    _final_terms = {term.lower() for term, _, _ in candidates}
+    _variants_out = {
+        canon: sorted(forms - {canon})
+        for canon, forms in variants_map.items()
+        if canon in _final_terms and (forms - {canon})
+    }
+    _variants_path = output_path.parent / "variants.json"
+    with open(_variants_path, "w", encoding="utf-8") as _vf:
+        json.dump({"variants": _variants_out}, _vf, indent=2, ensure_ascii=False)
+
     # B3 — save grouped-by-section file alongside flat terms.json
     if by_section:
         from collections import defaultdict as _defaultdict2
@@ -573,7 +636,12 @@ def rarities(
         _sec_groups: dict = _defaultdict2(list)
         for term, score, _ in candidates:
             _sec = term_section_map.get(term, "Document")
-            _sec_groups[_sec].append({"term": term, "metadata": {"score": score}})
+            _sec_groups[_sec].append(
+                {
+                    "term": term,
+                    "metadata": {"score": score, "corpus_count": _term_freq(term)},
+                }
+            )
 
         _by_sec_path = output_path.parent / (output_path.stem + "_by_section.json")
         _by_sec_data = {
@@ -970,8 +1038,9 @@ def search(
     "--definitions",
     is_flag=True,
     help=(
-        "Attach a definitional sentence to each node using sentence-embedding "
-        "similarity (requires: uv sync --extra embeddings)."
+        "Improve node definitions with sentence-embedding similarity "
+        "(requires: uv sync --extra embeddings). Definitions are always derived "
+        "from the text; this only adds the embedding ranking signal."
     ),
 )
 @click.pass_context
@@ -1124,11 +1193,15 @@ def graph(
         f"ratio {ratio:.1f}:1\n  {type_summary}"
     )
 
+    # Definitions are derived for every node by default (composite extractive
+    # over each term's concordance). --definitions adds the optional
+    # sentence-embedding signal as a ranking booster (needs the embeddings extra).
+    from concept_mapper.analysis.definitions import derive_definitions
+
+    ranker = None
     if definitions:
         try:
-            from concept_mapper.analysis.embeddings import (
-                enrich_graph_with_definitions,
-            )
+            from concept_mapper.analysis.embeddings import DefinitionRanker
         except ImportError as e:
             raise click.ClickException(
                 "The --definitions flag requires the embeddings extra. "
@@ -1138,14 +1211,14 @@ def graph(
         cache_dir = output_dir / "embeddings" / work_id
         click.echo("Ranking sentences for definitional content (embeddings)...")
         try:
-            n_def = enrich_graph_with_definitions(
-                concept_graph, docs, cache_dir=cache_dir
-            )
+            ranker = DefinitionRanker(cache_dir=cache_dir)
         except RuntimeError as e:
             raise click.ClickException(str(e)) from e
-        click.echo(
-            f"✓ Attached definitions to {n_def} of {concept_graph.node_count()} node(s)"
-        )
+
+    n_def = derive_definitions(concept_graph, docs, ranker=ranker)
+    click.echo(
+        f"✓ Derived definitions for {n_def} of {concept_graph.node_count()} node(s)"
+    )
 
     validate_concept_graph(concept_graph)
 
@@ -1204,8 +1277,17 @@ def graph(
         "every sentence a node's term appears in, with structural location."
     ),
 )
+@click.option(
+    "--variants",
+    type=click.Path(exists=True),
+    default=None,
+    help=(
+        "variants.json from rarities (HTML only). Extends a node's concordance "
+        "to the derivational variants merged into it (taxonomy ⇒ taxonomic)."
+    ),
+)
 @click.pass_context
-def export(ctx, graph_file, format, output, title, corpus):
+def export(ctx, graph_file, format, output, title, corpus, variants):
     """
     Export graph to various formats.
 
@@ -1300,6 +1382,7 @@ def export(ctx, graph_file, format, output, title, corpus):
 
     elif format == "html":
         docs = None
+        variants_map = None
         if corpus:
             from concept_mapper.corpus.models import ProcessedDocument
 
@@ -1307,7 +1390,12 @@ def export(ctx, graph_file, format, output, title, corpus):
                 docs = [ProcessedDocument.from_dict(d) for d in json.load(_cf)]
             if verbose:
                 click.echo(f"Loaded corpus for concordance: {len(docs)} document(s)")
-        html_path = generate_html(concept_graph, output_path, title=title, docs=docs)
+        if variants:
+            with open(variants, "r", encoding="utf-8") as _vf:
+                variants_map = json.load(_vf).get("variants", {})
+        html_path = generate_html(
+            concept_graph, output_path, title=title, docs=docs, variants=variants_map
+        )
         click.echo(f"✓ Generated HTML visualization at {html_path}")
         click.echo(f"  Open in browser: file://{html_path.absolute()}")
 
@@ -2626,6 +2714,7 @@ def run(
 
     # Filter chain \u2014 same code path as `cmapr rarities`, single source of
     # truth in terms.scoring.apply_run_pipeline.
+    from concept_mapper.terms import scoring as _sc
     from concept_mapper.terms.scoring import apply_run_pipeline
 
     candidates = apply_run_pipeline(
@@ -2636,6 +2725,10 @@ def run(
         no_filter_names=no_filter_names,
         no_lemmatize=no_lemmatize,
         no_filter_fragments=no_filter_fragments,
+        learned_stopwords=_sc.load_learned_stopwords(
+            output_dir / "stopwords_extra.json"
+        ),
+        aliases=_sc.load_aliases(output_dir / "aliases.json"),
     )
 
     if not candidates:
@@ -2674,6 +2767,12 @@ def run(
         term_scores=term_scores,
     )
     concept_graph = prune_to_ratio(concept_graph, target_ratio=3.0)
+
+    # Derive a text-based definition for every node (composite extractive).
+    from concept_mapper.analysis.definitions import derive_definitions
+
+    derive_definitions(concept_graph, docs)
+
     validate_concept_graph(concept_graph)
 
     graph_path = infer_output_path(text_path, output_dir, "graphs")

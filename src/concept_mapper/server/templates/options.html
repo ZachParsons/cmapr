@@ -51,13 +51,13 @@
     <div class="field">
       <label>
         <input type="checkbox" id="definitions" name="definitions" value="true">
-        &nbsp;Infer node definitions via sentence embeddings
+        &nbsp;Improve definitions with sentence embeddings (slower)
       </label>
       <span class="hint">
-        Adds ~30s and requires the embeddings extra
-        (<code>uv sync --extra embeddings</code>). Picks the most
-        definition-shaped sentence in the corpus for each node and shows
-        it in the tooltip.
+        Every node is always given a definition drawn from the text (the
+        best sentence from its concordance). This option adds a
+        sentence-embedding ranking signal for sharper picks — adds ~30s and
+        requires the embeddings extra (<code>uv sync --extra embeddings</code>).
       </span>
     </div>
 
