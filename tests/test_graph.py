@@ -1357,6 +1357,41 @@ class TestBuildPropositionGraph:
                 f"Expected typed edge for {src}→{tgt}, got cooccurrence"
             )
 
+    def test_multiple_relation_types_survive_on_one_edge(self):
+        """All extracted proposition types for a pair ride one multi-type edge.
+
+        Regression: the builder used to keep only the priority-winning type,
+        silently discarding the rest (which starved the composed definitions).
+        """
+        sentences = [
+            "Semiosis is a kind of process.",
+            "Semiosis produces the process.",
+            "Semiosis depends on the process.",
+        ]
+        graph = self._build(sentences, ["semiosis", "process"], pmi_threshold=0.0)
+        edge = graph.get_edge("semiosis", "process")
+        assert edge["relation_type"] == "kind-of", "primary stays the priority winner"
+        assert {"kind-of", "production", "dependence"} <= set(
+            edge.get("relation_types", [])
+        ), f"expected multi-type schema with all extracted types, got {edge}"
+        assert set(edge["evidence_by_type"]) == set(edge["relation_types"])
+
+    def test_typed_match_suppresses_generic_fallbacks(self):
+        """A sentence claimed by a typed pattern must not also feed the catch-alls.
+
+        Regression: the kind-of sentence below used to additionally emit
+        `relation` / pos-verb propositions, polluting the edge with
+        low-information types.
+        """
+        sentences = ["Semiosis is a kind of process."]
+        graph = self._build(sentences, ["semiosis", "process"], pmi_threshold=0.0)
+        edge = graph.get_edge("semiosis", "process") or graph.get_edge(
+            "process", "semiosis"
+        )
+        types = set(edge.get("relation_types", [edge["relation_type"]]))
+        assert "kind-of" in types
+        assert "relation" not in types, f"generic fallback leaked into {types}"
+
     def test_cooccurrence_fallback_when_no_pattern(self):
         """Terms co-occurring without any pattern marker fall back to cooccurrence edge."""
         # Sentences mention both terms but contain no typed-relation markers

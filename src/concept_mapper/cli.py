@@ -105,8 +105,19 @@ def cli(ctx, verbose, output_dir):
         "Chunks are stored in the corpus and surfaced by 'cmapr rarities'."
     ),
 )
+@click.option(
+    "--coref",
+    "use_coref",
+    is_flag=True,
+    default=False,
+    help=(
+        "Resolve pronouns to their antecedents before tokenization (requires: "
+        "uv sync --extra coref; model downloads on first use). Makes concepts "
+        "visible in sentences that mention them only as 'it'/'they'."
+    ),
+)
 @click.pass_context
-def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy):
+def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy, use_coref):
     """
     Load and preprocess documents.
 
@@ -123,12 +134,25 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy):
     "unlimited semiosis") alongside single-word tokens. These will appear in
     cmapr rarities output when the corpus is analysed.
 
+    Use --coref to rewrite pronominal mentions with their antecedents so
+    relation extraction and the concordance see every sentence a concept
+    participates in, not just those naming it explicitly.
+
     Examples:
         cmapr ingest data/input/eco_spl.txt
         cmapr ingest data/input/eco_spl.txt --clean-ocr
         cmapr ingest data/input/eco_spl.txt --toc data/input/eco_spl_toc.txt
         cmapr ingest data/input/eco_spl.txt --spacy
+        cmapr ingest data/input/eco_spl.txt --coref
     """
+    if use_coref:
+        from concept_mapper.preprocessing.coref import coref_available
+
+        if not coref_available():
+            raise click.ClickException(
+                "The --coref flag requires the coref extra. "
+                "Install with: uv sync --extra coref"
+            )
     verbose = ctx.obj["verbose"]
     output_dir = ctx.obj["output_dir"]
 
@@ -172,7 +196,11 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy):
         for doc in bar:
             processed.append(
                 preprocess(
-                    doc, clean_ocr=clean_ocr, toc_file=toc_file, use_spacy=use_spacy
+                    doc,
+                    clean_ocr=clean_ocr,
+                    toc_file=toc_file,
+                    use_spacy=use_spacy,
+                    resolve_coref=use_coref,
                 )
             )
 
@@ -1043,6 +1071,17 @@ def search(
         "from the text; this only adds the embedding ranking signal."
     ),
 )
+@click.option(
+    "--engine",
+    type=click.Choice(["auto", "dependency", "regex"]),
+    default="auto",
+    help=(
+        "Proposition-extraction engine. 'dependency' parses each sentence once "
+        "with spaCy and reads relations off the dependency tree (requires: "
+        "uv sync --extra spacy + en_core_web_sm); 'regex' is the pairwise "
+        "pattern chain; 'auto' uses dependency when spaCy is available."
+    ),
+)
 @click.pass_context
 def graph(
     ctx,
@@ -1059,6 +1098,7 @@ def graph(
     depth,
     focus,
     definitions,
+    engine,
 ):
     """
     Build concept graph by running analyze on each term in a terms file.
@@ -1120,12 +1160,23 @@ def graph(
         if entry.metadata and "score" in entry.metadata
     }
 
-    click.echo("Extracting typed propositions...")
+    from concept_mapper.graph.dep_extractor import dependency_available
+
+    if engine == "auto":
+        engine = "dependency" if dependency_available() else "regex"
+    elif engine == "dependency" and not dependency_available():
+        raise click.ClickException(
+            "The dependency engine requires the spacy extra and model. "
+            "Install with: uv sync --extra spacy && "
+            "python -m spacy download en_core_web_sm"
+        )
+    click.echo(f"Extracting typed propositions ({engine} engine)...")
     concept_graph = build_proposition_graph(
         docs=docs,
         seed_terms=seed_terms,
         node_filter=node_filter,
         term_scores=term_scores,
+        engine=engine,
     )
 
     # Prune to target ratio
@@ -1196,7 +1247,10 @@ def graph(
     # Definitions are derived for every node by default (composite extractive
     # over each term's concordance). --definitions adds the optional
     # sentence-embedding signal as a ranking booster (needs the embeddings extra).
-    from concept_mapper.analysis.definitions import derive_definitions
+    from concept_mapper.analysis.definitions import (
+        compose_definitions,
+        derive_definitions,
+    )
 
     ranker = None
     if definitions:
@@ -1219,6 +1273,8 @@ def graph(
     click.echo(
         f"✓ Derived definitions for {n_def} of {concept_graph.node_count()} node(s)"
     )
+    n_comp = compose_definitions(concept_graph)
+    click.echo(f"✓ Composed relation-based definitions for {n_comp} node(s)")
 
     validate_concept_graph(concept_graph)
 
@@ -2759,19 +2815,28 @@ def run(
     seed_terms = node_filter.filter([t for t, _, _ in candidates])
     term_scores = {t.lower(): s for t, s, _ in candidates}
 
-    click.echo("    Extracting typed propositions...")
+    from concept_mapper.graph.dep_extractor import dependency_available
+
+    run_engine = "dependency" if dependency_available() else "regex"
+    click.echo(f"    Extracting typed propositions ({run_engine} engine)...")
     concept_graph = build_proposition_graph(
         docs=docs,
         seed_terms=seed_terms,
         node_filter=node_filter,
         term_scores=term_scores,
+        engine=run_engine,
     )
     concept_graph = prune_to_ratio(concept_graph, target_ratio=3.0)
 
-    # Derive a text-based definition for every node (composite extractive).
-    from concept_mapper.analysis.definitions import derive_definitions
+    # Derive a text-based definition for every node (composite extractive),
+    # plus a relation-composed definition (deterministic template assembly).
+    from concept_mapper.analysis.definitions import (
+        compose_definitions,
+        derive_definitions,
+    )
 
     derive_definitions(concept_graph, docs)
+    compose_definitions(concept_graph)
 
     validate_concept_graph(concept_graph)
 

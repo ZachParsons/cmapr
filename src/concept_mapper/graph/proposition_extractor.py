@@ -499,7 +499,13 @@ class PropositionExtractor:
     # ------------------------------------------------------------------
 
     def _extract_from_sentence(self, sentence: str, term_a: str, term_b: str) -> list:
-        """Try all extractors in priority order on one sentence."""
+        """Try all extractors in priority order on one sentence.
+
+        The generic fallbacks (relation, pos_verb) only run when no typed
+        pattern matched the sentence — a sentence that already yielded e.g. a
+        kind-of proposition must not also feed the catch-alls, which would
+        emit spurious low-information edges for the same pair.
+        """
         results = []
         for extractor in (
             self._try_definition,
@@ -509,12 +515,15 @@ class PropositionExtractor:
             self._try_dependence,
             self._try_opposition,
             self._try_property,
-            self._try_relation,
-            self._try_pos_verb,  # v2: POS-based fallback, catches any verb
         ):
             p = extractor(sentence, term_a, term_b)
             if p is not None:
                 results.append(p)
+        if not results:
+            for fallback in (self._try_relation, self._try_pos_verb):
+                p = fallback(sentence, term_a, term_b)
+                if p is not None:
+                    results.append(p)
         return results
 
     # ------------------------------------------------------------------

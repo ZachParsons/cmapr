@@ -20,6 +20,7 @@ def build_proposition_graph(
     node_filter: Optional["NodeFilter"] = None,
     pmi_threshold: float = 1.0,
     term_scores: Optional[Dict[str, float]] = None,
+    engine: str = "auto",
 ) -> ConceptGraph:
     """
     Build a typed proposition graph from a document set and seed term list.
@@ -30,9 +31,12 @@ def build_proposition_graph(
     no typed proposition was found.
 
     Multigraph note: ConceptGraph is backed by a DiGraph (one edge per directed
-    pair). When multiple proposition types exist for the same pair the
-    highest-priority type wins: definition > kind-of > production > dependence >
-    component > cooccurrence.
+    pair). When multiple proposition types exist for the same directed pair,
+    *all* are kept on one edge via the additive multi-type schema also used by
+    ``cmapr merge`` (``relation_types`` / ``weight_by_type`` / ``verb_by_type``
+    / ``evidence_by_type``); the highest-priority type becomes the primary
+    ``relation_type`` (definition > kind-of > production > dependence >
+    component > property > opposition > relation > cooccurrence).
 
     Args:
         docs         : list of ProcessedDocument objects
@@ -40,6 +44,9 @@ def build_proposition_graph(
         node_filter  : optional NodeFilter; applied to extracted (non-seed) nodes
         pmi_threshold: minimum PMI for a cooccurrence fallback edge (default 1.0)
         term_scores  : optional dict mapping term → rarity score; stored as node attr
+        engine       : "dependency" (sentence-centric spaCy-parse extraction),
+                       "regex" (pairwise pattern chain), or "auto" — dependency
+                       when spaCy + en_core_web_sm are importable, else regex
 
     Returns:
         ConceptGraph with typed edges
@@ -55,7 +62,10 @@ def build_proposition_graph(
         "production": 2,
         "dependence": 3,
         "component": 4,
-        "cooccurrence": 5,
+        "property": 5,
+        "opposition": 6,
+        "relation": 7,
+        "cooccurrence": 8,
     }
 
     extractor = PropositionExtractor(docs)
@@ -70,33 +80,49 @@ def build_proposition_graph(
         term: sum(1 for s in all_sentences if term in s.lower()) for term in seed_lower
     }
 
-    # Accumulate best proposition per (source, target) pair
+    # Accumulate best proposition per (source, target, type) — different types
+    # for the same pair all survive (Decision 9); same-type duplicates merge.
     best: Dict[tuple, Proposition] = {}
 
     def _keep(prop: Proposition) -> None:
-        """Store prop if it beats the current best for its (source, target) pair."""
-        key = (prop.source.lower(), prop.target.lower())
-        rkey = (prop.target.lower(), prop.source.lower())
+        """Store prop, merging into an existing same-pair same-type proposition."""
+        key = (prop.source.lower(), prop.target.lower(), prop.type)
+        rkey = (prop.target.lower(), prop.source.lower(), prop.type)
         current = best.get(key) or best.get(rkey)
-        if current is None or _TYPE_PRIORITY.get(prop.type, 9) < _TYPE_PRIORITY.get(
-            current.type, 9
-        ):
-            # Remove reverse key if present so direction is updated
-            best.pop(rkey, None)
+        if current is None:
             best[key] = prop
+            return
+        current.weight = max(current.weight, prop.weight)
+        for sentence in prop.evidence:
+            if sentence not in current.evidence:
+                current.evidence.append(sentence)
+        current.evidence = current.evidence[:3]
 
-    # Typed propositions for all seed pairs
-    for i, term_a in enumerate(seed_lower):
-        for term_b in seed_lower[i + 1 :]:
-            for prop in extractor.extract(term_a, term_b):
-                _keep(prop)
+    if engine == "auto":
+        from concept_mapper.graph.dep_extractor import dependency_available
 
-    # Composition pattern across full term list
-    for prop in extractor.extract_composition(seed_lower):
-        _keep(prop)
+        engine = "dependency" if dependency_available() else "regex"
+
+    if engine == "dependency":
+        # Sentence-centric: one parse per sentence, all propositions at once.
+        from concept_mapper.graph.dep_extractor import DependencyExtractor
+
+        dep = DependencyExtractor(all_sentences, seed_lower)
+        for prop in dep.extract_all():
+            _keep(prop)
+    else:
+        # Typed propositions for all seed pairs (pairwise regex chain)
+        for i, term_a in enumerate(seed_lower):
+            for term_b in seed_lower[i + 1 :]:
+                for prop in extractor.extract(term_a, term_b):
+                    _keep(prop)
+
+        # Composition pattern across full term list
+        for prop in extractor.extract_composition(seed_lower):
+            _keep(prop)
 
     # Cooccurrence fallback for uncovered pairs
-    covered = {frozenset(k) for k in best}
+    covered = {frozenset((s, t)) for s, t, _ in best}
     for i, term_a in enumerate(seed_lower):
         for term_b in seed_lower[i + 1 :]:
             if frozenset([term_a, term_b]) in covered:
@@ -126,10 +152,16 @@ def build_proposition_graph(
         {k.lower(): v for k, v in term_scores.items()} if term_scores else {}
     )
 
+    # Group surviving propositions by directed pair (one edge per pair;
+    # multiple types ride the additive multi-type schema).
+    by_pair: Dict[tuple, List[Proposition]] = {}
+    for (source, target, _), prop in best.items():
+        by_pair.setdefault((source, target), []).append(prop)
+
     # Build graph
     graph = ConceptGraph(directed=True)
 
-    for (source, target), prop in best.items():
+    for (source, target), props in by_pair.items():
         # NodeFilter: reject extracted nodes that fail inclusion criteria
         if node_filter is not None:
             if any(
@@ -145,14 +177,20 @@ def build_proposition_graph(
                     node_attrs["score"] = scores_lower[node]
                 graph.add_node(node, **node_attrs)
 
-        graph.add_edge(
-            source,
-            target,
-            relation_type=prop.type,
-            verb=prop.label,
-            weight=prop.weight,
-            evidence=prop.evidence,
-        )
+        props.sort(key=lambda p: _TYPE_PRIORITY.get(p.type, 9))
+        primary = props[0]
+        edge_attrs: Dict[str, Any] = {
+            "relation_type": primary.type,
+            "verb": primary.label,
+            "weight": primary.weight,
+            "evidence": primary.evidence,
+        }
+        if len(props) > 1:
+            edge_attrs["relation_types"] = [p.type for p in props]
+            edge_attrs["weight_by_type"] = {p.type: p.weight for p in props}
+            edge_attrs["verb_by_type"] = {p.type: p.label for p in props}
+            edge_attrs["evidence_by_type"] = {p.type: p.evidence for p in props}
+        graph.add_edge(source, target, **edge_attrs)
 
     return graph
 

@@ -9,7 +9,6 @@ dependencies = [
     # Core NLP dependencies
     "nltk>=3.8",          # Tokenization, POS tagging, lemmatization
     "inflect>=7.0",       # Inflection generation for synonym replacement
-    "pattern3>=3.0",      # English conjugation and inflection
     "stanza>=1.8",        # Dependency parsing for sentence diagrams
     "networkx>=3.2",      # Graph construction and algorithms
     "click>=8.1",         # Command-line interface
@@ -18,10 +17,14 @@ dependencies = [
 
 [project.optional-dependencies]
 spacy = [
-    "spacy>=3.8",             # Multi-word noun chunk extraction
+    "spacy>=3.8",             # Noun chunks + dependency-parse relation extraction
 ]
 embeddings = [
     "sentence-transformers>=3.0",  # Definitional-sentence ranking; pulls torch + transformers
+]
+coref = [
+    "fastcoref>=2.1",         # Pronoun→antecedent resolution at ingest; pulls torch + transformers
+    "transformers<4.50",      # fastcoref breaks on the 4.5x tied-weights refactor
 ]
 serve = [
     "fastapi>=0.115",         # Web framework for local UI

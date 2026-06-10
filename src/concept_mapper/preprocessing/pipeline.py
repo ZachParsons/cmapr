@@ -24,12 +24,14 @@ def preprocess(
     clean_ocr: bool = False,
     toc_file: Optional[Path] = None,
     use_spacy: bool = False,
+    resolve_coref: bool = False,
 ) -> ProcessedDocument:
     """
     Preprocess a single document through full pipeline.
 
     Pipeline stages:
     0. Text cleaning (optional) - OCR/PDF artifact removal
+    0b. Coreference resolution (optional, requires the coref extra)
     1. Sentence tokenization
     2. Word tokenization
     3. POS tagging
@@ -44,6 +46,9 @@ def preprocess(
         toc_file: Optional path to table of contents file for guided structure detection
         use_spacy: Extract multi-word noun chunks via spaCy (default: False).
                    Results stored in ``ProcessedDocument.metadata["noun_chunks"]``.
+        resolve_coref: Rewrite pronominal mentions with their antecedents
+                       before tokenization (default: False; requires the
+                       coref extra — see ``preprocessing/coref.py``).
 
     Returns:
         ProcessedDocument with all linguistic annotations
@@ -61,6 +66,13 @@ def preprocess(
     # 0. Clean OCR/PDF artifacts if requested
     if clean_ocr:
         text = clean_text(text)
+
+    # 0b. Coreference resolution (after cleaning, before tokenization, so all
+    # downstream stages see the resolved text as the document text)
+    if resolve_coref:
+        from .coref import resolve_coreferences  # noqa: PLC0415
+
+        text = resolve_coreferences(text)
 
     # 1. Sentence tokenization
     sentences = tokenize_sentences(text)

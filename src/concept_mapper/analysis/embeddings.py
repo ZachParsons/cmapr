@@ -47,20 +47,20 @@ def _load_sentence_transformer(name: str):
 
 class DefinitionRanker:
     """
-    Rank candidate sentences by similarity to a definitional prototype.
+        Rank candidate sentences by similarity to a definitional prototype.
+    what'
+        The prototype is the mean (renormalised) embedding of a small set of
+        canonical definitional phrasings. Higher cosine similarity → sentence
+        structurally resembles a definition.
 
-    The prototype is the mean (renormalised) embedding of a small set of
-    canonical definitional phrasings. Higher cosine similarity → sentence
-    structurally resembles a definition.
-
-    Parameters
-    ----------
-    model_name : str
-        HuggingFace model identifier. Default: all-MiniLM-L6-v2 (~80 MB,
-        fast on CPU).
-    cache_dir : Path | None
-        If given, encoded sentence embeddings are persisted there keyed by
-        a content hash of the sentence list.
+        Parameters
+        ----------
+        model_name : str
+            HuggingFace model identifier. Default: all-MiniLM-L6-v2 (~80 MB,
+            fast on CPU).
+        cache_dir : Path | None
+            If given, encoded sentence embeddings are persisted there keyed by
+            a content hash of the sentence list.
     """
 
     DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
