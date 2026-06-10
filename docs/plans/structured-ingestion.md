@@ -69,9 +69,21 @@ Observed defects in `data/input/eco_spl1.txt` (pdftotext-style output):
 
 ### Phase B — PDF backend evaluation (docling first)
 
+**B.0 trial (2026-06-09) — feasibility confirmed.** docling
+(trial-installed, not yet in pyproject) on `Eco_1984_SPL.pdf` pages 1–40,
+`do_ocr=False`, no table structure: **25s for 40 pages** (~0.6s/page CPU;
+full ~270-page book ≈ 3 min). Detected 27 headings including the complete
+chapter-1 skeleton — `[I] SIGNS`, 1.1–1.7, all 1.5.1–1.5.6 subsections —
+matching the hand-curated `eco_spl_toc.txt`; also identified the CONTENTS
+page and front-matter title pages (useful for C.1). Caveats: glyph noise
+from the PDF's own text layer ("Ι.5.Ι" with Greek iota, "1.5*6",
+"I . I .") needs section-number normalization, and some sub-subsection
+headings (1.2.1–1.2.6) surface number-only. Verdict: proceed with B.1.
+
 - [ ] **B.1 `--pdf-backend {pdfplumber|docling}`** on `cmapr ingest`;
-  docling under a new `[ingest]` extra, lazy-loaded.
-- [ ] **B.2 Structure comparison harness**: extract TOC/headings from
+  docling under a new `[ingest]` extra, lazy-loaded. Include a
+  section-number normalizer (Greek-iota/`*`/spacing fixes seen in B.0).
+- [ ] **B.2 Structure comparison harness**: extract all headings from
   `Eco_1984_SPL.pdf` via docling; score against hand-curated
   `eco_spl_toc.txt` (precision/recall on section titles + ordering).
 - [ ] **B.3 Accept/reject**: if docling wins, it becomes the default PDF
