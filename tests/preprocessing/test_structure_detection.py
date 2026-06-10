@@ -327,6 +327,4 @@ class TestBackendSuppliedHeadings:
         )
         processed = preprocess(doc)
         assert processed.structure_nodes
-        assert any(
-            n.title == "Crisis of a concept" for n in processed.structure_nodes
-        )
+        assert any(n.title == "Crisis of a concept" for n in processed.structure_nodes)

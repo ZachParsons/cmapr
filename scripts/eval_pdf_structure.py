@@ -88,10 +88,14 @@ def main():
 
     recall = len(matched_truth) / max(len(truth_norm), 1)
     precision = len(matched_extracted) / max(len(extracted_norm), 1)
-    print(f"\nrecall    {len(matched_truth)}/{len(truth_norm)} = {recall:.0%}"
-          f"  (TOC entries docling found)")
-    print(f"precision {len(matched_extracted)}/{len(extracted_norm)} = {precision:.0%}"
-          f"  (docling headings that are real TOC entries)")
+    print(
+        f"\nrecall    {len(matched_truth)}/{len(truth_norm)} = {recall:.0%}"
+        f"  (TOC entries docling found)"
+    )
+    print(
+        f"precision {len(matched_extracted)}/{len(extracted_norm)} = {precision:.0%}"
+        f"  (docling headings that are real TOC entries)"
+    )
 
     misses = [truth[i] for i in range(len(truth)) if i not in matched_truth]
     if misses:

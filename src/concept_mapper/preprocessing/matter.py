@@ -37,7 +37,9 @@ _BACK_HEADING_RE = re.compile(
 
 # An index-shaped line: short, comma-separated trailing page numbers
 # ("semiosis, 23, 45, 112-13" / "Peirce, C. S., 7n, 215").
-_INDEX_LINE_RE = re.compile(r"^.{1,60}?,\s*\d{1,4}(?:n|f|ff)?(?:\s*[,–-]\s*\d{1,4}(?:n|f|ff)?)*\s*$")
+_INDEX_LINE_RE = re.compile(
+    r"^.{1,60}?,\s*\d{1,4}(?:n|f|ff)?(?:\s*[,–-]\s*\d{1,4}(?:n|f|ff)?)*\s*$"
+)
 
 # Copyright-page markers.
 _COPYRIGHT_RE = re.compile(

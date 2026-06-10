@@ -23,7 +23,8 @@ def _book_text():
         "2. Dictionary vs. Encyclopedia — 46\n"
     )
     body_lines = [
-        f"Body sentence number {i}: a sign stands for something else." for i in range(60)
+        f"Body sentence number {i}: a sign stands for something else."
+        for i in range(60)
     ]
     back = (
         "BIBLIOGRAPHY\n"

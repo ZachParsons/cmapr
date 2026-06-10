@@ -132,7 +132,9 @@ def _normalize_heading(text: str) -> str:
 
 
 def _load_pdf_docling(
-    file_path: Union[str, Path], page_range=None, collected_headings: Optional[list] = None
+    file_path: Union[str, Path],
+    page_range=None,
+    collected_headings: Optional[list] = None,
 ) -> str:
     """Layout-aware PDF extraction via docling (``ingest`` extra).
 
