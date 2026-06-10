@@ -97,6 +97,10 @@ def to_d3_dict(
             node_data["definition"] = node_attrs["definition"]
         if "definition_source" in node_attrs:
             node_data["definition_source"] = node_attrs["definition_source"]
+        if "composed_definition" in node_attrs:
+            node_data["composed_definition"] = node_attrs["composed_definition"]
+        if "composed_parts" in node_attrs:
+            node_data["composed_parts"] = node_attrs["composed_parts"]
         if "score" in node_attrs:
             node_data["score"] = node_attrs["score"]
         if "community" in node_attrs:

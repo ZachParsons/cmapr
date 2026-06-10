@@ -17,6 +17,13 @@ term's *concordance* — every sentence it occurs in — ranked by a composite
 When a term has no full-sentence occurrence, the coverage fallback chain is
 ``best concordance sentence → edge-derived gloss → first substring occurrence``
 so a node is never left undefined.
+
+A second, *composed* definition (:func:`compose_definitions`) is assembled
+deterministically from the node's typed edges by template — generation in the
+old-school sense: the sentence is new, but every clause is a slot filled from
+an extracted edge, so nothing can be asserted that the graph doesn't already
+evidence. Stored separately as ``composed_definition`` so the UI can label the
+verbatim and synthesized definitions honestly.
 """
 
 from __future__ import annotations
@@ -133,7 +140,9 @@ def _edge_gloss(graph, node_id: str) -> Optional[str]:
     return None
 
 
-def _first_occurrence_sentence(docs: List[ProcessedDocument], term: str) -> Optional[str]:
+def _first_occurrence_sentence(
+    docs: List[ProcessedDocument], term: str
+) -> Optional[str]:
     """Last-resort: the first sentence whose text contains the term substring."""
     tl = term.lower()
     for doc in docs:
@@ -183,9 +192,7 @@ def derive_definitions(
             best: Optional[Tuple[float, dict]] = None
             for idx, rec in enumerate(records):
                 sim = sims.get(rec["text"]) if sims is not None else None
-                s = _composite_score(
-                    rec["text"], term, sim=sim, is_intro=idx < 2
-                )
+                s = _composite_score(rec["text"], term, sim=sim, is_intro=idx < 2)
                 if best is None or s > best[0]:
                     best = (s, rec)
             definition = best[1]["text"]
@@ -203,3 +210,168 @@ def derive_definitions(
             defined += 1
 
     return defined
+
+
+# ---------------------------------------------------------------------------
+# Usage-based composed definitions (deterministic template assembly)
+# ---------------------------------------------------------------------------
+
+# Clause templates per relation type: (outgoing phrasing, incoming phrasing).
+# ``None`` means edges in that direction don't yield a readable clause.
+_COMPOSE_TEMPLATES: Dict[str, Tuple[Optional[str], Optional[str]]] = {
+    "definition": ("defined as {}", None),
+    "kind-of": ("a kind of {}", "whose kinds include {}"),
+    "production": ("producing {}", "produced by {}"),
+    "dependence": ("dependent on {}", "underpinning {}"),
+    "property": ("characterized as {}", "a quality of {}"),
+    "relation": ("related to {}", "related to {}"),
+    "component": ("comprising {}", "a component of {}"),
+    "opposition": ("opposed to {}", "opposed to {}"),
+}
+
+# Every composed definition carries all of these parts, in this order; a part
+# with no extracted edge stays None ("—" in the UI) rather than being invented
+# — stating absence is policy-compliant, fabricating content is not.
+_COMPOSE_PART_ORDER = (
+    "definition",
+    "kind-of",
+    "production",
+    "dependence",
+    "property",
+    "relation",
+    "component",
+    "opposition",
+)
+_MAX_TERMS_PER_CLAUSE = 3
+
+
+def _edge_relation_types(data: dict) -> List[str]:
+    """All relation types on an edge (multi-type merge schema aware)."""
+    if data.get("relation_types"):
+        return list(data["relation_types"])
+    return [data.get("relation_type") or data.get("type") or "relation"]
+
+
+def _join_terms(terms: List[str]) -> str:
+    if len(terms) == 1:
+        return terms[0]
+    return ", ".join(terms[:-1]) + " and " + terms[-1]
+
+
+def _incident_edges(graph, node_id: str) -> List[tuple]:
+    """Incident edges as (data, outgoing, other-node-id) triples."""
+    nx_graph = graph.graph
+    if graph.directed:
+        return [(d, True, t) for _, t, d in nx_graph.out_edges(node_id, data=True)] + [
+            (d, False, s) for s, _, d in nx_graph.in_edges(node_id, data=True)
+        ]
+    return [(d, True, t) for _, t, d in nx_graph.edges(node_id, data=True)]
+
+
+def _ranked_terms(pairs: List[Tuple[float, str]], own_label: str) -> List[str]:
+    """Dedupe and weight-order clause terms, capped at _MAX_TERMS_PER_CLAUSE."""
+    seen = set()
+    terms: List[str] = []
+    for _, name in sorted(pairs, key=lambda pair: -pair[0]):
+        if name.lower() in seen or name.lower() == own_label.lower():
+            continue
+        seen.add(name.lower())
+        terms.append(name)
+        if len(terms) == _MAX_TERMS_PER_CLAUSE:
+            break
+    return terms
+
+
+def compose_definition_parts(graph, node_id: str) -> Dict[str, Optional[str]]:
+    """Per-relation-type clauses for one node — all parts, None when absent."""
+    nx_graph = graph.graph
+    label = str(nx_graph.nodes[node_id].get("label", node_id))
+
+    # (etype, rendered template) → [(weight, other-node label)]. Keying on the
+    # template merges symmetric directions (opposition, relation) into one
+    # clause while keeping e.g. "producing X" and "produced by Y" distinct.
+    slots: Dict[Tuple[str, str], List[Tuple[float, str]]] = {}
+    for data, outgoing, other in _incident_edges(graph, node_id):
+        other_label = str(nx_graph.nodes[other].get("label", other))
+        weight = float(data.get("weight") or 1)
+        for etype in _edge_relation_types(data):
+            templates = _COMPOSE_TEMPLATES.get(etype)
+            if templates is None:
+                continue
+            template = templates[0] if outgoing else templates[1]
+            if template is None:
+                continue
+            slots.setdefault((etype, template), []).append((weight, other_label))
+
+    parts: Dict[str, Optional[str]] = {}
+    for etype in _COMPOSE_PART_ORDER:
+        clauses: List[str] = []
+        for template in _COMPOSE_TEMPLATES[etype]:
+            if template is None or (etype, template) not in slots:
+                continue
+            terms = _ranked_terms(slots[(etype, template)], label)
+            if terms:
+                clause = template.format(_join_terms(terms))
+                if clause not in clauses:
+                    clauses.append(clause)
+        parts[etype] = "; ".join(clauses) if clauses else None
+    return parts
+
+
+def _cooccurrence_clause(graph, node_id: str, label: str) -> Optional[str]:
+    """Fallback clause from cooccurrence edges (association, not assertion)."""
+    nx_graph = graph.graph
+    pairs: List[Tuple[float, str]] = []
+    for data, _, other in _incident_edges(graph, node_id):
+        if "cooccurrence" not in _edge_relation_types(data):
+            continue
+        other_label = str(nx_graph.nodes[other].get("label", other))
+        pairs.append((float(data.get("weight") or 1), other_label))
+    terms = _ranked_terms(pairs, label)
+    if not terms:
+        return None
+    return f"co-occurs with {_join_terms(terms)}"
+
+
+def compose_definition(graph, node_id: str) -> Optional[str]:
+    """Assemble a definition sentence for one node from its typed edges.
+
+    Coverage mirrors the verbatim-definition guarantee: when no typed edge
+    exists, falls back to a cooccurrence clause, so every connected node gets
+    a composed definition. Only a fully isolated node returns None (and those
+    are dropped at export).
+    """
+    nx_graph = graph.graph
+    label = str(nx_graph.nodes[node_id].get("label", node_id))
+    parts = compose_definition_parts(graph, node_id)
+    clauses = [phrase for phrase in parts.values() if phrase]
+    if not clauses:
+        fallback = _cooccurrence_clause(graph, node_id, label)
+        if fallback is None:
+            return None
+        clauses = [fallback]
+    text = f"{label} — {'; '.join(clauses)}."
+    return text[0].upper() + text[1:]
+
+
+def compose_definitions(graph) -> int:
+    """Attach ``composed_definition`` + ``composed_parts`` to every node.
+
+    Deterministic and purely graph-derived, so it always recomputes (stale
+    values from an earlier build are overwritten or dropped). Returns the
+    count of nodes that received a composed definition.
+    """
+    nx_graph = graph.graph
+    composed = 0
+    for node_id in graph.nodes():
+        text = compose_definition(graph, node_id)
+        if text:
+            nx_graph.nodes[node_id]["composed_definition"] = text
+            nx_graph.nodes[node_id]["composed_parts"] = compose_definition_parts(
+                graph, node_id
+            )
+            composed += 1
+        else:
+            nx_graph.nodes[node_id].pop("composed_definition", None)
+            nx_graph.nodes[node_id].pop("composed_parts", None)
+    return composed

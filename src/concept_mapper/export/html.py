@@ -691,8 +691,12 @@ def _generate_html_template(
                     }}
                     if (d.frequency) html += `<br>Frequency: ${{d.frequency}}`;
                     if (d.pos) html += `<br>Part of speech: ${{d.pos}}`;
+                    if (d.composed_definition) {{
+                        html += `<br><br><div style="color:#888;font-size:11px;margin-bottom:2px">From relations</div>`
+                            + `<em style="color:#ccc">${{d.composed_definition}}</em>`;
+                    }}
                     if (d.definition) {{
-                        html += `<br><br>${{d.definition}}`;
+                        html += `<br><br><div style="color:#888;font-size:11px;margin-bottom:2px">Example:</div>${{d.definition}}`;
                     }} else {{
                         // Derive an in-corpus characterisation by searching outgoing
                         // edges sourced at this node, preferring the most definitional
@@ -900,8 +904,25 @@ def _generate_html_template(
                 if (d.score    != null) html += `<div class="panel-meta">Rarity score: ${{d.score.toFixed(2)}}</div>`;
                 if (d.frequency != null) html += `<div class="panel-meta">Frequency: ${{d.frequency}}</div>`;
                 if (d.pos)              html += `<div class="panel-meta">POS: ${{d.pos}}</div>`;
+                if (d.composed_parts) {{
+                    // Full scaffold: every relation type is a row; "—" marks a
+                    // part with no extracted relation (absence, not omission).
+                    html += `<div class="panel-meta" style="margin-top:6px">`;
+                    Object.entries(d.composed_parts).forEach(([part, phrase]) => {{
+                        html += `<div><span style="color:#aaa;display:inline-block;min-width:82px">${{part}}</span>${{phrase || '<span style="color:#666">—</span>'}}</div>`;
+                    }});
+                    if (Object.values(d.composed_parts).every(v => !v) && d.composed_definition) {{
+                        // Cooccurrence-only node: no typed relations, so show
+                        // the association fallback the sentence was built from.
+                        html += `<div style="margin-top:2px">${{d.composed_definition}}</div>`;
+                    }}
+                    html += `</div><div class="panel-meta" style="color:#aaa;font-size:10px">— composed from relations; — = none extracted</div>`;
+                }} else if (d.composed_definition) {{
+                    html += `<div class="panel-meta" style="margin-top:6px">${{d.composed_definition}}</div>`
+                        + `<div class="panel-meta" style="color:#aaa;font-size:10px">— composed from relations</div>`;
+                }}
                 if (d.definition) {{
-                    html += `<div class="panel-meta" style="margin-top:6px;font-style:italic">${{d.definition}}</div>`;
+                    html += `<div class="panel-meta" style="margin-top:6px"><span style="color:#aaa">Example:</span> <span style="font-style:italic">${{d.definition}}</span></div>`;
                     if (d.definition_source) {{
                         html += `<div class="panel-meta" style="color:#aaa;font-size:10px">— ${{d.definition_source}}</div>`;
                     }}
