@@ -29,14 +29,14 @@ For each stage, the recap says *what cmapr already does*, then surveys candidate
 | **GLiNER** | 2 rarities / 3 graph | Zero-shot NER with custom labels | **Augment** (high-leverage typing) |
 | **BERTopic** | 2 rarities / cross-cutting | Embedding-based topic clustering | **Defer** (needs multi-doc input) |
 | **gensim** | 2 rarities | Topic modeling (LDA, NMF), word2vec | **Defer** (needs multi-doc input) |
-| **REBEL** | 3 graph | Neural seq2seq relation extraction | **Augment** (high-leverage; roadmap rb.1–rb.7) |
+| **REBEL** | 3 graph | Neural seq2seq relation extraction | **Defer** (generative → can hallucinate; deferred 2026-06 in favor of spaCy dependency parsing) |
 | **sentence-transformers** | 3 graph / 2 rarities | Sentence/term embeddings | **Augment** (high-leverage; roadmap st.1–st.8) |
 | **LangExtract** | 3 graph | LLM-based structured extraction with source grounding | **Investigate** (closest match to roadmap goals) |
 | **Instructor** | 3 graph | Pydantic-typed LLM outputs over any provider | **Investigate** (lightweight harness if LLM extraction lands) |
 | **spaCy-LLM** | 3 graph | LLM-powered NER/relations as spaCy components | **Investigate** (slots into existing spaCy stack) |
 | **Outlines / BAML** | 3 graph | Constrained / type-safe LLM generation | **Skip** (Instructor covers the same surface) |
 | **Microsoft GraphRAG** | 3 graph | Full LLM knowledge-graph pipeline | **Skip** (overlaps cmapr's whole graph stage) |
-| **Stanford OpenIE** | 3 graph | Classical open information extraction | **Skip** (REBEL strictly better) |
+| **Stanford OpenIE** | 3 graph | Classical open information extraction | **Skip** (spaCy dependency parsing covers the niche in-process) |
 | **DyGIE++** | 3 graph | Joint entity + relation extraction | **Skip** (research-grade, low maintenance) |
 | **ConceptNet** | 3 graph / cross-cutting | Public commonsense KG | **Augment** (v2 validation/augmentation) |
 | **PyKEEN** | cross-cutting | KG embeddings + link prediction | **Defer** (until extraction quality peaks) |
@@ -44,6 +44,33 @@ For each stage, the recap says *what cmapr already does*, then surveys candidate
 | **rdflib** | 4 export | RDF/Turtle/SPARQL serialization | **Skip** (no concrete RDF use case) |
 | **Cytoscape.js / Sigma.js / 3d-force-graph** | 4 export | Alternative interactive viz front-ends | **Skip** (current D3 covers it) |
 | **NetworkX** | 3 graph / cross-cutting | Graph algorithms | **Already integrated** (backs `ConceptGraph`) |
+
+---
+
+## Technology generations & determinism
+
+The core candidates span four successive generations of NLP technology. Where a library sits on this ladder predicts its integration cost, its failure modes, and — decisive for cmapr — whether its output is guaranteed to be grounded in the source text.
+
+| | Generation | Core technique | Output type |
+|---|---|---|---|
+| **NLTK** | Classical NLP (1990s–2000s) | Hand-written rules + curated lexicons (WordNet) + simple statistical models (averaged-perceptron tagger) | Symbolic: tags, lemmas, token lists |
+| **spaCy** | Statistical/neural ML (2010s) | Small supervised neural nets (CNN + hash embeddings) trained on annotated corpora | Symbolic: tags, parse trees, entities |
+| **sentence-transformers** | Pretrained transformers (late 2010s) | Self-supervised BERT-style pretraining + contrastive fine-tuning | Continuous: dense vectors, no linguistic structure |
+| **REBEL** | Generative transformers (2020s) | Seq2seq (BART) fine-tuned to *generate* relation triples as text | Generated symbolic: triples decoded from free text |
+| **LLM extraction** (LangExtract, Instructor, spaCy-LLM) | Prompted LLMs (2020s) | Instruction-following general models with schema constraints | Generated symbolic, schema-shaped |
+
+- **NLTK** is mostly pre-learning technology: regex/rule tokenizers, lookup lemmatization against the hand-built WordNet lexicon, and a tiny pre-neural linear model for POS. Knowledge lives in rules and dictionaries humans wrote; behavior is inspectable rule by rule.
+- **spaCy** is the supervised machine-learning generation: compact neural networks trained on annotated treebanks. Knowledge lives in learned weights — which is why it generalizes to neologisms WordNet has never seen — but it produces the same *kind* of output as NLTK: one tag per token, one parse per sentence.
+- **sentence-transformers** marks the representation-learning break: transformers pretrained on raw text at scale, fine-tuned so cosine distance means semantic similarity. It produces no linguistic structure at all — just geometry. It can only ever be a *signal* (ranking, similarity edges), never an extractor.
+- **REBEL** is the generative turn, one step short of an LLM: a ~400M-parameter encoder-decoder that reads a sentence and *writes out* triples as a text string, parsed back into structure. Task-fine-tuned rather than instruction-following.
+- **Prompted LLMs** (the LangExtract / Instructor / spaCy-LLM group) are the fifth rung: general instruction-following models constrained to a schema at decode time.
+
+**Determinism.** The distinction is finer than deterministic-vs-not. All of these are *reproducible*: same input, same model, same settings → same output (REBEL included — it decodes with beam search, not sampling; only GPU float quirks can wiggle results). The axes that actually differ:
+
+1. **Transparency** — NLTK's behavior can be read rule by rule; you can see *why* it failed. spaCy and everything after are opaque weights; failures can only be characterized statistically.
+2. **Output constraint** — this is the axis that matters for cmapr's evidence-driven design. NLTK and spaCy are *extractive and structurally constrained*: they can mis-tag, but they cannot invent content — every output is anchored to a token in the source text. sentence-transformers can't be "wrong" in a symbolic sense at all. REBEL and the LLM group are the first layers that can **hallucinate**: they generate text, so they can emit a triple whose subject or relation isn't supported by the sentence, and they normalize surface forms (outputting "Charles Peirce" where the text says "Peirce"), which breaks naive evidence-matching.
+
+**Policy (2026-06-09).** cmapr stays on the extractive side of that line. Every relation in the graph must be traceable to a verbatim span of the source text — that's the product's core promise to its academic users. Generative extraction (REBEL, LLM backends) is **deferred**: the preferred path for better relation extraction is the old-school one — spaCy dependency parsing as a deterministic base layer (see the "SpaCy integration" roadmap entry). Embeddings (sentence-transformers) remain in scope because they only *rank and relate*; they never assert content.
 
 ---
 
@@ -68,7 +95,7 @@ The known gap is the *ingest seam* itself — cmapr currently expects a clean ra
 
 ### spaCy — already integrated
 
-Lazy-loaded under the `[spacy]` extra to extract multi-word noun chunks during ingest (`preprocessing/noun_chunks.py`). Could also supply dependency parses to Stage 3 (currently NLTK POS only); see `docs/roadmap.md` "SpaCy integration" entry for the upsides/downsides of broadening usage.
+Lazy-loaded under the `[spacy]` extra to extract multi-word noun chunks during ingest (`preprocessing/noun_chunks.py`). Broadening it — dependency parses for Stage 3 relation extraction, neural POS, NER — is now the **preferred relation-extraction path** following the REBEL deferral (see "Technology generations & determinism" above and the `docs/roadmap.md` "SpaCy integration" entry).
 
 ### stanza — already integrated
 
@@ -144,9 +171,9 @@ Candidates in this stage either (a) provide a *different* distinctiveness signal
 
 This is the densest stage of cmapr and the one with the most ecosystem competition. The interesting candidates fall into three groups:
 
-1. **Neural relation extraction** (REBEL) — directly augments the regex chain.
-2. **LLM-based structured extraction** (LangExtract, Instructor, spaCy-LLM) — a different architecture entirely.
-3. **Embeddings as auxiliary signal** (sentence-transformers, ConceptNet, GLiNER) — feed evidence ranking, validation, and edge typing.
+1. **Neural relation extraction** (REBEL) — directly augments the regex chain. *Deferred per the generative-extraction policy above.*
+2. **LLM-based structured extraction** (LangExtract, Instructor, spaCy-LLM) — a different architecture entirely. *Deprioritized for the same reason.*
+3. **Embeddings as auxiliary signal** (sentence-transformers, ConceptNet, GLiNER) — feed evidence ranking, validation, and edge typing. *Still in scope — non-generative.*
 
 ### REBEL (Babelscape) — neural relation extraction
 
@@ -163,8 +190,9 @@ This is the densest stage of cmapr and the one with the most ecosystem competiti
 - ~500M-param model: ~2 GB on disk, ~2s/sentence on CPU. Opt-in via `--neural` or batch GPU.
 - Relation label mapping is lossy: many REBEL relations don't fit cmapr's seven types and get lumped into the generic `relation`.
 - Heavy optional dependency (PyTorch + transformers).
+- **Generative, so it can hallucinate**: it writes triples as free text, meaning a subject or relation may not be supported by the sentence, and surface forms get normalized away from the verbatim source — both break cmapr's span-grounded evidence model. See "Technology generations & determinism" above.
 
-**Recommendation.** **Augment** — `[neural]` extra + `cmapr graph --neural` flag. Roadmap **rb.1–rb.7**. Reasonable size-of-prize: 2–3× more typed edges on the same corpus.
+**Recommendation.** **Defer** *(downgraded from Augment, 2026-06-09)*. Hallucination-level complexity isn't worth it while a deterministic upgrade path exists: spaCy dependency parsing (tree-walk SVO/copular/prep extraction) attacks the same weakness — recall on passives, relative clauses, complex syntax — while staying extractive and fully grounded. Revisit REBEL only if the spaCy-parse extractor plateaus and the residual gap (relations with no syntactic surface pattern) proves to matter in practice. The rb.1–rb.7 roadmap items are retained in `docs/roadmap.md` as a deferred block for that eventuality.
 
 ### sentence-transformers — semantic embeddings
 
@@ -180,7 +208,7 @@ This is the densest stage of cmapr and the one with the most ecosystem competiti
 
 **Cons.** One more dependency (PyTorch transitive). Embedding quality is domain-sensitive — generic models may underperform on philosophical text vs. domain-tuned ones.
 
-**Recommendation.** **Augment** — `[neural]` extra (shared with REBEL). Roadmap **st.1–st.8**. Land *before* REBEL because it's the smaller integration and unlocks multiple wins from one piece of plumbing.
+**Recommendation.** **Augment** — extends the existing `[embeddings]` extra (already landed for definitional-sentence ranking via `analysis/embeddings.py:DefinitionRanker`). Roadmap **st.1–st.8**. Unaffected by the REBEL deferral: embeddings only rank and relate, they never assert content, so they sit on the safe side of the generative line.
 
 ### LangExtract (Google) — LLM-based structured extraction
 
@@ -192,7 +220,7 @@ This is the densest stage of cmapr and the one with the most ecosystem competiti
 
 **Cons.** Requires an LLM (API cost + latency + provenance) unless run against a local model. Provenance concerns for academic use. Cold-start dependency footprint is larger than REBEL.
 
-**Recommendation.** **Investigate.** Land *after* the sentence-transformers + REBEL initiatives so the comparison is apples-to-apples. If results justify it, slot as a third `--neural` backend: `cmapr graph --neural=rebel | --neural=langextract`.
+**Recommendation.** **Investigate (deprioritized, 2026-06-09).** Subject to the same generative-extraction policy that deferred REBEL — an LLM backend can hallucinate relations, which conflicts with cmapr's span-grounded evidence model (its source-grounding feature mitigates but doesn't eliminate this). Revisit only after the spaCy dependency-parse extractor lands and its residual gaps are measured.
 
 ### Instructor — Pydantic-typed LLM outputs
 
@@ -231,17 +259,17 @@ This is the densest stage of cmapr and the one with the most ecosystem competiti
 
 **What it does.** Rule-based extraction of `(subject, relation, object)` triples using dependency parses. Java; Python wrappers exist.
 
-**Fit with cmapr.** REBEL is strictly better for the same niche (typed neural extraction).
+**Fit with cmapr.** Philosophically aligned with the 2026-06 deterministic-extraction policy (rule-based over dependency parses, no hallucination), but it's a Java service — heavy operational footprint for what spaCy dependency parsing can do in-process.
 
-**Recommendation.** **Skip.**
+**Recommendation.** **Skip** — the planned spaCy-parse extractor covers the same niche natively.
 
 ### DyGIE++ — joint entity + relation extraction
 
 **What it does.** Research-grade neural model for joint named-entity and relation extraction. PyTorch.
 
-**Fit with cmapr.** Similar to REBEL but less maintained and harder to ship.
+**Fit with cmapr.** Similar to REBEL but less maintained and harder to ship — and neural relation extraction as a whole is deferred per the generative-extraction policy.
 
-**Recommendation.** **Skip** — REBEL is the better-supported neural option.
+**Recommendation.** **Skip.**
 
 ### ConceptNet — external commonsense KG
 
@@ -305,11 +333,11 @@ These don't fit one stage — they operate on the extracted graph as a whole, or
 1. **Link prediction** — train a TransE model on the extracted edges, surface high-confidence triples the extractor missed. Output as suggestions with confidence scores; manual vet, then optionally add to the graph.
 2. **Entity similarity** — cosine over entity embeddings → "which nodes behave similarly in the graph?" Different from semantic similarity (sentence-transformers) because it's purely structural.
 
-**Pros.** Closes the loop on extraction recall: catches relations the regex/REBEL pipelines miss because the supporting sentence is too implicit. No new annotation; trains on cmapr's own output.
+**Pros.** Closes the loop on extraction recall: catches relations the extraction pipeline misses because the supporting sentence is too implicit. No new annotation; trains on cmapr's own output.
 
 **Cons.** Needs a reasonable-sized graph to train on (~100s of edges minimum; current 50-term graphs are borderline). Embedding model selection / hyperparameter tuning is real work. Pays off most after the graph extractor is at peak quality.
 
-**Recommendation.** **Defer to v3.** Real value once REBEL + sentence-transformers have lifted extraction quality. Natural surface when it lands: `cmapr predict GRAPH --top-n 20 --model transe` writes a `suggestions.json` of candidate missing edges for manual vetting.
+**Recommendation.** **Defer to v3.** Real value once the spaCy-parse extractor + sentence-transformers have lifted extraction quality. Natural surface when it lands: `cmapr predict GRAPH --top-n 20 --model transe` writes a `suggestions.json` of candidate missing edges for manual vetting.
 
 ### NetworkX — already integrated
 
@@ -339,14 +367,15 @@ Would replace `cmapr serve` (FastAPI + Jinja2). The current web UI is bespoke fo
 
 Ordered by leverage per unit of work, given cmapr's current state:
 
-1. **sentence-transformers integration** (Stage 2 + Stage 3) — `[neural]` extra + `cmapr similar TERM` + semantic evidence ranking + similarity edges. Smaller and lossless next to REBEL; unlocks multiple downstream wins from one piece of plumbing. Roadmap **st.1–st.8**.
-2. **REBEL integration** (Stage 3) — `cmapr graph --neural` for neural relation extraction. Land after sentence-transformers so the embedding infrastructure is reusable. Roadmap **rb.1–rb.7**. Reasonable size-of-prize: 2–3× more typed edges.
-3. **GLiNER for term typing** (Stage 2) — concept vs thinker vs work classification on rarities output. Cleaner term lists, less manual vetting. Small surface; depends on the `[neural]` extra existing.
+1. **sentence-transformers integration** (Stage 2 + Stage 3) — extend the `[embeddings]` extra + `cmapr similar TERM` + semantic evidence ranking + similarity edges. Lossless and non-generative; unlocks multiple downstream wins from one piece of plumbing. Roadmap **st.1–st.8**.
+2. **spaCy dependency parsing as relation-extraction base layer** (Stage 3) — replace the regex/POS-pattern chain with tree-walk SVO/copular/prepositional extraction. Deterministic, extractive, span-grounded; the preferred answer to complex-sentence recall now that REBEL is deferred. See the "SpaCy integration" roadmap entry.
+3. **GLiNER for term typing** (Stage 2) — concept vs thinker vs work classification on rarities output. Cleaner term lists, less manual vetting. Small surface; depends on the `[embeddings]` extra existing.
 4. **KeyBERT as 6th rarity signal** (Stage 2) — embedding-based distinctiveness. ~50 lines on top of sentence-transformers.
-5. **LangExtract evaluation** (Stage 3) — once REBEL is in place, run LangExtract on the same corpus and compare yield + provenance. If it wins, add as a third `--neural` backend.
-6. **PyKEEN link prediction** (cross-cutting) — defer until the extractor is at peak quality and graphs are large enough to learn from.
-7. **ConceptNet lookup helper** (Stage 3) — exploratory; build when a concrete validation use case surfaces.
-8. **Structured ingestion pipeline** (Stage 1) — tracked as a separate roadmap entry (docling/pymupdf4llm/unstructured/nougat).
+5. **PyKEEN link prediction** (cross-cutting) — defer until the extractor is at peak quality and graphs are large enough to learn from.
+6. **ConceptNet lookup helper** (Stage 3) — exploratory; build when a concrete validation use case surfaces.
+7. **Structured ingestion pipeline** (Stage 1) — tracked as a separate roadmap entry (docling/pymupdf4llm/unstructured/nougat).
+
+**Deferred (generative-extraction policy, 2026-06-09):** REBEL (rb.1–rb.7) and the LangExtract evaluation. Both generate rather than extract, so they can assert relations unsupported by the source text. Revisit only if the spaCy-parse extractor plateaus with a measured recall gap.
 
 Out of scope (deliberately not on the list): GUI improvements, alternative export formats, topic modeling, RDF export, graph-DB backends. Revisit when the analytical pipeline saturates.
 
@@ -365,6 +394,6 @@ Deliberately omitted because they're outside cmapr's scope or would require rest
 
 ## Related docs
 
-- [`roadmap.md`](roadmap.md) — past / present / future + live Status block; sentence-transformers (st.1–st.8) and REBEL (rb.1–rb.7) tasks live there
+- [`roadmap.md`](roadmap.md) — past / present / future + live Status block; sentence-transformers (st.1–st.8) tasks live there, plus the deferred REBEL block (rb.1–rb.7)
 - [`architecture.md`](architecture.md) — pipeline diagram + module map; the stage structure here mirrors its Stage 1–4 sections
 - [`plans/`](plans/) — per-initiative implementation plans (drafted before code lands)
