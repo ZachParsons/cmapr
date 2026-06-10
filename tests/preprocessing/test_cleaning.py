@@ -217,3 +217,58 @@ class TestEdgeCases:
         assert "café" in result
         assert "naïve" in result
         assert "décor" in result
+
+
+class TestRunningHeaders:
+    """Frequency-based running-header removal (structured-ingestion Phase A)."""
+
+    def _page_text(self):
+        # Three page turns with the same header, one marker-glued section
+        # heading (real content), one bare marker line.
+        return (
+            "a sign is a proposition constituted by Sextus Empiricus,\n"
+            "[16] SEMIOTICS AND THE PHILOSOPHY OF LANGUAGE\n"
+            "Adv. Math. The same sign category was the object of study.\n"
+            "[18] SEMIOTICS AND THE PHILOSOPHY OF LANGUAGE\n"
+            "It is an instruction rather than a substitution.\n"
+            "[20] SEMIOTICS AND THE PHILOSOPHY OF LANGUAGE\n"
+            "A man wears a badge at his buttonhole.\n"
+            "[23]1.5.3. The sign as difference\n"
+            "[14]\n"
+            "Current handbooks of semiotics provide definitions.\n"
+        )
+
+    def test_repeated_header_lines_dropped(self):
+        cleaner = TextCleaner()
+        result = cleaner.clean(self._page_text())
+        assert "SEMIOTICS AND THE PHILOSOPHY" not in result
+
+    def test_sentence_flow_restored_across_header(self):
+        cleaner = TextCleaner()
+        result = cleaner.clean(self._page_text())
+        # The header no longer interrupts the quotation/citation flow.
+        assert "Sextus Empiricus" in result
+        assert "Adv. Math." in result
+
+    def test_marker_glued_section_heading_kept(self):
+        cleaner = TextCleaner()
+        result = cleaner.clean(self._page_text())
+        assert "The sign as difference" in result
+        assert "[23]" not in result
+
+    def test_bare_marker_line_dropped(self):
+        cleaner = TextCleaner()
+        result = cleaner.clean(self._page_text())
+        assert "[14]" not in result
+
+    def test_unrepeated_lines_unchanged(self):
+        cleaner = TextCleaner()
+        text = "A sign stands for something.\nSemiosis is unlimited.\n"
+        result = cleaner.clean(text)
+        assert "A sign stands for something." in result
+        assert "Semiosis is unlimited." in result
+
+    def test_disabled_flag_preserves_header(self):
+        cleaner = TextCleaner(remove_running_headers=False, remove_page_numbers=False)
+        result = cleaner.clean(self._page_text())
+        assert "SEMIOTICS AND THE PHILOSOPHY" in result

@@ -54,6 +54,7 @@ class TextCleaner:
         fix_split_words: bool = True,
         fix_joined_words: bool = True,
         remove_page_numbers: bool = True,
+        remove_running_headers: bool = True,
         min_word_length: int = 2,
     ):
         """
@@ -65,6 +66,8 @@ class TextCleaner:
             fix_split_words: Attempt to rejoin split words
             fix_joined_words: Attempt to split incorrectly joined words
             remove_page_numbers: Remove standalone page numbers
+            remove_running_headers: Drop page-header lines that repeat
+                throughout the document (frequency-based, no title list)
             min_word_length: Minimum length for valid words
         """
         self.fix_spacing = fix_spacing
@@ -72,6 +75,7 @@ class TextCleaner:
         self.fix_split_words = fix_split_words
         self.fix_joined_words = fix_joined_words
         self.remove_page_numbers = remove_page_numbers
+        self.remove_running_headers = remove_running_headers
         self.min_word_length = min_word_length
 
     def clean(self, text: str) -> str:
@@ -84,6 +88,12 @@ class TextCleaner:
         Returns:
             Cleaned text
         """
+        # Running headers must go before _remove_page_numbers strips the
+        # [N] page markers they're keyed on (stripping first orphans the
+        # header text into the surrounding sentence).
+        if self.remove_running_headers:
+            text = self._remove_running_headers(text)
+
         if self.remove_page_numbers:
             text = self._remove_page_numbers(text)
 
@@ -121,6 +131,48 @@ class TextCleaner:
         in typeset text and are unaffected.
         """
         return re.sub(r"-\n([a-z])", r"\1", text)
+
+    _PAGE_MARKER_RE = re.compile(r"^\s*\[\d+\]\s*")
+
+    def _remove_running_headers(self, text: str) -> str:
+        """
+        Drop running page-header lines, detected by repetition.
+
+        Typeset/PDF text repeats the book or chapter title at every page
+        turn ("[16] SEMIOTICS AND THE PHILOSOPHY OF LANGUAGE"), splitting
+        sentences in two. A header is any line body (leading "[N]" page
+        marker stripped, whitespace collapsed, case-folded) recurring ≥ 3
+        times — no hardcoded title list. One-off bodies glued to a page
+        marker ("[23]1.5.3. The sign as difference") are real content: the
+        marker is dropped, the body kept.
+        """
+        lines = text.split("\n")
+
+        def body(line: str) -> str:
+            return self._PAGE_MARKER_RE.sub("", line).strip()
+
+        def norm(b: str) -> str:
+            return re.sub(r"\s+", " ", b).lower()
+
+        counts: dict = {}
+        for line in lines:
+            b = body(line)
+            if len(b) >= 8:
+                counts[norm(b)] = counts.get(norm(b), 0) + 1
+        headers = {b for b, c in counts.items() if c >= 3}
+
+        out = []
+        for line in lines:
+            b = body(line)
+            if b and norm(b) in headers:
+                continue
+            if self._PAGE_MARKER_RE.match(line):
+                if not b:
+                    continue  # bare "[14]" marker line
+                out.append(b)  # keep glued content, marker stripped
+            else:
+                out.append(line)
+        return "\n".join(out)
 
     def _remove_page_numbers(self, text: str) -> str:
         """
