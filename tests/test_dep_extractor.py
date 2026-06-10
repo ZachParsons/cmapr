@@ -76,6 +76,64 @@ class TestVerbConstructions:
         assert ("semiosis", "sign", "relation") in _by_type(props)
 
 
+class TestVerbPrepAndVacuous:
+    def test_stands_for_is_definition(self):
+        props = _extract(["The sign stands for the object."], ["sign", "object"])
+        assert ("sign", "object", "definition") in _by_type(props)
+
+    def test_is_called_is_definition(self):
+        props = _extract(
+            ["This process is called semiosis."], ["process", "semiosis"]
+        )
+        assert ("process", "semiosis", "definition") in _by_type(props)
+
+    def test_based_on_is_dependence(self):
+        props = _extract(
+            ["Signification is based on the code."], ["signification", "code"]
+        )
+        assert ("signification", "code", "dependence") in _by_type(props)
+
+    def test_belongs_to_is_kind_of(self):
+        props = _extract(["The index belongs to the sign."], ["index", "sign"])
+        assert ("index", "sign", "kind-of") in _by_type(props)
+
+    def test_vacuous_copular_target_not_kind_of(self):
+        props = _extract(
+            ["A sign is something which produces an interpretant."],
+            ["sign", "interpretant"],
+        )
+        triples = _by_type(props)
+        assert not any(t == "something" for _, t, _ in triples)
+        # The claim is recovered through the relative clause instead.
+        assert ("sign", "interpretant", "production") in triples
+
+
+class TestArgumentResolution:
+    def test_adjective_seed_term_gets_property_from_amod(self):
+        # Adjectival seeds never head arguments; the modification is the
+        # relation: selection characterized-as contextual.
+        props = _extract(
+            ["The contextual selection presupposes a code."],
+            ["contextual"],
+        )
+        assert ("selection", "contextual", "property") in _by_type(props)
+
+    def test_hyphenated_seed_term_resolves(self):
+        props = _extract(
+            ["The sign-function produces an interpretant."],
+            ["sign-function", "interpretant"],
+        )
+        assert ("sign-function", "interpretant", "production") in _by_type(props)
+
+    def test_all_caps_header_noise_dropped(self):
+        # Running headers fused into sentences must not become arguments.
+        props = _extract(
+            ["SEMIOTICS produces the interpretant."],
+            ["semiotics", "interpretant"],
+        )
+        assert not any(s == "semiotics" for s, _, _ in _by_type(props))
+
+
 class TestCopularAndAppositive:
     def test_copular_kind_of(self):
         props = _extract(["Semiosis is a kind of process."], ["semiosis", "process"])
