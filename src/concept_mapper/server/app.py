@@ -113,6 +113,12 @@ _DEFAULT_PARAMS: dict = {
     "keep_names": False,  # --no-filter-names
     "keep_fragments": False,  # --no-filter-fragments
     "no_lemmatize": False,  # --no-lemmatize
+    "min_author_freq": 3,
+    "weight_ratio": 1.0,
+    "weight_tfidf": 1.0,
+    "weight_neologism": 0.5,
+    "weight_definitional": 0.3,
+    "weight_capitalized": 0.2,
 }
 
 
@@ -154,6 +160,12 @@ def _run_rarities(work: str, params: dict) -> subprocess.CompletedProcess:
         cmd.append("--no-filter-fragments")
     if params.get("no_lemmatize"):
         cmd.append("--no-lemmatize")
+    cmd += ["--min-freq", str(params.get("min_author_freq", 3))]
+    cmd += ["--weight-ratio", str(params.get("weight_ratio", 1.0))]
+    cmd += ["--weight-tfidf", str(params.get("weight_tfidf", 1.0))]
+    cmd += ["--weight-neologism", str(params.get("weight_neologism", 0.5))]
+    cmd += ["--weight-definitional", str(params.get("weight_definitional", 0.3))]
+    cmd += ["--weight-capitalized", str(params.get("weight_capitalized", 0.2))]
     result = _run(cmd)
     if result.returncode == 0:
         _params_path(work).write_text(json.dumps(params, indent=2), encoding="utf-8")
@@ -289,6 +301,16 @@ async def rerun_rarities(request: Request):
         threshold = float(form.get("threshold") or 0.5)
     except ValueError:
         threshold = 0.5
+    try:
+        min_author_freq = max(1, int(form.get("min_author_freq") or 3))
+    except ValueError:
+        min_author_freq = 3
+
+    def _float_param(key: str, default: float, lo: float = 0.0, hi: float = 10.0) -> float:
+        try:
+            return max(lo, min(float(form.get(key) or default), hi))
+        except ValueError:
+            return default
 
     params = {
         "top_n": max(10, min(pool_size, 2000)),
@@ -298,6 +320,12 @@ async def rerun_rarities(request: Request):
         "keep_names": bool(form.get("keep_names")),
         "keep_fragments": bool(form.get("keep_fragments")),
         "no_lemmatize": bool(form.get("no_lemmatize")),
+        "min_author_freq": min_author_freq,
+        "weight_ratio": _float_param("weight_ratio", 1.0),
+        "weight_tfidf": _float_param("weight_tfidf", 1.0),
+        "weight_neologism": _float_param("weight_neologism", 0.5),
+        "weight_definitional": _float_param("weight_definitional", 0.3),
+        "weight_capitalized": _float_param("weight_capitalized", 0.2),
     }
 
     result = _run_rarities(work, params)
@@ -395,6 +423,7 @@ def build(
     depth: Annotated[str, Form()] = "",
     focus: Annotated[str, Form()] = "",
     definitions: Annotated[bool, Form()] = False,
+    prune_ratio: Annotated[float, Form()] = 3.0,
 ):
     # Filter candidate pool → seed terms; the pool itself is preserved.
     seed_p = _build_seed_terms_file(work, top_n)
@@ -423,6 +452,7 @@ def build(
         cmd += ["--focus", focus.strip()]
     if definitions:
         cmd.append("--definitions")
+    cmd += ["--prune-ratio", str(max(0.5, prune_ratio))]
     result = _run(cmd)
     if result.returncode != 0:
         return RedirectResponse(

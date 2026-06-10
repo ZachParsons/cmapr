@@ -301,6 +301,12 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy, use
         "applied automatically on subsequent runs."
     ),
 )
+@click.option("--min-freq", type=int, default=3, help="Minimum times a term must appear in the corpus to be scored (default: 3)")
+@click.option("--weight-ratio", type=float, default=1.0, help="Weight for corpus-vs-reference frequency ratio signal")
+@click.option("--weight-tfidf", type=float, default=1.0, help="Weight for TF-IDF distinctiveness signal")
+@click.option("--weight-neologism", type=float, default=0.5, help="Weight for neologism detection signal")
+@click.option("--weight-definitional", type=float, default=0.3, help="Weight for definitional context signal")
+@click.option("--weight-capitalized", type=float, default=0.2, help="Weight for consistent capitalization signal")
 @click.pass_context
 def rarities(
     ctx,
@@ -315,6 +321,12 @@ def rarities(
     pos,
     by_section,
     vet,
+    min_freq,
+    weight_ratio,
+    weight_tfidf,
+    weight_neologism,
+    weight_definitional,
+    weight_capitalized,
 ):
     """
     Detect rare/philosophical terms in corpus.
@@ -373,7 +385,15 @@ def rarities(
 
     # Detect terms
     click.echo(f"Computing signals (method={method})...")
-    scorer = PhilosophicalTermScorer(docs, reference, use_lemmas=True, verbose=True)
+    weights = {
+        "ratio": weight_ratio,
+        "tfidf": weight_tfidf,
+        "neologism": weight_neologism,
+        "definitional": weight_definitional,
+        "capitalized": weight_capitalized,
+    }
+    scorer = PhilosophicalTermScorer(docs, reference, use_lemmas=True, verbose=True,
+                                     min_author_freq=min_freq, weights=weights)
     candidates = scorer.score_all(
         min_score=threshold, top_n=None if not no_lemmatize else top_n
     )
@@ -1082,6 +1102,12 @@ def search(
         "pattern chain; 'auto' uses dependency when spaCy is available."
     ),
 )
+@click.option(
+    "--prune-ratio",
+    type=float,
+    default=3.0,
+    help="Target edges-per-node ratio after pruning (default: 3.0; lower = sparser graph)",
+)
 @click.pass_context
 def graph(
     ctx,
@@ -1099,6 +1125,7 @@ def graph(
     focus,
     definitions,
     engine,
+    prune_ratio,
 ):
     """
     Build concept graph by running analyze on each term in a terms file.
@@ -1181,7 +1208,7 @@ def graph(
 
     # Prune to target ratio
     before_edges = concept_graph.edge_count()
-    concept_graph = prune_to_ratio(concept_graph, target_ratio=3.0)
+    concept_graph = prune_to_ratio(concept_graph, target_ratio=prune_ratio)
     pruned = before_edges - concept_graph.edge_count()
 
     # B4/B5 — depth limit and/or focus-term neighbourhood

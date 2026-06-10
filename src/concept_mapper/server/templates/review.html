@@ -57,6 +57,14 @@
         <span style="font-size:11px;color:#aaa">none = all</span>
       </div>
 
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <label for="min_author_freq" style="font-size:12px;color:#444">Min occurrences</label>
+        <input type="number" id="min_author_freq" name="min_author_freq"
+               value="{{ params.min_author_freq }}" min="1" max="50" step="1"
+               style="width:90px;margin:0">
+        <span style="font-size:11px;color:#aaa">term must appear ≥ N times</span>
+      </div>
+
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:12px;color:#444">Keep (skip filter)</span>
         <div style="display:flex;flex-direction:column;gap:2px;font-size:13px">
@@ -79,6 +87,34 @@
         Update candidates
       </button>
     </div>
+
+    <details style="margin-top:14px">
+      <summary style="font-size:12px;color:#666;cursor:pointer;user-select:none">
+        Significance weights
+      </summary>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;max-width:460px">
+        {% set weight_fields = [
+          ("weight_ratio",        "Ratio",        "corpus vs. reference frequency"),
+          ("weight_tfidf",        "TF-IDF",       "within-corpus distinctiveness"),
+          ("weight_neologism",    "Neologism",    "newly coined terms"),
+          ("weight_definitional", "Definitional", "author defines/explains the term"),
+          ("weight_capitalized",  "Capitalized",  "consistently capitalised")
+        ] %}
+        {% for key, label, tip in weight_fields %}
+        <div style="display:flex;align-items:center;gap:8px">
+          <label for="{{ key }}" style="font-size:12px;color:#444;width:90px;flex-shrink:0">{{ label }}</label>
+          <input type="number" id="{{ key }}" name="{{ key }}"
+                 value="{{ params[key] }}" min="0" max="10" step="0.05"
+                 style="width:70px;margin:0">
+          <span style="font-size:11px;color:#aaa">{{ tip }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div style="color:#aaa;font-size:12px;margin-top:8px">
+        node size in the graph scales with the total weighted score
+      </div>
+    </details>
+
     <div style="color:#aaa;font-size:12px;margin-top:10px">
       re-runs rarities only — no re-ingest
     </div>
