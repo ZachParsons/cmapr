@@ -319,8 +319,8 @@ class TestLoader:
         assert "second page" in text.lower()
 
     def test_load_pdf_multipage_separation(self, sample_pdf):
-        """Test that PDF pages are separated with double newlines."""
-        text = load_pdf(sample_pdf)
+        """pdfplumber backend separates pages with double newlines."""
+        text = load_pdf(sample_pdf, backend="pdfplumber")
 
         # Pages should be separated by double newline
         assert "\n\n" in text
@@ -415,3 +415,29 @@ class TestDoclingBackend:
         assert "sign" in text.lower()
         # Running headers are furniture — must not appear in body text.
         assert "SEMIOTICS AND THE PHILOSOPHY OF LANGUAGE" not in text
+
+    def test_auto_backend_resolution(self):
+        from concept_mapper.corpus.loader import resolve_pdf_backend
+
+        assert resolve_pdf_backend("pdfplumber") == "pdfplumber"
+        try:
+            import docling  # noqa: F401
+
+            assert resolve_pdf_backend("auto") == "docling"
+        except ImportError:
+            assert resolve_pdf_backend("auto") == "pdfplumber"
+
+    def test_docling_collects_headings(self):
+        import pytest
+        from pathlib import Path
+
+        pytest.importorskip("docling")
+        pdf = Path("data/input/Eco_1984_SPL.pdf")
+        if not pdf.exists():
+            pytest.skip("sample PDF not in repo")
+        from concept_mapper.corpus.loader import _load_pdf_docling
+
+        headings: list = []
+        _load_pdf_docling(pdf, page_range=(24, 26), collected_headings=headings)
+        assert headings, "expected headings collected from sample pages"
+        assert all("title" in h and "level" in h for h in headings)

@@ -255,3 +255,78 @@ Methods text.
         assert restored.sent_index == location.sent_index
         assert restored.chapter == location.chapter
         assert restored.section == location.section
+
+
+class TestBackendSuppliedHeadings:
+    """C.3 — structure from docling-style headings, no TOC file needed."""
+
+    def _text(self):
+        return (
+            "1.1 Crisis of a concept\n\n"
+            "Current handbooks of semiotics provide many definitions. "
+            "The sign is discussed at length here, sentence after sentence.\n\n"
+            "1.2 The signs of an obstinacy\n\n"
+            "A second section follows with more sentences about signs.\n\n"
+            "FIGURE 1.3\n\n"
+            "1.5.1 Sign vs. figura\n\n"
+            "A subsection on the figura distinction closes the chapter.\n"
+        )
+
+    def _headings(self):
+        return [
+            {"title": "1.1 Crisis of a concept", "level": 1},
+            {"title": "1.2 The signs of an obstinacy", "level": 1},
+            {"title": "FIGURE 1.3", "level": 1},
+            {"title": "1.5.1 Sign vs. figura", "level": 1},
+            {"title": "2.9", "level": 1},
+        ]
+
+    def test_headings_drive_structure(self):
+        from concept_mapper.preprocessing.structure import DocumentStructureDetector
+        from concept_mapper.preprocessing.tokenize import tokenize_sentences
+
+        text = self._text()
+        detector = DocumentStructureDetector()
+        nodes, locations = detector.detect(
+            text, tokenize_sentences(text), headings=self._headings()
+        )
+        titles = {n.title for n in nodes}
+        assert "Crisis of a concept" in titles
+        assert "Sign vs. figura" in titles
+
+    def test_furniture_headings_skipped(self):
+        from concept_mapper.preprocessing.structure import DocumentStructureDetector
+        from concept_mapper.preprocessing.tokenize import tokenize_sentences
+
+        text = self._text()
+        detector = DocumentStructureDetector()
+        nodes, _ = detector.detect(
+            text, tokenize_sentences(text), headings=self._headings()
+        )
+        titles = {n.title for n in nodes}
+        assert not any("FIGURE" in t for t in titles)
+
+    def test_trimmed_heading_lines_skipped_gracefully(self):
+        # Headings whose lines were removed (front-matter trim) are skipped.
+        from concept_mapper.preprocessing.structure import DocumentStructureDetector
+        from concept_mapper.preprocessing.tokenize import tokenize_sentences
+
+        text = self._text()
+        headings = [{"title": "Copyright Page Title", "level": 1}] + self._headings()
+        detector = DocumentStructureDetector()
+        nodes, _ = detector.detect(text, tokenize_sentences(text), headings=headings)
+        assert nodes  # detection still succeeds on the surviving headings
+
+    def test_pipeline_uses_detected_headings_metadata(self):
+        from concept_mapper.corpus.models import Document
+        from concept_mapper.preprocessing.pipeline import preprocess
+
+        doc = Document(
+            text=self._text(),
+            metadata={"detected_headings": self._headings()},
+        )
+        processed = preprocess(doc)
+        assert processed.structure_nodes
+        assert any(
+            n.title == "Crisis of a concept" for n in processed.structure_nodes
+        )

@@ -100,14 +100,19 @@ def preprocess(
     # 4. Lemmatization
     lemmas = lemmatize_tagged(pos_tags)
 
-    # 5. Structure detection
+    # 5. Structure detection — an explicit TOC file wins; otherwise
+    # backend-supplied headings (docling PDF path) make `--toc` optional;
+    # the heuristics remain the fallback.
     structure_nodes = []
     sentence_locations = []
     if detect_structure:
         try:
             detector = DocumentStructureDetector()
             structure_nodes, sentence_locations = detector.detect(
-                text, sentences, toc_file=toc_file
+                text,
+                sentences,
+                toc_file=toc_file,
+                headings=document.metadata.get("detected_headings"),
             )
         except Exception:
             # Fail gracefully - structure detection is optional

@@ -44,22 +44,40 @@ def load_text(file_path: Union[str, Path]) -> str:
         return path.read_text(encoding="latin-1")
 
 
-def load_pdf(file_path: Union[str, Path], backend: str = "pdfplumber") -> str:
+def resolve_pdf_backend(backend: str = "auto") -> str:
+    """Resolve "auto" to docling when importable, else pdfplumber.
+
+    Adopted per the B.2/B.3 evaluation (docs/plans/structured-ingestion.md):
+    98% heading recall against the hand-curated TOC baseline, full book in
+    ~34s — docling is preferred whenever the ``ingest`` extra is present.
+    """
+    if backend != "auto":
+        return backend
+    try:
+        import docling  # noqa: F401, PLC0415
+
+        return "docling"
+    except ImportError:
+        return "pdfplumber"
+
+
+def load_pdf(file_path: Union[str, Path], backend: str = "auto") -> str:
     """
     Extract text from a PDF file.
 
     Backends:
-    - ``pdfplumber`` (default): raw text layer, page by page. Running
+    - ``auto`` (default): docling when installed, else pdfplumber.
+    - ``pdfplumber``: raw text layer, page by page. Running
       headers/footers come along (clean with ``--clean-ocr`` downstream).
     - ``docling``: layout-aware extraction (requires the ``ingest`` extra).
       Page headers/footers are dropped as furniture, headings come out as
       standalone normalized lines — much friendlier to the automatic
-      structure detector. Slower (~0.6s/page CPU; layout model downloads
-      on first use).
+      structure detector. Slower (~0.1–0.6s/page CPU; layout model
+      downloads on first use).
 
     Args:
         file_path: Path to PDF file
-        backend: "pdfplumber" or "docling"
+        backend: "auto", "pdfplumber", or "docling"
 
     Returns:
         Extracted text from all pages
@@ -68,8 +86,12 @@ def load_pdf(file_path: Union[str, Path], backend: str = "pdfplumber") -> str:
         ImportError: If the chosen backend is not installed
         FileNotFoundError: If file doesn't exist
     """
+    backend = resolve_pdf_backend(backend)
     if backend == "docling":
         return _load_pdf_docling(file_path)
+
+    if backend != "pdfplumber":
+        raise ValueError(f"Unknown PDF backend: {backend!r}")
 
     if not PDF_SUPPORT:
         raise ImportError(
@@ -109,8 +131,15 @@ def _normalize_heading(text: str) -> str:
     return t
 
 
-def _load_pdf_docling(file_path: Union[str, Path], page_range=None) -> str:
-    """Layout-aware PDF extraction via docling (``ingest`` extra)."""
+def _load_pdf_docling(
+    file_path: Union[str, Path], page_range=None, collected_headings: Optional[list] = None
+) -> str:
+    """Layout-aware PDF extraction via docling (``ingest`` extra).
+
+    When ``collected_headings`` is a list, every emitted heading is also
+    appended to it as ``{"title": ..., "level": ...}`` so callers can feed
+    them to the structure detector (C.3 — TOC file optional).
+    """
     try:
         from docling.datamodel.base_models import InputFormat  # noqa: PLC0415
         from docling.datamodel.pipeline_options import PdfPipelineOptions  # noqa: PLC0415
@@ -141,7 +170,12 @@ def _load_pdf_docling(file_path: Union[str, Path], page_range=None) -> str:
         if not text:
             continue
         if isinstance(item, (SectionHeaderItem, TitleItem)):
-            lines.append(f"\n{_normalize_heading(text)}\n")
+            heading = _normalize_heading(text)
+            lines.append(f"\n{heading}\n")
+            if collected_headings is not None:
+                collected_headings.append(
+                    {"title": heading, "level": getattr(item, "level", 1)}
+                )
         else:
             lines.append(text)
     return "\n".join(lines)
@@ -150,7 +184,7 @@ def _load_pdf_docling(file_path: Union[str, Path], page_range=None) -> str:
 def load_file(
     file_path: Union[str, Path],
     metadata: Optional[Dict] = None,
-    pdf_backend: str = "pdfplumber",
+    pdf_backend: str = "auto",
 ) -> Document:
     """
     Load a single file into a Document object.
@@ -173,8 +207,13 @@ def load_file(
     path = Path(file_path)
 
     # Detect file type and load accordingly
+    detected_headings: list = []
     if path.suffix.lower() == ".pdf":
-        text = load_pdf(path, backend=pdf_backend)
+        backend = resolve_pdf_backend(pdf_backend)
+        if backend == "docling":
+            text = _load_pdf_docling(path, collected_headings=detected_headings)
+        else:
+            text = load_pdf(path, backend=backend)
     else:
         text = load_text(path)
 
@@ -189,6 +228,11 @@ def load_file(
         # Ensure source_path is set
         if "source_path" not in metadata:
             metadata["source_path"] = str(path.resolve())
+
+    # Backend-supplied headings let structure detection skip heuristics
+    # (and make the --toc file optional) — see preprocessing/structure.py.
+    if detected_headings:
+        metadata["detected_headings"] = detected_headings
 
     return Document(text=text, metadata=metadata)
 

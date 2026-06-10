@@ -129,12 +129,13 @@ def cli(ctx, verbose, output_dir):
 )
 @click.option(
     "--pdf-backend",
-    type=click.Choice(["pdfplumber", "docling"]),
-    default="pdfplumber",
+    type=click.Choice(["auto", "pdfplumber", "docling"]),
+    default="auto",
     help=(
         "PDF extraction backend. 'docling' is layout-aware -- drops running "
-        "headers/footers, emits normalized headings (requires: uv sync "
-        "--extra ingest; slower, layout model downloads on first use)."
+        "headers/footers, emits normalized headings that drive automatic "
+        "structure detection (requires: uv sync --extra ingest; layout model "
+        "downloads on first use). 'auto' prefers docling when installed."
     ),
 )
 @click.pass_context

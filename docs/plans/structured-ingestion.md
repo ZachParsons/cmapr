@@ -89,12 +89,19 @@ headings (1.2.1–1.2.6) surface number-only. Verdict: proceed with B.1.
   header is absent). Headings emitted as standalone normalized lines:
   `_normalize_heading` fixes the B.0 glyph noise (Greek Ι/Ο→I/O, `1.5*6`
   → `1.5.6`, `1 . 2 .` → `1.2.`).
-- [ ] **B.2 Structure comparison harness**: extract all headings from
-  `Eco_1984_SPL.pdf` via docling; score against hand-curated
-  `eco_spl_toc.txt` (precision/recall on section titles + ordering).
-- [ ] **B.3 Accept/reject**: if docling wins, it becomes the default PDF
-  path and supplies structure directly (TOC file optional); if not,
-  document why here and stop at Phase A cleaning.
+- [x] **B.2 Structure comparison harness** ✅ 2026-06-10 —
+  `scripts/eval_pdf_structure.py` (reproducible; reuses the detector's own
+  `_parse_toc_markdown` for ground truth). Full `Eco_1984_SPL.pdf` in
+  **34s**: **recall 121/123 = 98%** of hand-TOC entries, precision
+  121/163 = 74% — and the 42 "extras" are mostly *real* structure the
+  hand TOC omits (1.2.1–1.2.6 sub-subsections), front-matter title pages
+  (removed by `--trim-matter`), and filterable furniture (FIGURE
+  captions, `[N]` stubs). The 2 misses are long subsection titles split
+  across lines in the PDF.
+- [x] **B.3 Verdict: ADOPTED** ✅ 2026-06-10 — `--pdf-backend` defaults to
+  `auto` (docling when the `[ingest]` extra is installed, else
+  pdfplumber), mirroring the `--engine auto` pattern.
+  `resolve_pdf_backend()` in `corpus/loader.py`.
 - [ ] **B.4 nougat** only if scanned-OCR PDFs (no text layer) become a real
   use case — defer by default.
 
@@ -118,9 +125,20 @@ headings (1.2.1–1.2.6) surface number-only. Verdict: proceed with B.1.
   `detect_ocr_issues` and suggests `--clean-ocr` when artifacts are
   detected. Tests: `tests/preprocessing/test_matter.py` (8) +
   docling/normalizer tests in `tests/test_corpus.py`.
-- [ ] **C.3 Auto structure labeling**: when the backend supplies headings,
-  populate `structure_nodes`/`sentence_locations` without a `--toc` file;
-  `--toc` stays as the manual override.
+- [x] **C.3 Auto structure labeling** ✅ 2026-06-10 — the docling path
+  collects its headings into `Document.metadata["detected_headings"]`;
+  `DocumentStructureDetector.detect(headings=)` locates them *verbatim*
+  in the text (the backend wrote those lines itself — substring search,
+  not heuristics), skipping furniture (number-only stubs, FIGURE/TABLE
+  captions) and headings whose lines were trimmed away. Priority: TOC
+  file > backend headings > heuristics — `--toc` is now optional for
+  docling-ingested PDFs. End-to-end on the full book (no TOC file):
+  3,915 sentences, 134 structure nodes, all sentences located, running
+  header absent, 18 front + 802 back-matter lines auto-trimmed.
+  *Known wart:* heading items from the contents page itself can anchor
+  onto body occurrences of chapter titles — refine later by filtering
+  collected headings whose docling page provenance falls in the detected
+  front-matter range.
 - [ ] **C.4 QA fixture matrix** (folds in the "Manual QA text samples"
   roadmap item): fixtures at sentence/paragraph/chapter/book scale ×
   clean/dirty × TOC/index/neither; `docs/qa/ingestion.md` walk-through.

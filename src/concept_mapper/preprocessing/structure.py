@@ -36,7 +36,11 @@ class DocumentStructureDetector:
     ALLCAPS_HEADING = re.compile(r"^([A-Z][A-Z\s]{3,})$", re.MULTILINE)
 
     def detect(
-        self, text: str, sentences: List[str], toc_file: Optional[Path] = None
+        self,
+        text: str,
+        sentences: List[str],
+        toc_file: Optional[Path] = None,
+        headings: Optional[List[Dict]] = None,
     ) -> Tuple[List[StructureNode], List[SentenceLocation]]:
         """
         Detect document structure and map sentences to locations.
@@ -45,6 +49,9 @@ class DocumentStructureDetector:
             text: Full document text
             sentences: List of sentence strings
             toc_file: Optional path to table of contents file for guided detection
+            headings: Optional backend-supplied headings (``{"title", "level"}``
+                dicts, e.g. from the docling PDF backend) — trusted over the
+                heuristics but below an explicit TOC file
 
         Returns:
             Tuple of (structure_nodes, sentence_locations)
@@ -52,6 +59,13 @@ class DocumentStructureDetector:
         # Try TOC-based detection first (if provided)
         if toc_file:
             nodes = self._detect_from_toc(toc_file, text, sentences)
+            if nodes:
+                return self._build_structure(nodes, sentences, text)
+
+        # Backend-supplied headings (e.g. docling layout analysis): located
+        # verbatim in the text, since the backend wrote those lines itself.
+        if headings:
+            nodes = self._detect_from_headings(headings, text)
             if nodes:
                 return self._build_structure(nodes, sentences, text)
 
@@ -74,6 +88,53 @@ class DocumentStructureDetector:
 
         # Fallback: paragraph boundaries
         return self._detect_paragraphs(text, sentences)
+
+    def _detect_from_headings(
+        self, headings: List[Dict], text: str
+    ) -> Optional[List[Dict]]:
+        """Locate backend-supplied heading lines verbatim in the text.
+
+        The backend (docling) wrote these exact lines into the text itself,
+        so location is a substring search, not a heuristic. Headings whose
+        lines were trimmed away (front-matter) or that are furniture
+        (figure/table captions, number-only stubs) are skipped.
+        """
+        nodes = []
+        search_from = 0
+        for h in headings:
+            title = (h.get("title") or "").strip()
+            if not title:
+                continue
+            # Furniture: no real word (number-only stubs, "[2]") or captions.
+            if not re.search(r"[A-Za-z]{3,}", title) or re.match(
+                r"(?i)^(figure|table)\b", title
+            ):
+                continue
+            pos = text.find(title, search_from)
+            if pos < 0:
+                pos = text.find(title)
+            if pos < 0:
+                continue  # line not in (possibly trimmed/cleaned) text
+            search_from = pos + len(title)
+
+            m = re.match(r"^((?:\d+\.)*\d+\.?|[IVXL]+\.?)\s+(.+)$", title)
+            if m:
+                number = m.group(1).rstrip(".")
+                node_title = m.group(2).strip()
+                level = f"level_{number.count('.')}"
+            else:
+                number = ""
+                node_title = title
+                level = "level_0"
+            nodes.append(
+                {
+                    "level": level,
+                    "number": number,
+                    "title": node_title,
+                    "position": pos,
+                }
+            )
+        return nodes if len(nodes) >= 2 else None
 
     def _detect_numbered_headings(
         self, text: str, sentences: List[str]
