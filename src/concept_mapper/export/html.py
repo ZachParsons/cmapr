@@ -454,8 +454,10 @@ def _generate_html_template(
     <svg id="graph"></svg>
 
     <div id="legend">
-        <div style="font-weight:600;margin-bottom:6px;">Edge types</div>
-        <!-- rows injected by JS so checkboxes share closure with D3 selections -->
+        <div style="font-weight:600;margin-bottom:6px;">Node colors</div>
+        <div id="legend-node-section"></div>
+        <div style="margin-top:8px;padding-top:6px;border-top:1px solid #eee;font-weight:600;margin-bottom:4px;">Edge types</div>
+        <div id="legend-edge-section"></div>
     </div>
 
     <div id="detail-panel">
@@ -857,7 +859,7 @@ def _generate_html_template(
                 {{ type: "recurrence",   color: "#7a8aa0", dashed: true  }},
                 {{ type: "cooccurrence", color: "#bbbbbb", dashed: true  }},
             ];
-            const legendEl = document.getElementById("legend");
+            const legendEdgeEl = document.getElementById("legend-edge-section");
             LEGEND_TYPES.forEach(({{ type, color, dashed }}) => {{
                 // Only show types that appear in the data
                 const hasType = data.links.some(l => l.type === type);
@@ -886,8 +888,37 @@ def _generate_html_template(
                 row.appendChild(cb);
                 row.appendChild(swatch);
                 row.appendChild(lbl);
-                legendEl.appendChild(row);
+                legendEdgeEl.appendChild(row);
             }});
+
+            // Community color toggle
+            (function() {{
+                const nodeSectionEl = document.getElementById("legend-node-section");
+
+                const row = document.createElement("div");
+                row.className = "legend-row";
+
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.checked = true;
+                cb.title = "Toggle community colors";
+                cb.addEventListener("change", () => {{
+                    node.attr("fill", d => cb.checked ? communityColor(d.group || 0) : "#aaaaaa");
+                }});
+
+                const swatch = document.createElement("div");
+                swatch.style.cssText = "width:12px;height:12px;border-radius:50%;flex-shrink:0;"
+                    + "background:conic-gradient(#1f77b4 0deg 72deg,#ff7f0e 72deg 144deg,"
+                    + "#2ca02c 144deg 216deg,#d62728 216deg 288deg,#9467bd 288deg 360deg)";
+
+                const lbl = document.createElement("span");
+                lbl.textContent = "communities";
+
+                row.appendChild(cb);
+                row.appendChild(swatch);
+                row.appendChild(lbl);
+                nodeSectionEl.appendChild(row);
+            }})();
 
             // ----------------------------------------------------------------
             // 11.2 — Node detail panel
