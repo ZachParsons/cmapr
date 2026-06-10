@@ -36,10 +36,14 @@
       <input type="text" id="toc_path" name="toc_path"
              placeholder="data/input/eco_spl_toc.txt">
     </div>
-    <div class="field" style="display:flex;gap:20px;margin-top:4px">
+    <div class="field" style="display:flex;gap:20px;margin-top:4px;flex-wrap:wrap">
       <label>
         <input type="checkbox" name="clean_ocr" value="true">
         &nbsp;--clean-ocr &nbsp;<span class="hint">(strip OCR artifacts)</span>
+      </label>
+      <label>
+        <input type="checkbox" name="trim_matter" value="true">
+        &nbsp;--trim-matter &nbsp;<span class="hint">(drop copyright/contents pages, bibliography, index)</span>
       </label>
       <label>
         <input type="checkbox" name="use_spacy" value="true">

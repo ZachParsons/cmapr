@@ -190,6 +190,7 @@
   <summary>Re-run ingest with different options</summary>
   <div class="card" style="margin-top:0;border-top-left-radius:0;border-top-right-radius:0">
     <form method="post" action="/start">
+      <input type="hidden" name="force" value="true">
       <div class="field">
         <label class="field-label" for="ri_file_path">Source text path</label>
         <input type="text" id="ri_file_path" name="file_path"
@@ -199,9 +200,12 @@
         <label class="field-label" for="ri_toc">Table of contents (optional)</label>
         <input type="text" id="ri_toc" name="toc_path">
       </div>
-      <div class="field" style="display:flex;gap:20px">
+      <div class="field" style="display:flex;gap:20px;flex-wrap:wrap">
         <label>
           <input type="checkbox" name="clean_ocr" value="true"> &nbsp;--clean-ocr
+        </label>
+        <label>
+          <input type="checkbox" name="trim_matter" value="true"> &nbsp;--trim-matter
         </label>
         <label>
           <input type="checkbox" name="use_spacy" value="true"> &nbsp;--spacy

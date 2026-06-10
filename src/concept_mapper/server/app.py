@@ -209,16 +209,22 @@ def start(
     file_path: Annotated[str, Form()],
     clean_ocr: Annotated[bool, Form()] = False,
     use_spacy: Annotated[bool, Form()] = False,
+    trim_matter: Annotated[bool, Form()] = False,
     toc_path: Annotated[str, Form()] = "",
+    force: Annotated[bool, Form()] = False,
 ):
     work = Path(file_path).stem
 
-    if not _corpus_path(work).exists():
+    # `force` comes from the review page's "re-run ingest" form — without
+    # it, changed ingest options were silently ignored for existing corpora.
+    if force or not _corpus_path(work).exists():
         cmd = ["cmapr", "ingest", file_path]
         if clean_ocr:
             cmd.append("--clean-ocr")
         if use_spacy:
             cmd.append("--spacy")
+        if trim_matter:
+            cmd.append("--trim-matter")
         if toc_path.strip():
             cmd += ["--toc", toc_path.strip()]
         result = _run(cmd)
