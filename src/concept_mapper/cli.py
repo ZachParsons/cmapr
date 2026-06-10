@@ -116,8 +116,41 @@ def cli(ctx, verbose, output_dir):
         "visible in sentences that mention them only as 'it'/'they'."
     ),
 )
+@click.option(
+    "--trim-matter",
+    "trim_matter",
+    is_flag=True,
+    default=False,
+    help=(
+        "Strip detected front-matter (copyright page, contents block) and "
+        "back-matter (bibliography, index) before processing. Detection is "
+        "always reported; trimming only happens with this flag."
+    ),
+)
+@click.option(
+    "--pdf-backend",
+    type=click.Choice(["pdfplumber", "docling"]),
+    default="pdfplumber",
+    help=(
+        "PDF extraction backend. 'docling' is layout-aware -- drops running "
+        "headers/footers, emits normalized headings (requires: uv sync "
+        "--extra ingest; slower, layout model downloads on first use)."
+    ),
+)
 @click.pass_context
-def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy, use_coref):
+def ingest(
+    ctx,
+    path,
+    output,
+    recursive,
+    pattern,
+    clean_ocr,
+    toc,
+    use_spacy,
+    use_coref,
+    trim_matter,
+    pdf_backend,
+):
     """
     Load and preprocess documents.
 
@@ -162,7 +195,7 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy, use
     # Load documents
     path = Path(path)
     if path.is_file():
-        doc = load_file(path)
+        doc = load_file(path, pdf_backend=pdf_backend)
         docs = [doc]
     else:
         if not recursive:
@@ -191,6 +224,28 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy, use
         else:
             click.echo("Preprocessing documents...")
 
+    # Surface what better flags would catch, without changing behavior:
+    # front/back-matter detection always reports; OCR issues prompt the flag.
+    from concept_mapper.preprocessing.cleaning import detect_ocr_issues
+    from concept_mapper.preprocessing.matter import detect_matter
+
+    for doc in docs:
+        matter = detect_matter(doc.text)
+        if not trim_matter and (matter["front"] or matter["back"]):
+            found = " and ".join(filter(None, [matter["front"], matter["back"]]))
+            click.echo(
+                f"⚠ Detected {found} -- re-run with --trim-matter to strip it",
+                err=True,
+            )
+        if not clean_ocr:
+            issues = detect_ocr_issues(doc.text)
+            if sum(issues.values()) >= 25:
+                click.echo(
+                    "⚠ Text shows OCR artifacts "
+                    f"({sum(issues.values())} suspected) -- consider --clean-ocr",
+                    err=True,
+                )
+
     processed = []
     with click.progressbar(docs, label="Processing") as bar:
         for doc in bar:
@@ -201,7 +256,16 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy, use
                     toc_file=toc_file,
                     use_spacy=use_spacy,
                     resolve_coref=use_coref,
+                    trim_matter=trim_matter,
                 )
+            )
+    for pdoc in processed:
+        trimmed = pdoc.metadata.get("matter_trimmed")
+        if trimmed:
+            click.echo(
+                f"✓ Trimmed {trimmed['front_lines']} front-matter and "
+                f"{trimmed['back_lines']} back-matter line(s) "
+                f"({' / '.join(filter(None, [trimmed['front'], trimmed['back']]))})"
             )
 
     # Save
@@ -301,12 +365,42 @@ def ingest(ctx, path, output, recursive, pattern, clean_ocr, toc, use_spacy, use
         "applied automatically on subsequent runs."
     ),
 )
-@click.option("--min-freq", type=int, default=3, help="Minimum times a term must appear in the corpus to be scored (default: 3)")
-@click.option("--weight-ratio", type=float, default=1.0, help="Weight for corpus-vs-reference frequency ratio signal")
-@click.option("--weight-tfidf", type=float, default=1.0, help="Weight for TF-IDF distinctiveness signal")
-@click.option("--weight-neologism", type=float, default=0.5, help="Weight for neologism detection signal")
-@click.option("--weight-definitional", type=float, default=0.3, help="Weight for definitional context signal")
-@click.option("--weight-capitalized", type=float, default=0.2, help="Weight for consistent capitalization signal")
+@click.option(
+    "--min-freq",
+    type=int,
+    default=3,
+    help="Minimum times a term must appear in the corpus to be scored (default: 3)",
+)
+@click.option(
+    "--weight-ratio",
+    type=float,
+    default=1.0,
+    help="Weight for corpus-vs-reference frequency ratio signal",
+)
+@click.option(
+    "--weight-tfidf",
+    type=float,
+    default=1.0,
+    help="Weight for TF-IDF distinctiveness signal",
+)
+@click.option(
+    "--weight-neologism",
+    type=float,
+    default=0.5,
+    help="Weight for neologism detection signal",
+)
+@click.option(
+    "--weight-definitional",
+    type=float,
+    default=0.3,
+    help="Weight for definitional context signal",
+)
+@click.option(
+    "--weight-capitalized",
+    type=float,
+    default=0.2,
+    help="Weight for consistent capitalization signal",
+)
 @click.pass_context
 def rarities(
     ctx,
@@ -392,8 +486,14 @@ def rarities(
         "definitional": weight_definitional,
         "capitalized": weight_capitalized,
     }
-    scorer = PhilosophicalTermScorer(docs, reference, use_lemmas=True, verbose=True,
-                                     min_author_freq=min_freq, weights=weights)
+    scorer = PhilosophicalTermScorer(
+        docs,
+        reference,
+        use_lemmas=True,
+        verbose=True,
+        min_author_freq=min_freq,
+        weights=weights,
+    )
     candidates = scorer.score_all(
         min_score=threshold, top_n=None if not no_lemmatize else top_n
     )

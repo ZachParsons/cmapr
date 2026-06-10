@@ -25,11 +25,13 @@ def preprocess(
     toc_file: Optional[Path] = None,
     use_spacy: bool = False,
     resolve_coref: bool = False,
+    trim_matter: bool = False,
 ) -> ProcessedDocument:
     """
     Preprocess a single document through full pipeline.
 
     Pipeline stages:
+    0a. Front/back-matter trimming (optional) - copyright/TOC/index removal
     0. Text cleaning (optional) - OCR/PDF artifact removal
     0b. Coreference resolution (optional, requires the coref extra)
     1. Sentence tokenization
@@ -49,6 +51,10 @@ def preprocess(
         resolve_coref: Rewrite pronominal mentions with their antecedents
                        before tokenization (default: False; requires the
                        coref extra — see ``preprocessing/coref.py``).
+        trim_matter: Strip detected front-matter (copyright page, contents
+                     block) and back-matter (bibliography, index) before any
+                     other stage (default: False). Trim details land in
+                     ``ProcessedDocument.metadata["matter_trimmed"]``.
 
     Returns:
         ProcessedDocument with all linguistic annotations
@@ -62,6 +68,14 @@ def preprocess(
         ['the', 'cat', 'sit']
     """
     text = document.text
+
+    # 0a. Front/back-matter trimming — before everything, so cleaning and
+    # structure detection only ever see body text.
+    matter_report = None
+    if trim_matter:
+        from .matter import trim_matter as _trim_matter  # noqa: PLC0415
+
+        text, matter_report = _trim_matter(text)
 
     # 0. Clean OCR/PDF artifacts if requested
     if clean_ocr:
@@ -103,6 +117,8 @@ def preprocess(
     paragraph_indices = get_paragraph_indices(text, sentences)
 
     doc_metadata = document.metadata.copy()
+    if matter_report and (matter_report["front_lines"] or matter_report["back_lines"]):
+        doc_metadata["matter_trimmed"] = matter_report
 
     # 7. Noun chunk extraction (optional)
     if use_spacy:

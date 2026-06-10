@@ -377,3 +377,41 @@ class TestLoader:
 
         except ImportError:
             pytest.skip("reportlab not available for PDF test creation")
+
+
+class TestDoclingBackend:
+    """Docling PDF backend (structured-ingestion B.1). Heavy tests gated."""
+
+    def test_normalize_heading_glyph_noise(self):
+        from concept_mapper.corpus.loader import _normalize_heading
+
+        assert _normalize_heading("Ι.5.Ι. Sign vs.figura").startswith("I.5.I.")
+        assert _normalize_heading("1.5*6 The  sign  as  identity") == (
+            "1.5.6 The sign as identity"
+        )
+        assert _normalize_heading("1 . 2 . The  signs").startswith("1.2.")
+
+    def test_unknown_backend_uses_pdfplumber_error_path(self):
+        import pytest
+        from concept_mapper.corpus.loader import _load_pdf_docling
+
+        try:
+            import docling  # noqa: F401
+        except ImportError:
+            with pytest.raises(ImportError, match="extra ingest"):
+                _load_pdf_docling("nonexistent.pdf")
+
+    def test_docling_extracts_real_pdf(self):
+        import pytest
+        from pathlib import Path
+
+        pytest.importorskip("docling")
+        pdf = Path("data/input/Eco_1984_SPL.pdf")
+        if not pdf.exists():
+            pytest.skip("sample PDF not in repo")
+        from concept_mapper.corpus.loader import _load_pdf_docling
+
+        text = _load_pdf_docling(pdf, page_range=(24, 25))
+        assert "sign" in text.lower()
+        # Running headers are furniture — must not appear in body text.
+        assert "SEMIOTICS AND THE PHILOSOPHY OF LANGUAGE" not in text

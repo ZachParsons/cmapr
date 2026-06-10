@@ -82,9 +82,7 @@ class TestVerbPrepAndVacuous:
         assert ("sign", "object", "definition") in _by_type(props)
 
     def test_is_called_is_definition(self):
-        props = _extract(
-            ["This process is called semiosis."], ["process", "semiosis"]
-        )
+        props = _extract(["This process is called semiosis."], ["process", "semiosis"])
         assert ("process", "semiosis", "definition") in _by_type(props)
 
     def test_based_on_is_dependence(self):

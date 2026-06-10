@@ -306,7 +306,9 @@ async def rerun_rarities(request: Request):
     except ValueError:
         min_author_freq = 3
 
-    def _float_param(key: str, default: float, lo: float = 0.0, hi: float = 10.0) -> float:
+    def _float_param(
+        key: str, default: float, lo: float = 0.0, hi: float = 10.0
+    ) -> float:
         try:
             return max(lo, min(float(form.get(key) or default), hi))
         except ValueError:

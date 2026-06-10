@@ -80,9 +80,15 @@ from the PDF's own text layer ("Ι.5.Ι" with Greek iota, "1.5*6",
 "I . I .") needs section-number normalization, and some sub-subsection
 headings (1.2.1–1.2.6) surface number-only. Verdict: proceed with B.1.
 
-- [ ] **B.1 `--pdf-backend {pdfplumber|docling}`** on `cmapr ingest`;
-  docling under a new `[ingest]` extra, lazy-loaded. Include a
-  section-number normalizer (Greek-iota/`*`/spacing fixes seen in B.0).
+- [x] **B.1 `--pdf-backend {pdfplumber|docling}`** on `cmapr ingest` ✅
+  2026-06-10 — `corpus/loader.py:load_pdf(backend=)` / `_load_pdf_docling`
+  under the new `[ingest]` extra (lazy import, install-hint error).
+  Docling classifies running headers/footers as page furniture, which
+  `iterate_items` skips — the dirty-PDF header problem solved at the
+  source (gated integration test converts real pages and asserts the
+  header is absent). Headings emitted as standalone normalized lines:
+  `_normalize_heading` fixes the B.0 glyph noise (Greek Ι/Ο→I/O, `1.5*6`
+  → `1.5.6`, `1 . 2 .` → `1.2.`).
 - [ ] **B.2 Structure comparison harness**: extract all headings from
   `Eco_1984_SPL.pdf` via docling; score against hand-curated
   `eco_spl_toc.txt` (precision/recall on section titles + ordering).
@@ -94,10 +100,24 @@ headings (1.2.1–1.2.6) surface number-only. Verdict: proceed with B.1.
 
 ### Phase C — front/back-matter + structure unification
 
-- [ ] **C.1 Front-matter classifier** (heuristic): title page, copyright,
-  TOC pages, dedication — auto-skip with override flag.
-- [ ] **C.2 Back-matter classifier**: bibliography/references/index/appendix
-  detection (section-title + content-shape heuristics) — auto-truncate.
+- [x] **C.1 Front-matter detection** ✅ 2026-06-10 — new
+  `preprocessing/matter.py`: copyright-page markers (©/ISBN/"all rights
+  reserved"/Library of Congress) + CONTENTS block (heading + run of
+  TOC-shaped lines), position-gated to the first fifth of the document so
+  trimmed chapter files pass untouched.
+- [x] **C.2 Back-matter detection** ✅ 2026-06-10 — same module:
+  back-matter headings (BIBLIOGRAPHY / REFERENCES / INDEX / APPENDIX /
+  GLOSSARY / ENDNOTES, last-half only) **plus** an index-shape detector
+  (≥10 consecutive short lines ending in page-number lists) for indexes
+  without a heading — indexes are term-dense and were the worst rarities
+  pollutant. Wired as `preprocess(trim_matter=)` (stage 0a, before
+  cleaning) + `cmapr ingest --trim-matter`. **Never silent**: detection
+  without the flag prints a warning; trimming prints exactly what was cut
+  (line counts + reasons, also stored in
+  `metadata["matter_trimmed"]`). Bonus: ingest now also runs
+  `detect_ocr_issues` and suggests `--clean-ocr` when artifacts are
+  detected. Tests: `tests/preprocessing/test_matter.py` (8) +
+  docling/normalizer tests in `tests/test_corpus.py`.
 - [ ] **C.3 Auto structure labeling**: when the backend supplies headings,
   populate `structure_nodes`/`sentence_locations` without a `--toc` file;
   `--toc` stays as the manual override.

@@ -5,6 +5,7 @@ Provides functions to load individual files or entire directories
 into Document and Corpus objects.
 """
 
+import re
 from pathlib import Path
 from typing import Dict, Optional, Union
 
@@ -43,23 +44,33 @@ def load_text(file_path: Union[str, Path]) -> str:
         return path.read_text(encoding="latin-1")
 
 
-def load_pdf(file_path: Union[str, Path]) -> str:
+def load_pdf(file_path: Union[str, Path], backend: str = "pdfplumber") -> str:
     """
     Extract text from a PDF file.
 
-    Uses pdfplumber to extract text from all pages and combines them
-    with double newline separation between pages.
+    Backends:
+    - ``pdfplumber`` (default): raw text layer, page by page. Running
+      headers/footers come along (clean with ``--clean-ocr`` downstream).
+    - ``docling``: layout-aware extraction (requires the ``ingest`` extra).
+      Page headers/footers are dropped as furniture, headings come out as
+      standalone normalized lines — much friendlier to the automatic
+      structure detector. Slower (~0.6s/page CPU; layout model downloads
+      on first use).
 
     Args:
         file_path: Path to PDF file
+        backend: "pdfplumber" or "docling"
 
     Returns:
         Extracted text from all pages
 
     Raises:
-        ImportError: If pdfplumber is not installed
+        ImportError: If the chosen backend is not installed
         FileNotFoundError: If file doesn't exist
     """
+    if backend == "docling":
+        return _load_pdf_docling(file_path)
+
     if not PDF_SUPPORT:
         raise ImportError(
             "pdfplumber is required for PDF support. "
@@ -79,7 +90,68 @@ def load_pdf(file_path: Union[str, Path]) -> str:
     return "\n\n".join(pages_text)
 
 
-def load_file(file_path: Union[str, Path], metadata: Optional[Dict] = None) -> Document:
+# Glyph noise observed in typeset-PDF heading numbers (docling B.0 trial):
+# Greek capital iota / omicron and Cyrillic О standing in for I/O, "*" for
+# ".", and spaced-out dots ("1 . 5").
+_HEADING_GLYPHS = str.maketrans({"Ι": "I", "О": "O", "Ο": "O"})
+
+
+def _normalize_heading(text: str) -> str:
+    """Normalize a docling heading line for the structure detector."""
+    t = text.translate(_HEADING_GLYPHS)
+    t = re.sub(r"\s+", " ", t).strip()
+    # "1.5*6" → "1.5.6"; "1 . 5 . 3" → "1.5.3" (leading section numbers only)
+    t = re.sub(r"(?<=\d)\s*\*\s*(?=\d)", ".", t)
+    m = re.match(r"^((?:[\dIVXL]+\s*\.\s*)+[\dIVXL]*\.?)\s*(.*)$", t)
+    if m:
+        number = re.sub(r"\s+", "", m.group(1))
+        t = f"{number} {m.group(2)}".strip()
+    return t
+
+
+def _load_pdf_docling(file_path: Union[str, Path], page_range=None) -> str:
+    """Layout-aware PDF extraction via docling (``ingest`` extra)."""
+    try:
+        from docling.datamodel.base_models import InputFormat  # noqa: PLC0415
+        from docling.datamodel.pipeline_options import PdfPipelineOptions  # noqa: PLC0415
+        from docling.document_converter import (  # noqa: PLC0415
+            DocumentConverter,
+            PdfFormatOption,
+        )
+        from docling_core.types.doc import SectionHeaderItem, TitleItem  # noqa: PLC0415
+    except ImportError as e:
+        raise ImportError(
+            "docling is required for the docling PDF backend. "
+            "Install with: uv sync --extra ingest"
+        ) from e
+
+    opts = PdfPipelineOptions(do_ocr=False, do_table_structure=False)
+    converter = DocumentConverter(
+        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=opts)}
+    )
+    kwargs = {"page_range": page_range} if page_range else {}
+    doc = converter.convert(str(file_path), **kwargs).document
+
+    # Body items only — docling classifies running headers/footers as page
+    # furniture, which iterate_items skips. Headings become standalone
+    # blank-line-separated lines so structure detection can find them.
+    lines = []
+    for item, _level in doc.iterate_items():
+        text = (getattr(item, "text", "") or "").strip()
+        if not text:
+            continue
+        if isinstance(item, (SectionHeaderItem, TitleItem)):
+            lines.append(f"\n{_normalize_heading(text)}\n")
+        else:
+            lines.append(text)
+    return "\n".join(lines)
+
+
+def load_file(
+    file_path: Union[str, Path],
+    metadata: Optional[Dict] = None,
+    pdf_backend: str = "pdfplumber",
+) -> Document:
     """
     Load a single file into a Document object.
 
@@ -88,19 +160,21 @@ def load_file(file_path: Union[str, Path], metadata: Optional[Dict] = None) -> D
     Args:
         file_path: Path to text or PDF file
         metadata: Optional metadata dict (if None, extracts from filename)
+        pdf_backend: "pdfplumber" (raw text layer) or "docling"
+            (layout-aware; requires the ``ingest`` extra)
 
     Returns:
         Document object with text and metadata
 
     Raises:
         FileNotFoundError: If file doesn't exist
-        ImportError: If PDF file but pdfplumber not installed
+        ImportError: If PDF file but the chosen backend is not installed
     """
     path = Path(file_path)
 
     # Detect file type and load accordingly
     if path.suffix.lower() == ".pdf":
-        text = load_pdf(path)
+        text = load_pdf(path, backend=pdf_backend)
     else:
         text = load_text(path)
 

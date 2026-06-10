@@ -26,6 +26,9 @@ coref = [
     "fastcoref>=2.1",         # Pronoun→antecedent resolution at ingest; pulls torch + transformers
     "transformers<4.50",      # fastcoref breaks on the 4.5x tied-weights refactor
 ]
+ingest = [
+    "docling>=2.0",           # Layout-aware PDF extraction (headers/footers dropped, headings labeled)
+]
 serve = [
     "fastapi>=0.115",         # Web framework for local UI
     "uvicorn>=0.32",          # ASGI server

@@ -125,9 +125,7 @@ _VERB_PREP_TYPE: Dict[Tuple[str, str], str] = {
 
 # Prepositions through which a mapped verb's object may arrive
 # ("depends on", "derives from", "is defined as", "contrasts with").
-_OBJECT_PREPS = frozenset(
-    {"on", "upon", "from", "as", "to", "with", "of", "in", "for"}
-)
+_OBJECT_PREPS = frozenset({"on", "upon", "from", "as", "to", "with", "of", "in", "for"})
 
 # Semantically empty copular targets: "a sign is *something* which …" must
 # not become kind-of(sign, something). When such a target carries a relative
@@ -381,10 +379,7 @@ class DependencyExtractor:
                     raw += self._from_verb(tok)
                 elif tok.dep_ == "appos":
                     raw += self._from_appos(tok)
-                elif (
-                    tok.dep_ == "amod"
-                    and tok.lemma_.lower() in self._known
-                ):
+                elif tok.dep_ == "amod" and tok.lemma_.lower() in self._known:
                     # Adjectival seed terms ("contextual selection",
                     # "extensional device") never head an argument, so verb
                     # extraction can't see them — the modification itself is
